@@ -1,0 +1,16 @@
+{
+  "name": "rumsan-offera",
+  "private": true,
+  "packageManager": "pnpm@10.30.3",
+  "scripts": {
+    "build": "pnpm prisma generate --schema=./apps/api/prisma/schema.prisma && turbo build",
+    "db:generate": "pnpm prisma generate --schema=./apps/api/prisma/schema.prisma",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "clean": "turbo clean"
+  },
+  "devDependencies": {
+    "turbo": "^2.8.12",
+    "prisma": "^5.22.0"
+  }
+}

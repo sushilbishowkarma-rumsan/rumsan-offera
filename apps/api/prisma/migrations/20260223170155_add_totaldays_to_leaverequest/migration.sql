@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "LeaveRequest" ADD COLUMN     "totalDays" DOUBLE PRECISION NOT NULL DEFAULT 1;

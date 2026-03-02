@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// generator client {
+//   provider = "prisma-client"
+//   output   = "../generated/prisma"
+// }
+
+// datasource db {
+//   provider = "postgresql"
+// }
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") 
+}
+
+generator client {
+  provider = "prisma-client-js"
+  moduleFormat = "cjs"
+}
+
+enum Role {
+  MANAGER
+  HRADMIN
+  EMPLOYEE
+}
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  UNPAID
+  MATERNITY
+  BEREAVEMENT
+}
+
+model User {
+  id            String         @id @default(uuid())
+  googleId      String         @unique
+  email         String         @unique
+  name          String?
+  avatar        String?
+  department    String?
+  role          Role           @default(EMPLOYEE)
+  leaveRequests LeaveRequest[] @relation("EmployeeLeaves")    // ← update relation name
+  managedLeaves LeaveRequest[] @relation("ManagerLeaves")     // ← add this
+  leaveBalances LeaveBalance[]
+  leaveBalanceHistory LeaveBalanceHistory[]
+  notifications     Notification[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model LeaveRequest {
+  id          String      @id @default(uuid())
+  startDate   DateTime
+  endDate     DateTime
+  leaveType   String
+  reason      String?
+  status      LeaveStatus @default(PENDING)
+  isHalfDay   Boolean     @default(false)
+  halfDayPeriod  String?  // "FIRST" | "SECOND" | null
+  department  String?
+  totalDays   Float       
+  employeeId  String
+  employee    User        @relation("EmployeeLeaves", fields: [employeeId], references: [id])
+  managerId   String?                                          // ← add this
+  manager     User?       @relation("ManagerLeaves", fields: [managerId], references: [id])  // ← add this
+  approverComment String?                                      // ← add this
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model LeaveBalance {
+  id          String    @id @default(uuid())
+  leaveType   String    // ← plain string, matches LeavePolicy
+  total       Float
+  remaining   Float
+  employeeId  String
+  employee    User      @relation(fields: [employeeId], references: [id])
+
+  @@unique([employeeId, leaveType])
+}
+// ─── Leave Policy ─────────────────────────────────────────────────────────────
+
+model LeavePolicy {
+  id                 String   @id @default(uuid())
+  leaveType          String   @unique
+  defaultQuota       Int
+  carryForwardLimit  Int      @default(0)
+  accrualRate        Float    @default(0)
+  maxConsecutiveDays Int      @default(1)
+  requiresApproval   Boolean  @default(true)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  @@map("leave_policies")
+}
+model LeaveBalanceHistory {
+  id          String   @id @default(uuid())
+  employeeId  String
+  leaveType   String
+  month       Int      // 1-12
+  year        Int
+  total       Float
+  used        Float
+  remaining   Float
+  employee    User     @relation(fields: [employeeId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@unique([employeeId, leaveType, month, year])
+}
+model Notification {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String   // leave_submitted, leave_approved, leave_rejected, etc.
+  title             String
+  message           String
+  isRead            Boolean  @default(false)
+  linkTo            String?  // Optional link to related page
+  relatedRequestId  String?  // Optional reference to leave request
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+model PublicHoliday {
+  id         String   @id @default(cuid())
+  name       String
+  date       DateTime
+  isOptional Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
