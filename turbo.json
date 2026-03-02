@@ -8,7 +8,11 @@
     },
     "build": {
       "dependsOn": ["^build", "db:generate"],
-      "outputs": [".next/**", "dist/**"]
+      "outputs": [".next/**", "dist/**"],
+       "env": [
+        "NEXT_PUBLIC_SERVER_API",
+        "NEXT_PUBLIC_GOOGLE_CLIENT_ID"
+      ]
     }
   }
 }
