@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "buildCommand": "cd ../.. && pnpm install && pnpm prisma generate --schema=./apps/api/prisma/schema.prisma && turbo build --filter=@app/api",
   "builds": [
     {
       "src": "dist/main.js",
