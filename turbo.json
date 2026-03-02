@@ -4,14 +4,18 @@
     "dev": { "cache": false, "persistent": true },
     "db:generate": {
       "cache": false,
-      "outputs": [] 
+      "outputs": []
     },
     "build": {
       "dependsOn": ["^build", "db:generate"],
       "outputs": [".next/**", "dist/**"],
-       "env": [
+      "env": [
         "NEXT_PUBLIC_SERVER_API",
-        "NEXT_PUBLIC_GOOGLE_CLIENT_ID"
+        "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
+        "DATABASE_URL",
+        "GOOGLE_CLIENT_ID",
+        "JWT_SECRET",
+        "PORT"
       ]
     }
   }
