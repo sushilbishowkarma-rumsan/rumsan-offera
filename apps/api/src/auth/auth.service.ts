@@ -19,6 +19,8 @@ export class AuthService {
         audience: process.env.GOOGLE_CLIENT_ID,
       });
 
+      // console.log('Google token verified successfully for token:', token); // Debug log
+
       const payload = ticket.getPayload();
       if (!payload || !payload.email) {
         throw new UnauthorizedException(

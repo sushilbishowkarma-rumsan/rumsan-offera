@@ -1,5 +1,5 @@
 "use client";
-
+// components/dashboard/employee-dashboard.tsx
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useEmployeeDashboardData } from "@/hooks/use-dashboard-queries";

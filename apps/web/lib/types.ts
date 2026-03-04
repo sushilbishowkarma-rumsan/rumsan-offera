@@ -3,7 +3,7 @@
  * Core TypeScript type definitions for the entire application.
  * All types are centralized here for maintainability and future backend integration.
  */
-
+// apps/web/lib/types.ts
 /* ── User Roles ── */
 export type UserRole = "MANAGER" | "HRADMIN" | "EMPLOYEE";
 
