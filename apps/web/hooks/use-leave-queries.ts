@@ -69,8 +69,6 @@ export function useLeaveBalances(employeeId: string | undefined) {
       // Handle both array response and wrapped { data: [] } response
       const balances = Array.isArray(data) ? data : (data?.data ?? []);
 
-      console.log("API raw response:", data); // ← debug
-      console.log("Parsed balances:", balances); // ← debug
 
       return data as {
         id: string;

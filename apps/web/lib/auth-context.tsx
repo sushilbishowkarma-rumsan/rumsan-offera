@@ -95,11 +95,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!id) return;
 
       const { data } = await api.get(`/users/${id}`);
-      console.log("Refreshed user data:", data);
       setUser(data);
       localStorage.setItem("auth_user", JSON.stringify(data));
     } catch (error) {
-      console.error("Failed to refresh user:", error);
       // silently fail — user stays as-is
     }
   }, []);

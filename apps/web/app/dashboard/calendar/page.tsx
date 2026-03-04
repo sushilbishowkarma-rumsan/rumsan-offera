@@ -243,7 +243,6 @@ export default function CalendarPage() {
   const { data: allHolidays = [], isLoading: holidaysLoading } = useCalendarHolidays();
   const isLoading = usersLoading || leavesLoading || holidaysLoading;
 
-  console.log("all leaves", allLeaves);
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [currentDate, setCurrentDate] = useState(() => {
     const n = new Date();

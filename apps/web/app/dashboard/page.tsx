@@ -1,10 +1,3 @@
-/**
- * Dashboard Page - /dashboard
- * Renders the appropriate dashboard view based on the authenticated user's role.
- * Employee sees personal leave overview, Manager sees team approvals,
- * Admin sees organization-wide administration panel.
- */
-
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
@@ -14,8 +7,6 @@ import { AdminDashboard } from "@/components/dashboard/admin-dashboard";
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  console.log("Authenticated user:", user);
-
   if (!user) return null;
 
   // Match the UPPERCASE roles coming from your NestJS/Prisma backend
