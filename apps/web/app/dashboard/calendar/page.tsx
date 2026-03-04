@@ -532,7 +532,6 @@ export default function CalendarPage() {
                 ))}
 
                 {days.map(day=>{
-                  // ✅ FIXED: Use toLocalDateStr for dateStr comparison
                   const dateStr = toLocalDateStr(day);
                   const dow = day.getDay();
                   const isSat = dow===6, isSun = dow===0;
