@@ -539,7 +539,7 @@ export default function CalendarPage() {
                   const holiday = getHolidayForDate(day);
                   const membersOnLeave = getMembersOnLeave(day);
                   const isToday = day.getTime()===today.getTime();
-                  const isSelected = selectedDayStr===dateStr; // ✅ Now both use toLocalDateStr
+                  const isSelected = selectedDayStr===dateStr;
                   const bsDay = adToBs(day);
 
                   let bg = "#fff";
