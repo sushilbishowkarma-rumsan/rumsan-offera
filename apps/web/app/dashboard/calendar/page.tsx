@@ -243,6 +243,7 @@ export default function CalendarPage() {
   const { data: allHolidays = [], isLoading: holidaysLoading } = useCalendarHolidays();
   const isLoading = usersLoading || leavesLoading || holidaysLoading;
 
+  console.log("all leaves", allLeaves);
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [currentDate, setCurrentDate] = useState(() => {
     const n = new Date();
@@ -695,7 +696,7 @@ export default function CalendarPage() {
                               </span>
                               {leave.isHalfDay&&(
                                 <span className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold" style={{background:"#dcfce7",color:"#15803d",border:"1px solid #86efac"}}>
-                                  Half Day
+                                  {leave.halfDayPeriod} Half Day
                                 </span>
                               )}
                             </div>
