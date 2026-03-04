@@ -18,6 +18,10 @@ const nextConfig = {
             key: 'Cross-Origin-Opener-Policy',
             value: 'same-origin-allow-popups', // Allows Google login popup to work
           },
+          {
+            key: 'Referrer-Policy',
+            value: 'no-referrer-when-downgrade', // Helps Google pass the token back safely
+          },
         ],
       },
     ];
