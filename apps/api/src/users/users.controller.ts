@@ -13,7 +13,6 @@ import { UpdateDepartmentDto } from './dto/update-department.dto';
 
 @Controller('users')
 export class UsersController {
-  // <--- Make sure this name matches exactly
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
