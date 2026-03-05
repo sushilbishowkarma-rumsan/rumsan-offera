@@ -1,83 +1,12 @@
-// // import { Injectable, ConflictException } from '@nestjs/common';
-// // import { PrismaService } from '../prisma/prisma.service';
-// // import { CreateUserDto } from './dto/create-user.dto';
-
-// // @Injectable()
-// // export class UsersService {
-// //   constructor(private prisma: PrismaService) {}
-
-// //   async create(createUserDto: CreateUserDto) {
-// //     try {
-// //       return await this.prisma.user.create({
-// //         data: createUserDto,
-// //       });
-// //     } catch (error) {
-// //       // Prisma error code for unique constraint violation
-// //       if (error.code === 'P2002') {
-// //         throw new ConflictException('Email or Google ID already exists');
-// //       }
-// //       throw error;
-// //     }
-// //   }
-// // }
-// import { Injectable, UnauthorizedException } from '@nestjs/common';
-// import { PrismaService } from '../prisma/prisma.service';
-// import { OAuth2Client } from 'google-auth-library';
-
-// @Injectable()
-// export class UsersService {
-//   private googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-//   constructor(private prisma: PrismaService) {}
-
-//   async authenticateGoogleUser(token: string) {
-//     try {
-//       // 1. Verify the token with Google
-//       const ticket = await this.googleClient.verifyIdToken({
-//         idToken: token,
-//         audience: process.env.GOOGLE_CLIENT_ID,
-//       });
-
-//       const payload = ticket.getPayload();
-//       if (!payload) throw new UnauthorizedException('Invalid Google token');
-
-//       const { sub: googleId, email, name, picture: avatar } = payload;
-
-//       // 2. Upsert the user in our Database
-//       // Using Prisma v5 upsert: find by googleId, update if found, create if not.
-//       return await this.prisma.user.upsert({
-//         where: { googleId },
-//         update: {
-//           name,
-//           avatar,
-//         },
-//         create: {
-//           googleId,
-//           email: email!,
-//           name,
-//           avatar,
-//         },
-//       });
-//     } catch (error) {
-//       throw new UnauthorizedException('Authentication failed');
-//     }
-//   }
-// }
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
 export class UsersService {
-  private googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
   constructor(private prisma: PrismaService) {}
 
   // This is the missing method causing your error!
   async findAll() {
-    // return this.prisma.user.findMany({
-    //   orderBy: { createdAt: 'desc' },
-    // });
     return this.prisma.user.findMany({
       select: {
         id: true,
@@ -93,49 +22,6 @@ export class UsersService {
     });
   }
 
-  // Google Auth logic with default role 'EMPLOYEE'
-  async authenticateGoogleUser(token: string) {
-    try {
-      const ticket = await this.googleClient.verifyIdToken({
-        idToken: token,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-      const payload = ticket.getPayload();
-      if (!payload) throw new UnauthorizedException('Invalid token');
-      const { sub: googleId, email, name, picture: avatar } = payload;
-      const user = await this.prisma.user.upsert({
-        where: { googleId },
-        update: { name, avatar },
-        create: {
-          googleId,
-          email: email!,
-          name,
-          avatar,
-          role: 'EMPLOYEE',
-        },
-      });
-      // Seed leave balances for new employees (skipDuplicates = safe to call always)
-      const policies = await this.prisma.leavePolicy.findMany({
-        where: { isActive: true },
-      });
-
-      if (policies.length > 0) {
-        await this.prisma.leaveBalance.createMany({
-          data: policies.map((p) => ({
-            employeeId: user.id,
-            leaveType: p.leaveType,
-            total: p.defaultQuota,
-            remaining: p.defaultQuota,
-          })),
-          skipDuplicates: true, // safe — won't reset existing balances
-        });
-      }
-      return user;
-    } catch (error) {
-      throw new UnauthorizedException('Authentication failed');
-    }
-  }
-
   async updateRole(id: string, role: 'EMPLOYEE' | 'MANAGER' | 'HRADMIN') {
     return this.prisma.user.update({
       where: { id },
@@ -144,9 +30,6 @@ export class UsersService {
   }
 
   async findById(id: string) {
-    // return this.prisma.user.findUnique({
-    //   where: { id },
-    // });
     return this.prisma.user.findUnique({
       where: { id },
       select: {

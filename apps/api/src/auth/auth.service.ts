@@ -1,78 +1,100 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OAuth2Client } from 'google-auth-library';
 import { Role } from '@prisma/client';
+import { CryptoService } from './crypto.service';
+import { RS_OFFICE_CLIENT } from '../rsoffice/rsoffice.module';
+import type { RsOfficeClient } from '@rumsan/user';
+
 @Injectable()
 export class AuthService {
-  private googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  private readonly appId: string;
 
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService,
-  ) {}
+    private crypto: CryptoService, //new added
+    @Inject(RS_OFFICE_CLIENT) private readonly rsClient: RsOfficeClient,
+  ) {
+    const appId = process.env.APP_ID;
+    if (!appId) throw new Error('APP_ID env var is required');
+    this.appId = appId;
+  }
 
   async validateGoogleUser(token: string) {
-    try {
-      const ticket = await this.googleClient.verifyIdToken({
-        idToken: token,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-
-      // console.log('Google token verified successfully for token:', token); // Debug log
-
-      const payload = ticket.getPayload();
-      if (!payload || !payload.email) {
-        throw new UnauthorizedException(
-          'Google account must have an email address',
-        );
-      }
-      const { sub: googleId, email, name, picture: avatar } = payload;
-
-      const HR_ADMIN_EMAILS = [
-        'anusha.thapa@rumsan.net',
-        'sushil.bishowkarma@rumsan.net',
-      ];
-
-      const isHardcodedAdmin = HR_ADMIN_EMAILS.includes(email.toLowerCase());
-      // 2. Check if the current user's email is in that list
-
-      let assignedRole: Role;
-
-      if (isHardcodedAdmin) {
-        assignedRole = 'HRADMIN';
-      } else {
-        // 2. Look for existing user in DB to keep their current role
-        const existingUser = await this.prisma.user.findUnique({
-          where: { googleId },
-        });
-
-        // If user exists, keep their role. If brand new, assign 'EMPLOYEE'.
-        assignedRole = existingUser ? existingUser.role : 'EMPLOYEE';
-      }
-
-      // Upsert: Create user if new, Update if exists
-      const user = await this.prisma.user.upsert({
-        where: { googleId },
-        update: { name, avatar, role: assignedRole },
-        create: {
-          googleId,
-          email,
-          name,
-          avatar,
-          role: assignedRole,
-        },
-      });
-
-      // Generate our own JWT for the frontend to use
-      const jwtPayload = { sub: user.id, email: user.email, role: user.role };
-      return {
-        user,
-        access_token: await this.jwtService.signAsync(jwtPayload),
-      };
-    } catch (e) {
-      throw new UnauthorizedException('Google authentication failed');
+    interface GoogleData {
+      sub: string;
+      given_name: string;
+      family_name: string;
+      picture: string;
     }
+
+    interface AuthResult {
+      user: { email: string; name: string; cuid: string };
+      google: GoogleData;
+      roles: string[];
+      token: string;
+    }
+
+    // ── Step B: RsOffice 3-step challenge flow to get RsOffice JWT ──
+    const { challenge } = await this.rsClient.auth.getChallenge({
+      appId: this.appId,
+    });
+    // console.log('Received challenge from RsOffice API:', challenge);
+    const appSignature = this.crypto.signChallenge(challenge);
+    // console.log('Generated app signature for challenge:', appSignature);
+    const rsAuthResult = (await this.rsClient.auth.googleLogin(
+      { id_token: token, challenge, app_signature: appSignature },
+      { appId: this.appId },
+    )) as AuthResult;
+
+    const { email, name } = rsAuthResult.user;
+    const { picture: avatar } = rsAuthResult.google;
+    const role = rsAuthResult.roles[0] || 'EMPLOYEE';
+
+    // ── Step C: Save/update user in your own Prisma DB ──
+    const HR_ADMIN_EMAILS = ['sushil.bishowkarma@rumsan.net'];
+    const isHardcodedAdmin = HR_ADMIN_EMAILS.includes(email.toLowerCase());
+    let assignedRole: Role;
+    if (isHardcodedAdmin) {
+      assignedRole = 'HRADMIN';
+    } else {
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email },
+      });
+      assignedRole = existingUser ? existingUser.role : (role as Role);
+    }
+    // Upsert: Create user if new, Update if exists
+    const user = await this.prisma.user.upsert({
+      where: { email },
+      update: { name, avatar, role: assignedRole },
+      create: {
+        googleId: rsAuthResult.google.sub,
+        email,
+        name,
+        avatar,
+        role: assignedRole,
+      },
+    });
+
+    // Seed leave balances for new users
+    const policies = await this.prisma.leavePolicy.findMany({
+      where: { isActive: true },
+    });
+    if (policies.length > 0) {
+      await this.prisma.leaveBalance.createMany({
+        data: policies.map((p) => ({
+          employeeId: user.id,
+          leaveType: p.leaveType,
+          total: p.defaultQuota,
+          remaining: p.defaultQuota,
+        })),
+        skipDuplicates: true,
+      });
+    }
+    // ── Step D: Return RsOffice JWT + your Prisma user ──
+    return {
+      user,
+      access_token: rsAuthResult.token, // ← RsOffice JWT (ES256K signed)
+    };
   }
 }
 

@@ -9,9 +9,11 @@ import { LeavePolicyModule } from './leave-policy/leave-policy.module';
 import { LeaveBalanceModule } from './leave-balance/leave-balance.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { HolidaysModule } from './holidays/holidays.module';
+import { RsOfficeModule } from './rsoffice/rsoffice.module';
 
 @Module({
   imports: [
+    RsOfficeModule,
     PrismaModule,
     UsersModule,
     AuthModule,
