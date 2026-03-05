@@ -1,0 +1,36 @@
+[33m9ae2b6b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32m1-add-user-auth-from-santosh-sir-admin-panal[m[33m, [m[1;31morigin/2-make-duplicate-to-take-backup[m[33m, [m[1;31morigin/1-add-user-auth-from-santosh-sir-admin-panal[m[33m, [m[1;32m2-make-duplicate-to-take-backup[m[33m)[m HEAD@{0}: reset: moving to origin/1-add-user-auth-from-santosh-sir-admin-panal
+[33m9947acd[m HEAD@{1}: reset: moving to HEAD~1
+[33m2d6a460[m HEAD@{2}: commit: feat: add user auth and fix security leaks
+[33m9947acd[m HEAD@{3}: reset: moving to HEAD~4
+[33mfcfa48d[m HEAD@{4}: checkout: moving from main to 1-add-user-auth-from-santosh-sir-admin-panal
+[33m726cc3a[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m HEAD@{5}: pull --tags origin main: Fast-forward
+[33m2b24ec6[m HEAD@{6}: checkout: moving from 1-add-user-auth-from-santosh-sir-admin-panal to main
+[33mfcfa48d[m HEAD@{7}: commit: add coment
+[33m1bd6d5e[m HEAD@{8}: commit: try to resolve not commit problem
+[33mfb8bfed[m HEAD@{9}: commit: delete unwanted code
+[33mbe88d39[m HEAD@{10}: checkout: moving from 1-add-user-auth-from-santosh-sir-admin-panal to 1-add-user-auth-from-santosh-sir-admin-panal
+[33mbe88d39[m HEAD@{11}: commit: delete unwanted comment code
+[33m9947acd[m HEAD@{12}: checkout: moving from 2-make-duplicate-to-take-backup to 1-add-user-auth-from-santosh-sir-admin-panal
+[33m9ae2b6b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32m1-add-user-auth-from-santosh-sir-admin-panal[m[33m, [m[1;31morigin/2-make-duplicate-to-take-backup[m[33m, [m[1;31morigin/1-add-user-auth-from-santosh-sir-admin-panal[m[33m, [m[1;32m2-make-duplicate-to-take-backup[m[33m)[m HEAD@{13}: checkout: moving from 1-add-user-auth-from-santosh-sir-admin-panal to 2-make-duplicate-to-take-backup
+[33m9947acd[m HEAD@{14}: commit: get user details from rumsan platform successfulll
+[33m9ae2b6b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32m1-add-user-auth-from-santosh-sir-admin-panal[m[33m, [m[1;31morigin/2-make-duplicate-to-take-backup[m[33m, [m[1;31morigin/1-add-user-auth-from-santosh-sir-admin-panal[m[33m, [m[1;32m2-make-duplicate-to-take-backup[m[33m)[m HEAD@{15}: commit: add .next
+[33mc8c1b4a[m HEAD@{16}: commit: chore: stop tracking build files
+[33m2b24ec6[m HEAD@{17}: checkout: moving from main to 1-add-user-auth-from-santosh-sir-admin-panal
+[33m2b24ec6[m HEAD@{18}: commit: test token that came from google client id
+[33m6bfea19[m HEAD@{19}: commit: to solve [api] No auth_token found
+[33m1f541e2[m HEAD@{20}: commit: delete all console log
+[33mfe70dd2[m HEAD@{21}: commit: test to redeployee in vercel
+[33mfe67ad1[m HEAD@{22}: commit: change for redeployee the project
+[33m9de94a5[m HEAD@{23}: commit: delete old image and add favicon.ico
+[33m07fc0a5[m HEAD@{24}: commit: update build command
+[33m5c8b089[m HEAD@{25}: commit: update build script
+[33mda1dbc7[m HEAD@{26}: commit: ok
+[33m10110f0[m HEAD@{27}: commit: build code
+[33m052958d[m HEAD@{28}: commit: delete docker fiel
+[33me845ec6[m HEAD@{29}: commit: delete vercel.jsocn
+[33m468e44a[m HEAD@{30}: commit: update vercel
+[33m94db91c[m HEAD@{31}: commit: update all package an dscript to run
+[33mdfe91cc[m HEAD@{32}: commit: morden method add in api
+[33m6ad4cef[m HEAD@{33}: commit: add env in turbo
+[33m673390f[m HEAD@{34}: Branch: renamed refs/heads/main to refs/heads/main
+[33m673390f[m HEAD@{36}: commit (initial): first commit
