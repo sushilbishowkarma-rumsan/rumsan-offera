@@ -1,11 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
 export class UsersService {
-  private googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
   constructor(private prisma: PrismaService) {}
 
   // This is the missing method causing your error!
@@ -25,49 +22,6 @@ export class UsersService {
     });
   }
 
-  // Google Auth logic with default role 'EMPLOYEE'
-  async authenticateGoogleUser(token: string) {
-    try {
-      const ticket = await this.googleClient.verifyIdToken({
-        idToken: token,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-      const payload = ticket.getPayload();
-      if (!payload) throw new UnauthorizedException('Invalid token');
-      const { sub: googleId, email, name, picture: avatar } = payload;
-      const user = await this.prisma.user.upsert({
-        where: { googleId },
-        update: { name, avatar },
-        create: {
-          googleId,
-          email: email!,
-          name,
-          avatar,
-          role: 'EMPLOYEE',
-        },
-      });
-      // Seed leave balances for new employees (skipDuplicates = safe to call always)
-      const policies = await this.prisma.leavePolicy.findMany({
-        where: { isActive: true },
-      });
-
-      if (policies.length > 0) {
-        await this.prisma.leaveBalance.createMany({
-          data: policies.map((p) => ({
-            employeeId: user.id,
-            leaveType: p.leaveType,
-            total: p.defaultQuota,
-            remaining: p.defaultQuota,
-          })),
-          skipDuplicates: true, // safe — won't reset existing balances
-        });
-      }
-      return user;
-    } catch (error) {
-      throw new UnauthorizedException('Authentication failed');
-    }
-  }
-
   async updateRole(id: string, role: 'EMPLOYEE' | 'MANAGER' | 'HRADMIN') {
     return this.prisma.user.update({
       where: { id },
@@ -76,9 +30,6 @@ export class UsersService {
   }
 
   async findById(id: string) {
-    // return this.prisma.user.findUnique({
-    //   where: { id },
-    // });
     return this.prisma.user.findUnique({
       where: { id },
       select: {
