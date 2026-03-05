@@ -10,9 +10,6 @@ export class UsersService {
 
   // This is the missing method causing your error!
   async findAll() {
-    // return this.prisma.user.findMany({
-    //   orderBy: { createdAt: 'desc' },
-    // });
     return this.prisma.user.findMany({
       select: {
         id: true,
