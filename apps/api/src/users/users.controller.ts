@@ -1,19 +1,10 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Param,
-  Body,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/roles.guard';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 
 @Controller('users')
 export class UsersController {
-  // <--- Make sure this name matches exactly
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
