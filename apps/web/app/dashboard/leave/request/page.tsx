@@ -450,22 +450,6 @@ export default function LeaveRequestPage() {
                   )}
                 </div>
               )}
-
-              {/* Reason */}
-              {/* <div className="flex flex-col gap-2">
-                <label className="text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: "#475569" }}>Reason</label>
-                <textarea
-                  placeholder="Briefly describe the reason for your leave..."
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  rows={4}
-                  className="w-full resize-none rounded-xl px-3 py-2.5 text-[13px] outline-none transition-all placeholder:text-slate-400"
-                  style={{ background: "#f8f9fc", border: "1px solid #bfc2c7", color: "#1e293b" }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#a5b4fc")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "#e2e8f0")}
-                />
-                <p className="text-right text-[11px]" style={{ color: "#94a3b8" }}>{reason.trim().length} characters</p>
-              </div> */}
               <div className="flex flex-col gap-2">
                 <label
                   className="text-[12px] font-semibold uppercase tracking-[0.08em]"
