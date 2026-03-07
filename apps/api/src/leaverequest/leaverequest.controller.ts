@@ -16,6 +16,17 @@ import { LeaverequestService } from './leaverequest.service';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { UpdateLeaveStatusDto } from './dto/update-leave-request.dto';
 import { JwtAuthGuard } from '../auth/guards/roles.guard';
+import { Request } from 'express'; // ← import express Request
+
+// ← Shared typed request — move to src/common/types/authenticated-request.ts
+// and import from there if you use it in multiple controllers
+interface AuthenticatedRequest extends Request {
+  user: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
 
 @Controller('leaverequests')
 export class LeaverequestController {
@@ -24,7 +35,7 @@ export class LeaverequestController {
   // Get all leave requests (HR Admin)
   @Get('all')
   @UseGuards(JwtAuthGuard)
-  async getAllRequests(@Req() req: any) {
+  async getAllRequests(@Req() req: AuthenticatedRequest) {
     const { id: userId, role } = req.user;
 
     // HR Admin and Manager can see all
@@ -33,9 +44,30 @@ export class LeaverequestController {
     }
 
     // Employee can only see their department
-    return this.leaverequestService.findByDepartment(userId);
+    return this.leaverequestService.findApprovedLeavesByDepartment(userId);
   }
 
+  @Get('calendar')
+  @UseGuards(JwtAuthGuard)
+  async getCalendarData(@Req() req: AuthenticatedRequest) {
+    const { id: userId, role } = req.user;
+    console.log('User role in calendar endpoint:', role);
+    console.log('User ID in calendar endpoint:', userId);
+    if (role === 'HRADMIN' || role === 'MANAGER') {
+      // See all approved leaves
+      const approvedLeaves =
+        await this.leaverequestService.findApprovedLeaves();
+      console.log('Approved leaves from API:', approvedLeaves);
+      return approvedLeaves;
+    }
+
+    // Employee: see only their department's approved leaves
+    console.log('Fetching approved leaves for user:', userId);
+    const approvedLeaves =
+      await this.leaverequestService.findApprovedLeavesByDepartment(userId);
+    console.log('Approved leaves for user:', approvedLeaves);
+    return approvedLeaves;
+  }
   // Get pending requests for manager
   @Get('manager/:managerId/pending')
   @UseGuards(JwtAuthGuard)
@@ -44,7 +76,17 @@ export class LeaverequestController {
     const requests = await this.leaverequestService.findAllByManager(managerId);
     return requests.filter((r) => r.status === 'PENDING');
   }
-
+  // Manager: view requests assigned to them
+  @Get('manager/:managerId')
+  @UseGuards(JwtAuthGuard)
+  async getManagerRequests(@Param('managerId') managerId: string) {
+    return this.leaverequestService.findAllByManager(managerId);
+  }
+  @Get('employee/:id')
+  @UseGuards(JwtAuthGuard)
+  async getEmployeeRequests(@Param('id') id: string) {
+    return this.leaverequestService.findAllByEmployee(id);
+  }
   @Post()
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
@@ -56,23 +98,10 @@ export class LeaverequestController {
       console.log('--- STEP 4: Controller Sending Success Response ---');
       return { message: 'Leave request created successfully', data: result };
     } catch (error) {
-      console.error('--- STEP 4 (ERROR): Controller caught error ---');
-      console.error(error.message);
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('Controller caught error:', message);
       throw error; // Re-throw so NestJS sends the correct HTTP error code
     }
-  }
-
-  @Get('employee/:id')
-  @UseGuards(JwtAuthGuard)
-  async getEmployeeRequests(@Param('id') id: string) {
-    return this.leaverequestService.findAllByEmployee(id);
-  }
-
-  // Manager: view requests assigned to them
-  @Get('manager/:managerId')
-  @UseGuards(JwtAuthGuard)
-  async getManagerRequests(@Param('managerId') managerId: string) {
-    return this.leaverequestService.findAllByManager(managerId);
   }
 
   // Manager: approve or reject
@@ -89,19 +118,5 @@ export class LeaverequestController {
       managerId,
       updateDto,
     );
-  }
-  // ✅ New: Get calendar data based on role
-  @Get('calendar')
-  @UseGuards(JwtAuthGuard)
-  async getCalendarData(@Req() req: any) {
-    const { id: userId, role } = req.user;
-
-    if (role === 'HRADMIN' || role === 'MANAGER') {
-      // See all approved leaves
-      return this.leaverequestService.findApprovedLeaves();
-    }
-
-    // Employee: see only their department's approved leaves
-    return this.leaverequestService.findApprovedLeavesByDepartment(userId);
   }
 }

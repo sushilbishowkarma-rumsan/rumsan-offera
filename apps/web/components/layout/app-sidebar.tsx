@@ -391,34 +391,6 @@ export function AppSidebar() {
 
                 <DropdownMenuSeparator className="bg-white/[0.06]" />
 
-                {/* <DropdownMenuItem
-                  asChild
-                  className="
-                    mx-1 rounded-lg text-slate-300 text-sm
-                    focus:bg-white/[0.06] focus:text-slate-100
-                    cursor-pointer
-                  "
-                >
-                  <Link href="/dashboard/profile">
-                    <UserCircle className="mr-2.5 h-4 w-4 text-slate-500" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem> */}
-
-                {/* <DropdownMenuItem
-                  asChild
-                  className="
-                    mx-1 rounded-lg text-slate-300 text-sm
-                    focus:bg-white/[0.06] focus:text-slate-100
-                    cursor-pointer
-                  "
-                >
-                  <Link href="/dashboard/notifications">
-                    <Bell className="mr-2.5 h-4 w-4 text-slate-500" />
-                    Notifications
-                  </Link>
-                </DropdownMenuItem> */}
-
                 <DropdownMenuSeparator className="bg-white/[0.06]" />
 
                 <DropdownMenuItem

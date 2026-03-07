@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 // generator client {
 //   provider = "prisma-client"
 //   output   = "../generated/prisma"
@@ -44,6 +38,7 @@ enum LeaveType {
 model User {
   id            String         @id @default(uuid())
   googleId      String         @unique
+  rsofficeId   String? @unique
   email         String         @unique
   name          String?
   avatar        String?
@@ -54,6 +49,8 @@ model User {
   leaveBalances LeaveBalance[]
   leaveBalanceHistory LeaveBalanceHistory[]
   notifications     Notification[]
+  wfhRequests     WfhRequest[] @relation("EmployeeWfh")
+  managedWfh      WfhRequest[] @relation("ManagerWfh")
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -66,16 +63,41 @@ model LeaveRequest {
   reason      String?
   status      LeaveStatus @default(PENDING)
   isHalfDay   Boolean     @default(false)
-  halfDayPeriod  String?  // "FIRST" | "SECOND" | null
+  halfDayPeriod  String?
   department  String?
   totalDays   Float       
   employeeId  String
   employee    User        @relation("EmployeeLeaves", fields: [employeeId], references: [id])
-  managerId   String?                                          // ← add this
-  manager     User?       @relation("ManagerLeaves", fields: [managerId], references: [id])  // ← add this
-  approverComment String?                                      // ← add this
+  managerId   String?
+  manager     User?       @relation("ManagerLeaves", fields: [managerId], references: [id])
+  approverComment String?
+  leaveDays       LeaveDay[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+}
+
+model LeaveDay {
+  id             String       @id @default(uuid())
+  date           String 
+  dayType        String
+  leaveRequestId String
+  leaveRequest   LeaveRequest @relation(fields: [leaveRequestId], references: [id], onDelete: Cascade)
+}
+
+model WfhRequest {
+  id              String      @id @default(uuid())
+  startDate       String      // ← changed from date to startDate
+  endDate         String      // ← added
+  totalDays       Float       @default(1) 
+  reason          String?
+  status          LeaveStatus @default(PENDING)
+  employeeId      String
+  employee        User        @relation("EmployeeWfh", fields: [employeeId], references: [id])
+  managerId       String?
+  manager         User?       @relation("ManagerWfh", fields: [managerId], references: [id])
+  approverComment String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 model LeaveBalance {

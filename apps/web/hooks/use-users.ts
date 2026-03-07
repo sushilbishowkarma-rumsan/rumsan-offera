@@ -37,20 +37,6 @@ export function useUpdateUserRole() {
   });
 }
 
-// export function useMe() {
-//   const user = JSON.parse(localStorage.getItem("auth_user") || "null");
-//   const id = user?.id;
-
-//   return useQuery({
-//     queryKey: ["users", id],
-//     queryFn: async () => {
-//       const { data } = await api.get(`/users/${id}`);
-//       return data;
-//     },
-//     enabled: !!id, // ← only runs when id exists
-//     staleTime: 1000 * 60 * 5,
-//   });
-// }
 export function useMe() {
   const { user } = useAuth(); // Get the ID from context instead of manual localStorage parse
   const id = user?.id;
@@ -60,22 +46,10 @@ export function useMe() {
     queryKey: userKeys.me(id ?? ""),
     queryFn: async () => {
       const { data } = await api.get(`/users/${id}`);
+      // console.log(`[useMe] Fetched user data for ID ${id}:`, data);
       return data;
     },
     enabled: !!id,
     staleTime: 3000,
   });
 }
-
-//   return useQuery({
-//     queryKey: ['users', 'me', id],
-//     queryFn: async () => {
-//       const { data } = await api.get('/users/me/');
-//       return data;
-//     },
-//     enabled: !!id,
-//     staleTime: 1000 * 60 * 5,
-//   });
-// }
-// queryKey: ['users', 'me', id],
-// queryFn: () => usersApi.getMe(id),

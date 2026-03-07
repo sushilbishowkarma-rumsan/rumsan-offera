@@ -1,8 +1,3 @@
-/**
- * User Profile Page
- * Accessible by HR Admin & Manager to view employee details
- */
-
 "use client";
 
 import { use } from "react";

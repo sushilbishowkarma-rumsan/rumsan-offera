@@ -51,6 +51,8 @@ const roleAccentBar: Record<Role, string> = {
   HRADMIN: "#22c55e",
 };
 
+
+
 export default function ProfilePage() {
   const { data: user, isLoading, isError } = useMe();
 
@@ -123,6 +125,7 @@ export default function ProfilePage() {
       </div>
     );
   }
+const role = user.role as Role;
 
   // ── Render ──
   return (
@@ -142,14 +145,14 @@ export default function ProfilePage() {
               {/* Role-colored top accent bar */}
               <div
                 className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
-                style={{ background: roleAccentBar[user.role] }}
+                style={{ background: roleAccentBar[role] }}
               />
 
               {/* Avatar */}
               <div className="relative mb-5 mt-2">
                 <Avatar
                   className="relative h-20 w-20 rounded-full"
-                  style={{ border: `2px solid ${roleDot[user.role]}33` }}
+                  style={{ border: `2px solid ${roleDot[role]}33` }}
                 >
                   {user.avatar && (
                     <AvatarImage
@@ -186,14 +189,14 @@ export default function ProfilePage() {
               {/* Role pill */}
               <span
                 className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold"
-                style={roleStyle[user.role]}
+                style={roleStyle[role]}
               >
                 <span
                   className="h-1.5 w-1.5 rounded-full"
-                  style={{ background: roleDot[user.role] }}
+                  style={{ background: roleDot[role] }}
                 />
                 <Shield className="h-3 w-3" />
-                {roleLabels[user.role]}
+                {roleLabels[role]}
               </span>
             </div>
           </div>
@@ -324,13 +327,13 @@ export default function ProfilePage() {
                     </p>
                     <span
                       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold"
-                      style={roleStyle[user.role]}
+                      style={roleStyle[role]}
                     >
                       <span
                         className="h-1.5 w-1.5 rounded-full"
-                        style={{ background: roleDot[user.role] }}
+                        style={{ background: roleDot[role] }}
                       />
-                      {roleLabels[user.role]}
+                      {roleLabels[role]}
                     </span>
                   </div>
                 </div>

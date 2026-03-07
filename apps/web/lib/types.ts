@@ -1,11 +1,6 @@
-/**
- * Offera - Office Leave Management System
- * Core TypeScript type definitions for the entire application.
- * All types are centralized here for maintainability and future backend integration.
- */
 // apps/web/lib/types.ts
 /* ── User Roles ── */
-export type UserRole = "MANAGER" | "HRADMIN" | "EMPLOYEE";
+export type UserRole = 'MANAGER' | 'HRADMIN' | 'EMPLOYEE';
 
 /* ── User Profile ── */
 export interface User {
@@ -14,17 +9,25 @@ export interface User {
   email: string;
   avatar?: string;
   role: UserRole;
-  department: string;
-  designation: string;
-  managerId?: string; // ID of the user's direct manager
-  joinDate: string; // ISO date string
+  department?: string; // ← optional: DB can return null for new users
+  designation?: string; // ← optional: not always set
+  managerId?: string;
+  joinDate?: string; // ← optional: backend uses createdAt, not joinDate
+  createdAt?: string; // ← ADD: backend returns this
+  updatedAt?: string; // ← ADD: backend returns this
 }
 
 /* ── Leave Types ── */
-export type LeaveType = "annual" | "sick" | "casual" | "emergency" | "unpaid" | string;
+export type LeaveType =
+  | 'annual'
+  | 'sick'
+  | 'casual'
+  | 'emergency'
+  | 'unpaid'
+  | string;
 
 /* ── Leave Request Status ── */
-export type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";
+export type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 
 /* ── Leave Request ── */
 export interface LeaveRequest {
@@ -45,7 +48,7 @@ export interface LeaveRequest {
   approverComment?: string;
   attachmentUrl?: string;
   // backend relation fields
-  employee?: User; 
+  employee?: User;
 }
 
 /* ── Leave Balance per type ── */
@@ -79,14 +82,14 @@ export interface PublicHoliday {
 
 /* ── Notification ── */
 export type NotificationType =
-  | "leave_submitted"
-  | "leave_approved"
-  | "leave_rejected"
-  | "leave_cancelled"
-  | "new_request"
-  | "reminder"
-  | "balance_low"
-  | "system";
+  | 'leave_submitted'
+  | 'leave_approved'
+  | 'leave_rejected'
+  | 'leave_cancelled'
+  | 'new_request'
+  | 'reminder'
+  | 'balance_low'
+  | 'system';
 
 export interface Notification {
   id: string;
@@ -154,7 +157,8 @@ export interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (role: UserRole) => void; // Mock login with role selection
+  login: (userData: User, token: string) => void;
   logout: () => void;
   switchRole: (role: UserRole) => void; // For demo purposes
+  refreshUser: () => Promise<void>;
 }

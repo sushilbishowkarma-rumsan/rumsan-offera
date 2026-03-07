@@ -3,9 +3,9 @@
  * React Query hooks for fetching leave data from the NestJS backend.
  */
 
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import type { LeaveBalance, LeaveRequest } from "@/lib/types";
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import type { LeaveBalance, LeaveRequest } from '@/lib/types';
 
 // ─── Recent Leave Requests ───────────────────────────────────────────────────
 // Backend endpoint: GET /api/v1/leaverequests/employee/:employeeId
@@ -16,7 +16,7 @@ export function useRecentLeaveRequests(
   limit: number = 5,
 ) {
   return useQuery<LeaveRequest[]>({
-    queryKey: ["leave-history", employeeId],
+    queryKey: ['leave-history', employeeId],
     queryFn: async () => {
       const { data } = await api.get(`/leaverequests/employee/${employeeId}`);
       // Backend returns all; slice on client to the requested limit
@@ -31,9 +31,9 @@ export function useRecentLeaveRequests(
 
 export function useLeavePolicies() {
   return useQuery({
-    queryKey: ["leave-policies"],
+    queryKey: ['leave-policies'],
     queryFn: async () => {
-      const { data } = await api.get("/leave-policies");
+      const { data } = await api.get('/leave-policies');
       return data as { id: string; leaveType: string; isActive: boolean }[];
     },
     staleTime: 1000 * 60 * 10, // 10 min — policies rarely change
@@ -42,9 +42,9 @@ export function useLeavePolicies() {
 
 export function useManagers() {
   return useQuery({
-    queryKey: ["managers"],
+    queryKey: ['managers'],
     queryFn: async () => {
-      const { data } = await api.get("/users/managers");
+      const { data } = await api.get('/users/managers');
       return data as { id: string; name: string }[];
     },
     staleTime: 1000 * 60 * 5,
@@ -52,7 +52,7 @@ export function useManagers() {
 }
 export function useManagerLeaveRequests(managerId: string | undefined) {
   return useQuery({
-    queryKey: ["manager-leave-requests", managerId],
+    queryKey: ['manager-leave-requests', managerId],
     queryFn: async () => {
       const { data } = await api.get(`/leaverequests/manager/${managerId}`);
       return data as any[];
@@ -63,12 +63,11 @@ export function useManagerLeaveRequests(managerId: string | undefined) {
 }
 export function useLeaveBalances(employeeId: string | undefined) {
   return useQuery({
-    queryKey: ["leave-balances", employeeId],
+    queryKey: ['leave-balances', employeeId],
     queryFn: async () => {
       const { data } = await api.get(`/leave-balances/employee/${employeeId}`);
       // Handle both array response and wrapped { data: [] } response
       const balances = Array.isArray(data) ? data : (data?.data ?? []);
-
 
       return data as {
         id: string;
@@ -86,11 +85,11 @@ export function useLeaveBalances(employeeId: string | undefined) {
 
 export function useAllEmployeesHistory(month?: number, year?: number) {
   return useQuery({
-    queryKey: ["balance-history-all", month, year],
+    queryKey: ['balance-history-all', month, year],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (month) params.append("month", month.toString());
-      if (year) params.append("year", year.toString());
+      if (month) params.append('month', month.toString());
+      if (year) params.append('year', year.toString());
       const { data } = await api.get(`/leave-balances/history/all?${params}`);
       return data as {
         id: string;
@@ -119,12 +118,12 @@ export function useLeaveRequestsHistory(
   employeeId?: string,
 ) {
   return useQuery({
-    queryKey: ["leave-requests-history", month, year, employeeId],
+    queryKey: ['leave-requests-history', month, year, employeeId],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (month) params.append("month", month.toString());
-      if (year) params.append("year", year.toString());
-      if (employeeId) params.append("employeeId", employeeId);
+      if (month) params.append('month', month.toString());
+      if (year) params.append('year', year.toString());
+      if (employeeId) params.append('employeeId', employeeId);
       const { data } = await api.get(
         `/leave-balances/requests/history?${params}`,
       );
@@ -136,7 +135,7 @@ export function useLeaveRequestsHistory(
 
 export function useEmployeeBalanceHistory(employeeId: string | undefined) {
   return useQuery({
-    queryKey: ["balance-history", employeeId],
+    queryKey: ['balance-history', employeeId],
     queryFn: async () => {
       const { data } = await api.get(
         `/leave-balances/employee/${employeeId}/history`,
@@ -153,5 +152,46 @@ export function useEmployeeBalanceHistory(employeeId: string | undefined) {
     },
     enabled: !!employeeId,
     staleTime: 1000 * 60 * 5,
+  });
+}
+export function useWfhRequests(employeeId: string | undefined) {
+  return useQuery({
+    queryKey: ['wfh-requests', employeeId],
+    queryFn: async () => {
+      const { data } = await api.get(`/wfh-requests/employee/${employeeId}`);
+      return data as {
+        id: string;
+        startDate: string;
+        endDate: string;
+        totalDays: number;
+        reason?: string;
+        status: string;
+        createdAt: string;
+      }[];
+    },
+    enabled: !!employeeId,
+    staleTime: 1000 * 30,
+  });
+}
+
+export function useManagerWfhRequests(managerId: string | undefined) {
+  return useQuery({
+    queryKey: ["manager-wfh-requests", managerId],
+    queryFn: async () => {
+      const { data } = await api.get(`/wfh-requests/manager/${managerId}`);
+      return data as {
+        id: string;
+        startDate: string;
+        endDate: string;
+        totalDays: number;
+        reason?: string;
+        status: string;
+        createdAt: string;
+        approverComment?: string;
+        employee: { id: string; name: string; email: string; avatar?: string };
+      }[];
+    },
+    enabled: !!managerId,
+    staleTime: 1000 * 30,
   });
 }

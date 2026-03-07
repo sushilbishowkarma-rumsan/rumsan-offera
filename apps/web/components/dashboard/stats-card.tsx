@@ -1,9 +1,3 @@
-/**
- * Stats Card - Reusable dashboard metric card.
- * Displays a single KPI with icon, title, value, and optional description.
- * Used across all role-based dashboards for consistent metrics display.
- */
-
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 

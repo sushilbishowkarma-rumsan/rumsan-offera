@@ -44,10 +44,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Update Context State
       setUser(updatedUser);
 
-      // Update TanStack Query Cache for 'useMe'
-      // queryClient.setQueryData(["users", updatedUser.id], updatedUser);
-
-      // Invalidate all other queries to ensure permissions are recalculated
       queryClient.invalidateQueries();
     };
 

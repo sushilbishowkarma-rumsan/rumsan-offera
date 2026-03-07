@@ -1,11 +1,4 @@
 "use client";
-
-/**
- * Admin Leave Policies Page - /dashboard/admin/policies
- * HR Admins can view and edit leave policy configurations.
- * Data is fetched from the NestJS backend via TanStack Query + Axios.
- */
-
 import { useState } from "react";
 import { getLeaveTypeLabel } from "@/lib/leave-helpers";
 import type { LeavePolicy } from "@/lib/leave-policy.types";
