@@ -10,6 +10,7 @@ import { LeaveBalanceModule } from './leave-balance/leave-balance.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { HolidaysModule } from './holidays/holidays.module';
 import { RsOfficeModule } from './rsoffice/rsoffice.module';
+import { WfhRequestModule } from './wfh-request/wfh-request.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { RsOfficeModule } from './rsoffice/rsoffice.module';
     LeaveBalanceModule,
     NotificationsModule,
     HolidaysModule,
+    WfhRequestModule,
   ],
   controllers: [AppController],
   providers: [AppService],

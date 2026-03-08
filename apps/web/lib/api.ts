@@ -13,10 +13,7 @@ api.interceptors.request.use((config) => {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else {
-      console.warn(
-        '[api] No auth_token found in localStorage for:',
-        config.url,
-      );
+      console.log('[api] No auth_token found in localStorage for:', config.url);
     }
   }
   return config;

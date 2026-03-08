@@ -1,9 +1,3 @@
-/**
- * Offera - Leave Helper Utilities
- * Common formatting and utility functions used across leave-related components.
- * Centralizing these ensures consistent display and easy maintenance.
- */
-
 import type { LeaveType, LeaveStatus } from "./types";
 
 /** Map leave type keys to human-readable labels */

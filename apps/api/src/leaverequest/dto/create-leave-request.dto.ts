@@ -8,8 +8,10 @@ import {
   IsNotEmpty,
   Min,
   IsIn,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
-
+import { Type } from 'class-transformer';
 export class CreateLeaveRequestDto {
   @IsString()
   @IsNotEmpty()
@@ -51,4 +53,21 @@ export class CreateLeaveRequestDto {
   @IsString()
   @IsOptional()
   managerId?: string;
+
+  // ← NEW: optional per-day breakdown
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => LeaveDayDto)
+  leaveDays?: LeaveDayDto[];
+}
+
+export class LeaveDayDto {
+  @IsString()
+  @IsNotEmpty()
+  date: string; // "2026-03-10"
+
+  @IsString()
+  @IsIn(['FULL', 'FIRST_HALF', 'SECOND_HALF'])
+  dayType: 'FULL' | 'FIRST_HALF' | 'SECOND_HALF';
 }

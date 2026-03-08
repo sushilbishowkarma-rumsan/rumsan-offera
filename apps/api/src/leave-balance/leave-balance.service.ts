@@ -2,6 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as ExcelJS from 'exceljs';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class LeaveBalanceService {
@@ -126,7 +127,8 @@ export class LeaveBalanceService {
   // HR Admin — get all employees balance history
   // Optionally filter by month and year
   async getAllEmployeesHistory(month?: number, year?: number) {
-    const where: any = {};
+    const where: Prisma.LeaveBalanceHistoryWhereInput = {};
+
     if (month) where.month = month;
     if (year) where.year = year;
 
@@ -154,7 +156,7 @@ export class LeaveBalanceService {
     year?: number,
     employeeId?: string,
   ) {
-    const where: any = {};
+    const where: Prisma.LeaveRequestWhereInput = {};
 
     // Filter by month/year using date range
     if (month && year) {
@@ -249,7 +251,6 @@ export class LeaveBalanceService {
     const primaryColor = '3B6CF5';
     const lightBlue = 'EBF0FF';
     const headerFont = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
-    const subHeaderFont = { bold: true, size: 10 };
 
     // ── Column widths ──
     sheet.columns = [

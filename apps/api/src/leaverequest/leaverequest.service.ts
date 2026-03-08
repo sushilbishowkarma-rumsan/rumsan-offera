@@ -8,8 +8,11 @@ import {
 import { PrismaService } from '../prisma/prisma.service'; // Adjust path to your PrismaService
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 // import { LeaveType } from '@prisma/client/wasm';
-import { UpdateLeaveStatusDto } from './dto/update-leave-request.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import {
+  LeaveAction,
+  UpdateLeaveStatusDto,
+} from './dto/update-leave-request.dto';
 
 @Injectable()
 export class LeaverequestService {
@@ -18,26 +21,20 @@ export class LeaverequestService {
     private notificationsService: NotificationsService, // ← Add this
   ) {}
   async create(dto: CreateLeaveRequestDto) {
-    console.log('--- STEP 2: Service Logic Started ---');
     const start = new Date(dto.startDate);
     const end = new Date(dto.endDate);
 
-    // 1. Basic Validation: End date shouldn't be before start date
     if (end < start) {
-      console.warn('Validation Failed: End date before Start date');
       throw new BadRequestException(
         'End date cannot be earlier than start date',
       );
     }
 
-    // 2. Optional: Check if the user exists
-    console.log(`Checking if user ${dto.employeeId} exists...`);
     const user = await this.prisma.user.findUnique({
       where: { id: dto.employeeId },
     });
 
     if (!user) {
-      console.error(`User with ID ${dto.employeeId} NOT FOUND in database`);
       throw new BadRequestException('Employee not found');
     }
 
@@ -53,12 +50,22 @@ export class LeaverequestService {
         department: user.department || dto.department,
         employeeId: dto.employeeId,
         managerId: dto.managerId, // ← save manager
-        totalDays: dto.isHalfDay ? 0.5 : dto.totalDays,
+        totalDays: dto.totalDays,
+        // totalDays: dto.isHalfDay ? 0.5 : dto.totalDays,
         status: 'PENDING', // Defaulting via schema, but good to be explicit
+        leaveDays: dto.leaveDays?.length
+          ? {
+              create: dto.leaveDays.map((d) => ({
+                date: d.date,
+                dayType: d.dayType,
+              })),
+            }
+          : undefined,
       },
       include: {
         employee: true,
         manager: true,
+        leaveDays: true,
       },
     });
     // Send notification to manager
@@ -79,6 +86,9 @@ export class LeaverequestService {
     return this.prisma.leaveRequest.findMany({
       where: { employeeId },
       orderBy: { createdAt: 'desc' },
+      include: {
+        leaveDays: true, // ← ADD THIS
+      },
     });
   }
 
@@ -91,6 +101,7 @@ export class LeaverequestService {
         employee: {
           select: { id: true, name: true, email: true, avatar: true },
         },
+        leaveDays: true,
       },
     });
   }
@@ -111,13 +122,13 @@ export class LeaverequestService {
     if (request.status !== 'PENDING')
       throw new BadRequestException('Already processed');
 
-    if (dto.action === 'REJECTED' && !dto.approverComment?.trim()) {
+    if (dto.action === LeaveAction.REJECT && !dto.approverComment?.trim()) {
       throw new BadRequestException('Comment required when rejecting');
     }
 
     // ── Run in transaction so balance + status update atomically ──
     const updatedRequest = await this.prisma.$transaction(async (tx) => {
-      if (dto.action === 'APPROVED') {
+      if (dto.action === LeaveAction.APPROVE) {
         // Check balance exists and is sufficient
         const balance = await tx.leaveBalance.findUnique({
           where: {
@@ -162,8 +173,11 @@ export class LeaverequestService {
     // Send notification to employee AFTER the transaction is successful
     await this.notificationsService.create({
       userId: request.employeeId,
-      type: dto.action === 'APPROVED' ? 'leave_approved' : 'leave_rejected',
-      title: `Leave Request ${dto.action === 'APPROVED' ? 'Approved' : 'Rejected'}`,
+      type:
+        dto.action === LeaveAction.APPROVE
+          ? 'leave_approved'
+          : 'leave_rejected',
+      title: `Leave Request ${dto.action === LeaveAction.APPROVE ? 'Approved' : 'Rejected'}`,
       message: `Your request was ${dto.action.toLowerCase()}${dto.approverComment ? `: ${dto.approverComment}` : ''}`,
       linkTo: `/dashboard/leave/history`,
       relatedRequestId: updatedRequest.id,
@@ -197,42 +211,12 @@ export class LeaverequestService {
     });
   }
 
-  // ✅ New: Get leave requests by department (for employees)
-  async findByDepartment(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { department: true },
-    });
-
-    if (!user || !user.department) {
-      return []; // No department = no results
-    }
-
-    return this.prisma.leaveRequest.findMany({
-      where: {
-        department: user.department,
-        status: 'APPROVED', // Only show approved leaves
-      },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            department: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
   // ✅ New: Get all approved leaves (HR Admin & Manager)
   async findApprovedLeaves() {
-    return this.prisma.leaveRequest.findMany({
+    const results = await this.prisma.leaveRequest.findMany({
       where: { status: 'APPROVED' },
       include: {
+        leaveDays: true,
         employee: {
           select: {
             id: true,
@@ -245,6 +229,9 @@ export class LeaverequestService {
       },
       orderBy: { startDate: 'asc' },
     });
+    console.log('=== findApprovedLeaves result count:', results.length);
+    console.log('=== sample:', JSON.stringify(results[0], null, 2));
+    return results;
   }
 
   // ✅ New: Get approved leaves by department (for employees)
@@ -253,17 +240,42 @@ export class LeaverequestService {
       where: { id: userId },
       select: { department: true },
     });
+    console.log(
+      '=== Employee department:',
+      user?.department,
+      'userId:',
+      userId,
+    );
 
-    if (!user || !user.department) {
-      return [];
+    if (!user || !user?.department) {
+      return this.prisma.leaveRequest.findMany({
+        where: {
+          employeeId: userId, // ← their own leaves only
+          status: 'APPROVED',
+        },
+        include: {
+          leaveDays: true,
+          employee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              department: true,
+            },
+          },
+        },
+        orderBy: { startDate: 'asc' },
+      });
     }
-
+    // Has department → show entire department's approved leaves
     return this.prisma.leaveRequest.findMany({
       where: {
-        department: user.department,
+        department: user.department, // ← same department only
         status: 'APPROVED',
       },
       include: {
+        leaveDays: true,
         employee: {
           select: {
             id: true,

@@ -1,4 +1,3 @@
-// import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import {
   Injectable,
   CanActivate,
@@ -10,11 +9,21 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '@prisma/client';
-// import { AuthGuard } from '@nestjs/passport';
 import type { RsOfficeClient } from '@rumsan/user';
 import type { Request } from 'express';
 import { RS_OFFICE_CLIENT } from '../../rsoffice/rsoffice.module';
 import { CryptoService } from '../crypto.service';
+import { PrismaService } from '../../prisma/prisma.service'; //add for ovveride role from my db
+
+// ── Shared typed request — single source of truth for req.user shape ──────────
+// Matches exactly what JwtAuthGuard sets on request.user
+interface AuthenticatedRequest extends Request {
+  user: {
+    id: string;
+    email: string;
+    role: string; // ← string, not Role enum, because fallback can be 'EMPLOYEE' string
+  };
+}
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate, OnModuleInit {
@@ -24,6 +33,7 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
   constructor(
     @Inject(RS_OFFICE_CLIENT) private readonly client: RsOfficeClient,
     private readonly crypto: CryptoService,
+    private readonly prisma: PrismaService, // ← ADDED for role override
   ) {}
   async onModuleInit(): Promise<void> {
     try {
@@ -35,9 +45,7 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
     }
   }
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context
-      .switchToHttp()
-      .getRequest<Request & { user: any }>();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const authHeader = request.headers.authorization;
 
     if (!authHeader?.startsWith('Bearer ')) {
@@ -66,13 +74,42 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
     if (!valid || !payload)
       throw new UnauthorizedException('Invalid or expired token');
 
-    // Keep your existing shape: { id, email, role }
-    // RsOffice payload has different claims — map them to your app's shape
+    try {
+      const dbUser = await this.prisma.user.findFirst({
+        where: {
+          OR: [
+            { rsofficeId: payload.sub }, // ← first try RsOffice ID
+            { email: payload.email }, // ← also try email
+          ],
+        },
+        select: { id: true, role: true, email: true },
+      });
+
+      if (dbUser) {
+        // DB says elevated role → override token role
+        request.user = {
+          id: dbUser.id, // ← use our DB UUID, not RsOffice sub
+          email: dbUser.email,
+          role: dbUser.role, // ← always from DB
+        };
+
+        this.logger.debug(
+          `Auth resolved: rsoffice_sub=${payload.sub} → db.id=${dbUser.id} role=${dbUser.role}`,
+        );
+        return true;
+      }
+      // If DB role is EMPLOYEE or user not found → keep tokenRole as-is
+    } catch (err) {
+      this.logger.warn(`DB role lookup failed for ${payload.sub}: ${err}`);
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     request.user = {
       id: payload.sub,
       email: payload.email,
-      role: payload.roles?.[0] ?? 'EMPLOYEE',
+      role: payload.roles?.[0] ?? 'EMPLOYEE', // ← uses DB role if elevated, token role otherwise
     };
+
     return true;
   }
 }
@@ -88,25 +125,9 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
     if (!requiredRoles) return true;
-    const { user } = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+
+    const { user } = request;
     return requiredRoles.some((role) => user.role === role);
   }
 }
-// @Injectable()
-// export class RolesGuard implements CanActivate {
-//   constructor(private reflector: Reflector) {}
-
-//   canActivate(context: ExecutionContext): boolean {
-//     const requiredRoles = this.reflector.getAllAndOverride<Role[]>('roles', [
-//       context.getHandler(),
-//       context.getClass(),
-//     ]);
-//     if (!requiredRoles) return true;
-
-//     const { user } = context.switchToHttp().getRequest();
-//     return requiredRoles.some((role) => user.role === role);
-//   }
-// }
-
-// @Injectable()
-// export class JwtAuthGuard extends AuthGuard('jwt') {}

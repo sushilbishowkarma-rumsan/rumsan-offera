@@ -1,4 +1,4 @@
-"use client";
+'use client';
 // lib/auth-context.tsx
 import React, {
   createContext,
@@ -7,28 +7,28 @@ import React, {
   useCallback,
   useMemo,
   useEffect,
-} from "react";
-import type { AuthContextType, User, UserRole } from "./types";
-import { api } from "./api";
-import { useQueryClient } from "@tanstack/react-query";
+} from 'react';
+import type { AuthContextType, User, UserRole } from './types';
+import { api } from './api';
+import { useQueryClient } from '@tanstack/react-query';
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Start as true to check storage
+  const [isLoading, setIsLoading] = useState(true);
   const queryClient = useQueryClient();
   // --- PERSISTENCE: Check for logged in user on mount ---
   useEffect(() => {
-    const savedUser = localStorage.getItem("auth_user");
-    const savedToken = localStorage.getItem("auth_token");
+    const savedUser = localStorage.getItem('auth_user');
+    const savedToken = localStorage.getItem('auth_token');
 
     if (savedUser && savedToken) {
       setUser(JSON.parse(savedUser));
@@ -44,15 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Update Context State
       setUser(updatedUser);
 
-      // Update TanStack Query Cache for 'useMe'
-      // queryClient.setQueryData(["users", updatedUser.id], updatedUser);
-
-      // Invalidate all other queries to ensure permissions are recalculated
       queryClient.invalidateQueries();
     };
 
-    window.addEventListener("auth_user_updated", handleSync);
-    return () => window.removeEventListener("auth_user_updated", handleSync);
+    window.addEventListener('auth_user_updated', handleSync);
+    return () => window.removeEventListener('auth_user_updated', handleSync);
   }, [queryClient]);
 
   /** * UPDATED LOGIN: Accepts the real user and token from your Backend
@@ -64,16 +60,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(userData);
 
     // 2. Persist to LocalStorage (so refresh doesn't log you out)
-    localStorage.setItem("auth_user", JSON.stringify(userData));
-    localStorage.setItem("auth_token", token);
+    localStorage.setItem('auth_user', JSON.stringify(userData));
+    localStorage.setItem('auth_token', token);
 
     setIsLoading(false);
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
-    localStorage.removeItem("auth_user");
-    localStorage.removeItem("auth_token");
+    localStorage.removeItem('auth_user');
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('google token');
   }, []);
 
   const switchRole = useCallback(
@@ -81,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (user) {
         const updatedUser = { ...user, role };
         setUser(updatedUser);
-        localStorage.setItem("auth_user", JSON.stringify(updatedUser));
+        localStorage.setItem('auth_user', JSON.stringify(updatedUser));
       }
     },
     [user],
@@ -90,13 +87,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ── NEW: re-fetch user from /users/me and sync state + localStorage ──
   const refreshUser = useCallback(async () => {
     try {
-      const stored = localStorage.getItem("auth_user");
+      const stored = localStorage.getItem('auth_user');
       const id = stored ? JSON.parse(stored)?.id : null;
       if (!id) return;
 
       const { data } = await api.get(`/users/${id}`);
       setUser(data);
-      localStorage.setItem("auth_user", JSON.stringify(data));
+      localStorage.setItem('auth_user', JSON.stringify(data));
     } catch (error) {
       // silently fail — user stays as-is
     }

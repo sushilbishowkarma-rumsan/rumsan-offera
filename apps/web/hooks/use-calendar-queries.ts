@@ -1,6 +1,6 @@
 // hooks/use-calendar-queries.ts
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 
 export interface CalendarUser {
   id: string;
@@ -10,6 +10,11 @@ export interface CalendarUser {
   role: string;
 }
 
+export interface CalendarLeaveDay {
+  id: string;
+  date: string;
+  dayType: 'FULL' | 'FIRST_HALF' | 'SECOND_HALF';
+}
 export interface CalendarLeaveRequest {
   id: string;
   startDate: string;
@@ -21,6 +26,7 @@ export interface CalendarLeaveRequest {
   totalDays: number;
   employeeId: string;
   department: string;
+  leaveDays: CalendarLeaveDay[];
   employee: {
     id: string;
     name: string;
@@ -34,7 +40,20 @@ export interface CalendarLeaveRequest {
     email: string;
   };
 }
-
+export interface CalendarWfhRequest {
+  id: string;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  status: string;
+  employeeId: string;
+  employee: {
+    id: string;
+    name: string;
+    email: string;
+    department: string;
+  };
+}
 export interface CalendarHoliday {
   id: string;
   name: string;
@@ -46,9 +65,9 @@ export interface CalendarHoliday {
 // ✅ Updated: Role-based users fetching
 export function useCalendarUsers(userRole: string | undefined) {
   return useQuery<CalendarUser[]>({
-    queryKey: ["calendar-users", userRole],
+    queryKey: ['calendar-users', userRole],
     queryFn: async () => {
-      const { data } = await api.get("/users");
+      const { data } = await api.get('/users');
       return data;
     },
     enabled: !!userRole,
@@ -59,20 +78,35 @@ export function useCalendarUsers(userRole: string | undefined) {
 // ✅ Updated: Role-based leave requests (uses new /calendar endpoint)
 export function useCalendarLeaveRequests() {
   return useQuery<CalendarLeaveRequest[]>({
-    queryKey: ["calendar-leave-requests"],
+    queryKey: ['calendar-leave-requests'],
     queryFn: async () => {
-      const { data } = await api.get("/leaverequests/calendar");
+      const { data } = await api.get('/leaverequests/calendar');
+      // console.log('Calendar leave requests from API:', data);
+      // console.log(
+      //   'Calendar leaves from API:',
+      //   JSON.stringify(data.slice(0, 2), null, 2),
+      // );
+
       return data;
     },
     staleTime: 1000 * 60 * 2,
   });
 }
-
+export function useCalendarWfhRequests() {
+  return useQuery<CalendarWfhRequest[]>({
+    queryKey: ['calendar-wfh-requests'],
+    queryFn: async () => {
+      const { data } = await api.get('/wfh-requests/calendar');
+      return data;
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+}
 export function useCalendarHolidays() {
   return useQuery<CalendarHoliday[]>({
-    queryKey: ["holidays"],
+    queryKey: ['holidays'],
     queryFn: async () => {
-      const { data } = await api.get("/holidays");
+      const { data } = await api.get('/holidays');
       return data;
     },
     staleTime: 1000 * 60 * 10,
@@ -82,9 +116,9 @@ export function useCalendarHolidays() {
 // ✅ New: Get filtered users by department
 export function useCalendarUsersByDepartment(department: string | undefined) {
   return useQuery<CalendarUser[]>({
-    queryKey: ["calendar-users-department", department],
+    queryKey: ['calendar-users-department', department],
     queryFn: async () => {
-      const { data } = await api.get("/users");
+      const { data } = await api.get('/users');
       if (!department) return data;
       return (data as CalendarUser[]).filter(
         (u) => u.department === department,

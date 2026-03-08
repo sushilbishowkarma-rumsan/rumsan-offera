@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useState, useMemo } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useState, useMemo } from 'react';
+import { useAuth } from '@/lib/auth-context';
 import {
   useTeamAvailability,
   useAllEmployeesAvailability,
-} from "@/hooks/use-dashboard-queries";
-import { getInitials, formatDate } from "@/lib/leave-helpers";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
+} from '@/hooks/use-dashboard-queries';
+import { getInitials, formatDate } from '@/lib/leave-helpers';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Users,
   Search,
@@ -26,14 +26,14 @@ import {
   UserX,
   AlertCircle,
   Sparkles,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function TeamAvailabilityPage() {
   const { user } = useAuth();
-  const [search, setSearch] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("all"); // ← changed from roleFilter
+  const [search, setSearch] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('all'); // ← changed from roleFilter
 
   const { data, isLoading, error } = useAllEmployeesAvailability();
 
@@ -44,12 +44,12 @@ export default function TeamAvailabilityPage() {
     if (!user) return allMembers;
 
     // HR Admin & Manager: See all employees
-    if (user.role === "HRADMIN" || user.role === "MANAGER") {
+    if (user.role === 'HRADMIN' || user.role === 'MANAGER') {
       return allMembers;
     }
 
     // Employee: Only see their department
-    if (user.role === "EMPLOYEE" && user.department) {
+    if (user.role === 'EMPLOYEE' && user.department) {
       return allMembers.filter((m: any) => m.department === user.department);
     }
 
@@ -58,7 +58,7 @@ export default function TeamAvailabilityPage() {
 
   // ✅ Get available departments (only for HR/Manager)
   const departments = useMemo(() => {
-    if (user?.role === "EMPLOYEE") {
+    if (user?.role === 'EMPLOYEE') {
       // Employee: no department options
       return [];
     }
@@ -73,7 +73,7 @@ export default function TeamAvailabilityPage() {
     let members = visibleMembers;
 
     // Apply department filter (only for HR/Manager)
-    if (user?.role !== "EMPLOYEE" && departmentFilter !== "all") {
+    if (user?.role !== 'EMPLOYEE' && departmentFilter !== 'all') {
       members = members.filter((m: any) => m.department === departmentFilter);
     }
 
@@ -99,17 +99,17 @@ export default function TeamAvailabilityPage() {
     return (
       <div
         className="min-h-screen p-4 sm:p-6 lg:p-8"
-        style={{ background: "#f8f9fc" }}
+        style={{ background: '#f8f9fc' }}
       >
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="space-y-2">
             <Skeleton
               className="h-8 w-64 rounded-xl"
-              style={{ background: "#e8eaf0" }}
+              style={{ background: '#e8eaf0' }}
             />
             <Skeleton
               className="h-4 w-96 rounded-lg"
-              style={{ background: "#e8eaf0" }}
+              style={{ background: '#e8eaf0' }}
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -117,7 +117,7 @@ export default function TeamAvailabilityPage() {
               <Skeleton
                 key={i}
                 className="h-28 rounded-2xl"
-                style={{ background: "#e8eaf0" }}
+                style={{ background: '#e8eaf0' }}
               />
             ))}
           </div>
@@ -126,7 +126,7 @@ export default function TeamAvailabilityPage() {
               <Skeleton
                 key={i}
                 className="h-52 rounded-2xl"
-                style={{ background: "#e8eaf0" }}
+                style={{ background: '#e8eaf0' }}
               />
             ))}
           </div>
@@ -140,38 +140,38 @@ export default function TeamAvailabilityPage() {
     return (
       <div
         className="flex min-h-screen items-center justify-center p-6"
-        style={{ background: "#f8f9fc" }}
+        style={{ background: '#f8f9fc' }}
       >
         <div
           className="max-w-sm w-full rounded-2xl p-8 text-center"
           style={{
-            background: "#fff",
-            border: "1px solid #fecaca",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
+            background: '#fff',
+            border: '1px solid #fecaca',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
           }}
         >
           <div
             className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
-            style={{ background: "#fef2f2" }}
+            style={{ background: '#fef2f2' }}
           >
             <AlertCircle className="h-7 w-7 text-red-500" />
           </div>
           <h3
             className="text-[15px] font-semibold"
-            style={{ color: "#0f172a" }}
+            style={{ color: '#0f172a' }}
           >
             Error Loading Team Data
           </h3>
           <p
             className="mt-2 text-[13px] leading-relaxed"
-            style={{ color: "#64748b" }}
+            style={{ color: '#64748b' }}
           >
             Unable to load team availability. Please try again.
           </p>
           <button
             onClick={() => window.location.reload()}
             className="mt-6 w-full rounded-xl py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
-            style={{ background: "#ef4444" }}
+            style={{ background: '#ef4444' }}
           >
             Retry
           </button>
@@ -183,40 +183,40 @@ export default function TeamAvailabilityPage() {
   // ── Stat card config ──
   const statCards = [
     {
-      label: "Total Employees",
+      label: 'Total Employees',
       value: filtered.length,
       icon: <Users className="h-5 w-5" />,
-      iconBg: "#eef2ff",
-      iconColor: "#4f46e5",
-      accentBar: "#4f46e5",
+      iconBg: '#eef2ff',
+      iconColor: '#4f46e5',
+      accentBar: '#4f46e5',
     },
     {
-      label: "Available",
+      label: 'Available',
       value: availableCount,
       icon: <UserCheck className="h-5 w-5" />,
-      iconBg: "#f0fdf4",
-      iconColor: "#16a34a",
-      accentBar: "#22c55e",
+      iconBg: '#f0fdf4',
+      iconColor: '#16a34a',
+      accentBar: '#22c55e',
     },
     {
-      label: "On Leave",
+      label: 'On Leave',
       value: onLeaveCount,
       icon: <UserX className="h-5 w-5" />,
-      iconBg: "#fffbeb",
-      iconColor: "#d97706",
-      accentBar: "#f59e0b",
+      iconBg: '#fffbeb',
+      iconColor: '#d97706',
+      accentBar: '#f59e0b',
     },
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: "#f8f9fc" }}>
+    <div className="min-h-screen" style={{ background: '#f8f9fc' }}>
       <div className="max-w-7xl mx-auto flex flex-col gap-8 p-4 sm:p-6 lg:p-8">
         {/* ── Page Header ── */}
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">
-            {user?.role === "EMPLOYEE"
-              ? `View your department (${user.department || "Not Set"}) colleagues and their availability`
-              : "View all employees and their current availability status"}
+            {user?.role === 'EMPLOYEE'
+              ? `View your department (${user.department || 'Not Set'}) colleagues and their availability`
+              : 'View all employees and their current availability status'}
           </p>
         </div>
 
@@ -227,21 +227,21 @@ export default function TeamAvailabilityPage() {
               key={card.label}
               className="group relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 cursor-default"
               style={{
-                background: "#ffffff",
-                border: "1px solid #e2e8f0",
-                boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLDivElement).style.boxShadow =
-                  "0 8px 24px rgba(15,23,42,0.10)";
+                  '0 8px 24px rgba(15,23,42,0.10)';
                 (e.currentTarget as HTMLDivElement).style.borderColor =
-                  "#cbd5e1";
+                  '#cbd5e1';
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLDivElement).style.boxShadow =
-                  "0 1px 3px rgba(15,23,42,0.05)";
+                  '0 1px 3px rgba(15,23,42,0.05)';
                 (e.currentTarget as HTMLDivElement).style.borderColor =
-                  "#e2e8f0";
+                  '#e2e8f0';
               }}
             >
               {/* Colored top bar */}
@@ -260,13 +260,13 @@ export default function TeamAvailabilityPage() {
                 <div>
                   <p
                     className="text-[32px] font-bold leading-none tabular-nums"
-                    style={{ color: "#0f172a" }}
+                    style={{ color: '#0f172a' }}
                   >
                     {card.value}
                   </p>
                   <p
                     className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.1em]"
-                    style={{ color: "#475569" }}
+                    style={{ color: '#475569' }}
                   >
                     {card.label}
                   </p>
@@ -280,16 +280,16 @@ export default function TeamAvailabilityPage() {
         <div
           className="flex flex-col sm:flex-row gap-3 rounded-2xl p-4"
           style={{
-            background: "#ffffff",
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
           }}
         >
           {/* Search */}
           <div className="relative flex-1">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
-              style={{ color: "#94a3b8" }}
+              style={{ color: '#94a3b8' }}
             />
             <input
               placeholder="Search by name, email, or designation..."
@@ -297,24 +297,24 @@ export default function TeamAvailabilityPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="w-full rounded-xl pl-9 pr-4 py-2.5 text-[13px] outline-none transition-all"
               style={{
-                background: "#f8f9fc",
-                border: "1px solid #e2e8f0",
-                color: "#1e293b",
+                background: '#f8f9fc',
+                border: '1px solid #e2e8f0',
+                color: '#1e293b',
               }}
               onFocus={(e) => {
-                e.currentTarget.style.border = "1px solid #a5b4fc";
-                e.currentTarget.style.background = "#ffffff";
+                e.currentTarget.style.border = '1px solid #a5b4fc';
+                e.currentTarget.style.background = '#ffffff';
               }}
               onBlur={(e) => {
-                e.currentTarget.style.border = "1px solid #e2e8f0";
-                e.currentTarget.style.background = "#f8f9fc";
+                e.currentTarget.style.border = '1px solid #e2e8f0';
+                e.currentTarget.style.background = '#f8f9fc';
               }}
             />
           </div>
 
           {/* ✅ DEPARTMENT FILTER - Only for HR Admin & Manager */}
           {user &&
-            (user.role === "HRADMIN" || user.role === "MANAGER") &&
+            (user.role === 'HRADMIN' || user.role === 'MANAGER') &&
             departments.length > 0 && (
               <Select
                 value={departmentFilter}
@@ -335,7 +335,7 @@ export default function TeamAvailabilityPage() {
             )}
 
           {/* ✅ EMPLOYEE: Show their department as a badge */}
-          {user && user.role === "EMPLOYEE" && user.department && (
+          {user && user.role === 'EMPLOYEE' && user.department && (
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted border">
               <span className="text-sm text-muted-foreground">
                 Your Department:
@@ -350,18 +350,18 @@ export default function TeamAvailabilityPage() {
           <div
             className="flex flex-col items-center justify-center gap-3 rounded-2xl py-16"
             style={{
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
             }}
           >
             <div
               className="flex h-12 w-12 items-center justify-center rounded-2xl"
-              style={{ background: "#f1f5f9" }}
+              style={{ background: '#f1f5f9' }}
             >
-              <Users className="h-6 w-6" style={{ color: "#cbd5e1" }} />
+              <Users className="h-6 w-6" style={{ color: '#cbd5e1' }} />
             </div>
-            <p className="text-[13px] font-medium" style={{ color: "#94a3b8" }}>
+            <p className="text-[13px] font-medium" style={{ color: '#94a3b8' }}>
               No employees or team members found matching your filters.
             </p>
           </div>
@@ -373,28 +373,38 @@ export default function TeamAvailabilityPage() {
                 key={member.id}
                 className="group relative flex flex-col items-center text-center gap-3 rounded-2xl p-6 overflow-hidden transition-all duration-200 hover:-translate-y-0.5 cursor-default"
                 style={{
-                  background: "#ffffff",
-                  border: "1px solid #e2e8f0",
-                  boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
                 }}
+                // onMouseEnter={(e) => {
+                //   (e.currentTarget as HTMLDivElement).style.boxShadow =
+                //     "0 8px 24px rgba(15,23,42,0.10)";
+                //   (e.currentTarget as HTMLDivElement).style.borderColor =
+                //     "#cbd5e1";
+                // }}
+                // onMouseLeave={(e) => {
+                //   (e.currentTarget as HTMLDivElement).style.boxShadow =
+                //     "0 1px 3px rgba(15,23,42,0.05)";
+                //   (e.currentTarget as HTMLDivElement).style.borderColor =
+                //     "#e2e8f0";
+                // }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.boxShadow =
-                    "0 8px 24px rgba(15,23,42,0.10)";
-                  (e.currentTarget as HTMLDivElement).style.borderColor =
-                    "#cbd5e1";
+                  e.currentTarget.style.boxShadow =
+                    '0 8px 24px rgba(15,23,42,0.10)';
+                  e.currentTarget.style.borderColor = '#cbd5e1';
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.boxShadow =
-                    "0 1px 3px rgba(15,23,42,0.05)";
-                  (e.currentTarget as HTMLDivElement).style.borderColor =
-                    "#e2e8f0";
+                  e.currentTarget.style.boxShadow =
+                    '0 1px 3px rgba(15,23,42,0.05)';
+                  e.currentTarget.style.borderColor = '#e2e8f0';
                 }}
               >
                 {/* Colored top accent bar based on status */}
                 <div
                   className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
                   style={{
-                    background: member.isOnLeave ? "#f59e0b" : "#22c55e",
+                    background: member.isOnLeave ? '#f59e0b' : '#22c55e',
                   }}
                 />
 
@@ -403,18 +413,18 @@ export default function TeamAvailabilityPage() {
                   className="relative h-14 w-14 rounded-full mt-1"
                   style={{
                     border: member.isOnLeave
-                      ? "2px solid #fde68a"
-                      : "2px solid #bbf7d0",
+                      ? '2px solid #fde68a'
+                      : '2px solid #bbf7d0',
                   }}
                 >
                   <AvatarFallback
                     className="text-base font-bold"
                     style={{
-                      background: member.isOnLeave ? "#fffbeb" : "#f0fdf4",
-                      color: member.isOnLeave ? "#d97706" : "#16a34a",
+                      background: member.isOnLeave ? '#fffbeb' : '#f0fdf4',
+                      color: member.isOnLeave ? '#d97706' : '#16a34a',
                     }}
                   >
-                    {getInitials(member.name || member.email || "?")}
+                    {getInitials(member.name || member.email || '?')}
                   </AvatarFallback>
                 </Avatar>
 
@@ -422,22 +432,22 @@ export default function TeamAvailabilityPage() {
                 <div className="w-full">
                   <p
                     className="text-[13px] font-semibold truncate"
-                    style={{ color: "#1e293b" }}
+                    style={{ color: '#1e293b' }}
                     title={member.name}
                   >
                     {member.name || member.email}
                   </p>
                   <p
                     className="text-[11px] capitalize truncate mt-0.5"
-                    style={{ color: "#64748b" }}
+                    style={{ color: '#64748b' }}
                     title={member.designation}
                   >
-                    {member.designation?.toLowerCase() || "Employee"}
+                    {member.designation?.toLowerCase() || 'Employee'}
                   </p>
                   {member.department && (
                     <p
                       className="text-[11px] truncate"
-                      style={{ color: "#94a3b8" }}
+                      style={{ color: '#94a3b8' }}
                       title={member.department}
                     >
                       {member.department}
@@ -451,29 +461,29 @@ export default function TeamAvailabilityPage() {
                     <span
                       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold"
                       style={{
-                        background: "#fffbeb",
-                        border: "1px solid #fde68a",
-                        color: "#d97706",
+                        background: '#fffbeb',
+                        border: '1px solid #fde68a',
+                        color: '#d97706',
                       }}
                     >
                       <span
                         className="h-1.5 w-1.5 rounded-full"
-                        style={{ background: "#f59e0b" }}
+                        style={{ background: '#f59e0b' }}
                       />
                       On Leave
                     </span>
                     <div
                       className="text-[11px] space-y-0.5"
-                      style={{ color: "#64748b" }}
+                      style={{ color: '#64748b' }}
                     >
                       <p className="capitalize">
                         {member.currentLeave.leaveType.charAt(0) +
                           member.currentLeave.leaveType.slice(1).toLowerCase()}
                       </p>
                       <p>Until {formatDate(member.currentLeave.endDate)}</p>
-                      <p className="font-semibold" style={{ color: "#d97706" }}>
-                        {member.currentLeave.totalDays}{" "}
-                        {member.currentLeave.totalDays === 1 ? "day" : "days"}
+                      <p className="font-semibold" style={{ color: '#d97706' }}>
+                        {member.currentLeave.totalDays}{' '}
+                        {member.currentLeave.totalDays === 1 ? 'day' : 'days'}
                       </p>
                     </div>
                   </div>
@@ -481,14 +491,14 @@ export default function TeamAvailabilityPage() {
                   <span
                     className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold"
                     style={{
-                      background: "#f0fdf4",
-                      border: "1px solid #bbf7d0",
-                      color: "#16a34a",
+                      background: '#f0fdf4',
+                      border: '1px solid #bbf7d0',
+                      color: '#16a34a',
                     }}
                   >
                     <span
                       className="h-1.5 w-1.5 rounded-full"
-                      style={{ background: "#22c55e" }}
+                      style={{ background: '#22c55e' }}
                     />
                     Available
                   </span>

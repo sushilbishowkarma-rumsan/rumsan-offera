@@ -13,12 +13,6 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  // @Get('me')
-  // @UseGuards(JwtAuthGuard)
-  // async getMe(@Req() req: any) {
-  //   return this.usersService.findById(req.user.id); // jwt.strategy validate() maps sub → id
-  // }
-
   @Get('managers')
   @UseGuards(JwtAuthGuard)
   getManagers() {
@@ -47,18 +41,4 @@ export class UsersController {
   ) {
     return this.usersService.updateDepartment(id, dto.department);
   }
-
-  // Get all users (HR Admin)
-  // @Get()
-  // async getAllUsers() {
-  //   return this.prisma.user.findMany({
-  //     select: {
-  //       id: true,
-  //       name: true,
-  //       email: true,
-  //       role: true,
-  //       createdAt: true,
-  //     },
-  //   });
-  // }
 }

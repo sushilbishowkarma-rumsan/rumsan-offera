@@ -15,10 +15,7 @@ export default function LoginPage() {
   const loginMutation = useLoginMutation();
 
   return (
-    // Updated: Stylish background with a subtle orange radial glow    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#fafafa] px-4 dark:bg-slate-950">
-
-    // <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#5d4444] px-4 dark:bg-slate-950">
-    <div
+      <div
       className="relative flex min-h-screen items-center justify-center overflow-hidden px-4"
       style={{
         background:

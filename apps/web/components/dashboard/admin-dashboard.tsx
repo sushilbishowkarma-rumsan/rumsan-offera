@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import Link from "next/link";
+import Link from 'next/link';
 import {
   useAdminDashboardData,
   useRecentActivity,
-} from "@/hooks/use-dashboard-queries";
-import { formatDateTime } from "@/lib/leave-helpers";
-import { StatsCard } from "./stats-card";
+} from '@/hooks/use-dashboard-queries';
+import { formatDate, formatDateTime, getInitials } from '@/lib/leave-helpers';
+import { StatsCard } from './stats-card';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Users,
   Clock,
@@ -27,31 +27,51 @@ import {
   AlertCircle,
   ArrowRight,
   Sparkles,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useUsers } from "@/hooks/use-users";
+  Laptop,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useUsers } from '@/hooks/use-users';
+import { Avatar, AvatarFallback } from '../ui/avatar';
 
 export function AdminDashboard() {
-  
   const { data, isLoading, error } = useAdminDashboardData();
   const { data: activity, isLoading: activityLoading } = useRecentActivity(5);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen p-6 lg:p-8" style={{ background: "#f8f9fc" }}>
+      <div
+        className="min-h-screen p-6 lg:p-8"
+        style={{ background: '#f8f9fc' }}
+      >
         <div className="flex flex-col gap-6 max-w-7xl mx-auto">
           <div className="space-y-2">
-            <Skeleton className="h-8 w-56 rounded-xl" style={{ background: "#e8eaf0" }} />
-            <Skeleton className="h-4 w-72 rounded-lg" style={{ background: "#e8eaf0" }} />
+            <Skeleton
+              className="h-8 w-56 rounded-xl"
+              style={{ background: '#e8eaf0' }}
+            />
+            <Skeleton
+              className="h-4 w-72 rounded-lg"
+              style={{ background: '#e8eaf0' }}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-36 rounded-2xl" style={{ background: "#e8eaf0" }} />
+              <Skeleton
+                key={i}
+                className="h-36 rounded-2xl"
+                style={{ background: '#e8eaf0' }}
+              />
             ))}
           </div>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Skeleton className="h-80 rounded-2xl" style={{ background: "#e8eaf0" }} />
-            <Skeleton className="h-80 rounded-2xl" style={{ background: "#e8eaf0" }} />
+            <Skeleton
+              className="h-80 rounded-2xl"
+              style={{ background: '#e8eaf0' }}
+            />
+            <Skeleton
+              className="h-80 rounded-2xl"
+              style={{ background: '#e8eaf0' }}
+            />
           </div>
         </div>
       </div>
@@ -60,22 +80,40 @@ export function AdminDashboard() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6" style={{ background: "#f8f9fc" }}>
+      <div
+        className="flex min-h-screen items-center justify-center p-6"
+        style={{ background: '#f8f9fc' }}
+      >
         <div
           className="max-w-sm w-full rounded-2xl p-8 text-center"
-          style={{ background: "#fff", border: "1px solid #fecaca", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}
+          style={{
+            background: '#fff',
+            border: '1px solid #fecaca',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+          }}
         >
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: "#fef2f2" }}>
+          <div
+            className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
+            style={{ background: '#fef2f2' }}
+          >
             <AlertCircle className="h-7 w-7 text-red-500" />
           </div>
-          <h3 className="text-[15px] font-semibold" style={{ color: "#0f172a" }}>Error Loading Dashboard</h3>
-          <p className="mt-2 text-[13px] leading-relaxed" style={{ color: "#64748b" }}>
+          <h3
+            className="text-[15px] font-semibold"
+            style={{ color: '#0f172a' }}
+          >
+            Error Loading Dashboard
+          </h3>
+          <p
+            className="mt-2 text-[13px] leading-relaxed"
+            style={{ color: '#64748b' }}
+          >
             Unable to load dashboard data. Please refresh the page.
           </p>
           <button
             onClick={() => window.location.reload()}
             className="mt-6 w-full rounded-xl py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
-            style={{ background: "#ef4444" }}
+            style={{ background: '#ef4444' }}
           >
             Retry
           </button>
@@ -84,100 +122,96 @@ export function AdminDashboard() {
     );
   }
 
-  const { stats } = data || {};
+  const { stats, combinedPending = [] } = data || {};
+//   console.log('[AdminDashboard] data:', data);
+// console.log('[AdminDashboard] combinedPending:', combinedPending);
+// console.log('[AdminDashboard] activity:', activity);
+// console.log('[AdminDashboard] activityLoading:', activityLoading);
 
   const statCards = [
     {
-      label: "Total Employees",
+      label: 'Total Employees',
       sub: `${stats?.totalEmployees || 0} in system`,
       value: stats?.totalEmployees || 0,
       icon: <Users className="h-5 w-5" />,
-      iconBg: "#eef2ff",
-      iconColor: "#4f46e5",
-      accentBar: "#4f46e5",
+      iconBg: '#eef2ff',
+      iconColor: '#4f46e5',
+      accentBar: '#4f46e5',
     },
     {
-      label: "Pending Requests",
-      sub: "Across organization",
+      label: 'Pending Requests',
+      sub: 'Across organization',
       value: stats?.pendingCount || 0,
       icon: <Clock className="h-5 w-5" />,
-      iconBg: "#fffbeb",
-      iconColor: "#d97706",
-      accentBar: "#f59e0b",
+      iconBg: '#fffbeb',
+      iconColor: '#d97706',
+      accentBar: '#f59e0b',
     },
     {
-      label: "On Leave Today",
-      sub: "Currently absent",
+      label: 'On Leave Today',
+      sub: 'Currently absent',
       value: stats?.onLeaveToday || 0,
       icon: <CalendarRange className="h-5 w-5" />,
-      iconBg: "#f0f9ff",
-      iconColor: "#0284c7",
-      accentBar: "#0ea5e9",
+      iconBg: '#f0f9ff',
+      iconColor: '#0284c7',
+      accentBar: '#0ea5e9',
     },
     {
-      label: "Approved",
-      sub: "Total approved leaves",
+      label: 'Approved',
+      sub: 'Total approved leaves',
       value: stats?.approvedThisMonth || 0,
       icon: <CheckCircle2 className="h-5 w-5" />,
-      iconBg: "#f0fdf4",
-      iconColor: "#16a34a",
-      accentBar: "#22c55e",
+      iconBg: '#f0fdf4',
+      iconColor: '#16a34a',
+      accentBar: '#22c55e',
     },
   ];
 
   const quickActions = [
     {
-      label: "All Requests",
-      href: "/dashboard/admin/requests",
+      label: 'All Requests',
+      href: '/dashboard/admin/requests',
       icon: <FileText className="h-5 w-5" />,
-      iconBg: "#eef2ff",
-      iconColor: "#4f46e5",
-      hoverBorder: "#c7d2fe",
+      iconBg: '#eef2ff',
+      iconColor: '#4f46e5',
+      hoverBorder: '#c7d2fe',
     },
     {
-      label: "Leave Policies",
-      href: "/dashboard/admin/policies",
+      label: 'Leave Policies',
+      href: '/dashboard/admin/policies',
       icon: <ShieldCheck className="h-5 w-5" />,
-      iconBg: "#fffbeb",
-      iconColor: "#d97706",
-      hoverBorder: "#fde68a",
+      iconBg: '#fffbeb',
+      iconColor: '#d97706',
+      hoverBorder: '#fde68a',
     },
     {
-      label: "Public Holidays",
-      href: "/dashboard/admin/holidays",
+      label: 'Public Holidays',
+      href: '/dashboard/admin/holidays',
       icon: <CalendarDays className="h-5 w-5" />,
-      iconBg: "#f0fdf4",
-      iconColor: "#16a34a",
-      hoverBorder: "#bbf7d0",
+      iconBg: '#f0fdf4',
+      iconColor: '#16a34a',
+      hoverBorder: '#bbf7d0',
     },
     {
-      label: "Employees",
-      href: "/dashboard/admin/employees",
+      label: 'Employees',
+      href: '/dashboard/admin/employees',
       icon: <Users className="h-5 w-5" />,
-      iconBg: "#f0f9ff",
-      iconColor: "#0284c7",
-      hoverBorder: "#bae6fd",
+      iconBg: '#f0f9ff',
+      iconColor: '#0284c7',
+      hoverBorder: '#bae6fd',
     },
     {
-      label: "Reports",
-      href: "/dashboard/reports",
-      icon: <BarChart3 className="h-5 w-5" />,
-      iconBg: "#faf5ff",
-      iconColor: "#7c3aed",
-      hoverBorder: "#ddd6fe",
-    },
-    {
-      label: "Team Calendar",
-      href: "/dashboard/calendar",
+      label: 'Team Calendar',
+      href: '/dashboard/calendar',
       icon: <CalendarRange className="h-5 w-5" />,
-      iconBg: "#fdf2f8",
-      iconColor: "#be185d",
-      hoverBorder: "#fbcfe8",
+      iconBg: '#fdf2f8',
+      iconColor: '#be185d',
+      hoverBorder: '#fbcfe8',
     },
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: "#f8f9fc" }}>
+    <div className="min-h-screen" style={{ background: '#f8f9fc' }}>
       <div className="flex flex-col gap-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         {/* ── Stats Grid ── */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
@@ -186,17 +220,21 @@ export function AdminDashboard() {
               key={card.label}
               className="group relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 cursor-default"
               style={{
-                background: "#ffffff",
-                border: "1px solid #e2e8f0",
-                boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 24px rgba(15,23,42,0.10)";
-                (e.currentTarget as HTMLDivElement).style.borderColor = "#cbd5e1";
+                (e.currentTarget as HTMLDivElement).style.boxShadow =
+                  '0 8px 24px rgba(15,23,42,0.10)';
+                (e.currentTarget as HTMLDivElement).style.borderColor =
+                  '#cbd5e1';
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 3px rgba(15,23,42,0.05)";
-                (e.currentTarget as HTMLDivElement).style.borderColor = "#e2e8f0";
+                (e.currentTarget as HTMLDivElement).style.boxShadow =
+                  '0 1px 3px rgba(15,23,42,0.05)';
+                (e.currentTarget as HTMLDivElement).style.borderColor =
+                  '#e2e8f0';
               }}
             >
               {/* Colored top bar */}
@@ -218,17 +256,20 @@ export function AdminDashboard() {
                 <div>
                   <p
                     className="text-[34px] font-bold leading-none tabular-nums"
-                    style={{ color: "#0f172a" }}
+                    style={{ color: '#0f172a' }}
                   >
                     {card.value}
                   </p>
                   <p
                     className="mt-2 text-[11px] font-semibold uppercase tracking-[0.1em]"
-                    style={{ color: "#475569" }}
+                    style={{ color: '#475569' }}
                   >
                     {card.label}
                   </p>
-                  <p className="mt-0.5 text-[11px]" style={{ color: "#94a3b8" }}>
+                  <p
+                    className="mt-0.5 text-[11px]"
+                    style={{ color: '#94a3b8' }}
+                  >
                     {card.sub}
                   </p>
                 </div>
@@ -239,29 +280,28 @@ export function AdminDashboard() {
 
         {/* ── Two-column cards ── */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-
           {/* ── Quick Actions ── */}
           <div
             className="flex flex-col rounded-2xl overflow-hidden"
             style={{
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
             }}
           >
             {/* Header */}
             <div
               className="flex items-center justify-between px-5 py-4"
-              style={{ borderBottom: "1px solid #f1f5f9" }}
+              style={{ borderBottom: '1px solid #f1f5f9' }}
             >
               <div>
                 <h2
                   className="text-[13px] font-semibold"
-                  style={{ color: "#0f172a" }}
+                  style={{ color: '#0f172a' }}
                 >
                   Quick Actions
                 </h2>
-                <p className="text-[11px] mt-0.5" style={{ color: "#94a3b8" }}>
+                <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>
                   Common administrative tasks
                 </p>
               </div>
@@ -276,29 +316,38 @@ export function AdminDashboard() {
                     href={action.href}
                     className="group/tile relative flex flex-col items-center gap-2.5 rounded-xl p-4 text-center transition-all duration-200 hover:-translate-y-0.5"
                     style={{
-                      background: "#f8f9fc",
-                      border: "1px solid #e2e8f0",
+                      background: '#f8f9fc',
+                      border: '1px solid #e2e8f0',
                     }}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLAnchorElement).style.borderColor = action.hoverBorder;
-                      (e.currentTarget as HTMLAnchorElement).style.background = "#ffffff";
-                      (e.currentTarget as HTMLAnchorElement).style.boxShadow = "0 4px 12px rgba(15,23,42,0.08)";
+                      (e.currentTarget as HTMLAnchorElement).style.borderColor =
+                        action.hoverBorder;
+                      (e.currentTarget as HTMLAnchorElement).style.background =
+                        '#ffffff';
+                      (e.currentTarget as HTMLAnchorElement).style.boxShadow =
+                        '0 4px 12px rgba(15,23,42,0.08)';
                     }}
                     onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLAnchorElement).style.borderColor = "#e2e8f0";
-                      (e.currentTarget as HTMLAnchorElement).style.background = "#f8f9fc";
-                      (e.currentTarget as HTMLAnchorElement).style.boxShadow = "none";
+                      (e.currentTarget as HTMLAnchorElement).style.borderColor =
+                        '#e2e8f0';
+                      (e.currentTarget as HTMLAnchorElement).style.background =
+                        '#f8f9fc';
+                      (e.currentTarget as HTMLAnchorElement).style.boxShadow =
+                        'none';
                     }}
                   >
                     <div
                       className="flex h-10 w-10 items-center justify-center rounded-xl transition-transform duration-200 group-hover/tile:scale-110"
-                      style={{ background: action.iconBg, color: action.iconColor }}
+                      style={{
+                        background: action.iconBg,
+                        color: action.iconColor,
+                      }}
                     >
                       {action.icon}
                     </div>
                     <span
                       className="text-[12px] font-semibold leading-tight"
-                      style={{ color: "#334155" }}
+                      style={{ color: '#334155' }}
                     >
                       {action.label}
                     </span>
@@ -312,94 +361,258 @@ export function AdminDashboard() {
           <div
             className="flex flex-col rounded-2xl overflow-hidden"
             style={{
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
             }}
           >
             {/* Header */}
             <div
               className="flex items-center justify-between px-5 py-4"
-              style={{ borderBottom: "1px solid #f1f5f9" }}
+              style={{ borderBottom: '1px solid #f1f5f9' }}
             >
               <div>
                 <h2
                   className="text-[13px] font-semibold"
-                  style={{ color: "#0f172a" }}
+                  style={{ color: '#0f172a' }}
                 >
-                  Recent Activity
+                  Pending Requests
                 </h2>
-                <p className="text-[11px] mt-0.5" style={{ color: "#94a3b8" }}>
-                  Latest leave-related actions
+                <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>
+                  Leave & WFH awaiting approval
                 </p>
               </div>
+              {combinedPending.length > 0 && (
+                <div
+                  className="flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-[10px] font-bold"
+                  style={{
+                    background: '#fffbeb',
+                    color: '#d97706',
+                    border: '1px solid #fde68a',
+                  }}
+                >
+                  {combinedPending.length}
+                </div>
+              )}
             </div>
 
             {/* Body */}
             <div className="flex-1">
+              {combinedPending.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-14">
+                  <CheckCircle2
+                    className="h-6 w-6"
+                    style={{ color: '#16a34a' }}
+                  />
+                  <p
+                    className="text-[13px] font-medium"
+                    style={{ color: '#94a3b8' }}
+                  >
+                    No pending requests.
+                  </p>
+                </div>
+              ) : (
+                combinedPending.slice(0, 6).map((req: any) => {
+                  const isWfh = req.requestType === 'wfh';
+                  return (
+                    <div
+                      key={req.id}
+                      className="flex items-center gap-3 px-5 py-3.5 transition-colors duration-100"
+                      style={{ borderBottom: '1px solid #f8fafc' }}
+                      onMouseEnter={(e) =>
+                        ((e.currentTarget as HTMLDivElement).style.background =
+                          '#f8f9fc')
+                      }
+                      onMouseLeave={(e) =>
+                        ((e.currentTarget as HTMLDivElement).style.background =
+                          'transparent')
+                      }
+                    >
+                      <Avatar className="h-8 w-8 shrink-0 rounded-xl">
+                        <AvatarFallback
+                          className="rounded-xl text-[10px] font-bold"
+                          style={{
+                            background: isWfh ? '#dbeafe' : '#fffbeb',
+                            color: isWfh ? '#1d4ed8' : '#d97706',
+                          }}
+                        >
+                          {getInitials(
+                            req.employee?.name || req.employee?.email || '?',
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p
+                            className="text-[12px] font-semibold truncate"
+                            style={{ color: '#1e293b' }}
+                          >
+                            {req.employee?.name ||
+                              req.employee?.email ||
+                              'Unknown'}
+                          </p>
+                          {/* WFH badge */}
+                          {isWfh && (
+                            <span
+                              className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold shrink-0"
+                              style={{
+                                background: '#dbeafe',
+                                color: '#1d4ed8',
+                                border: '1px solid #93c5fd',
+                              }}
+                            >
+                              <Laptop className="h-2.5 w-2.5" /> WFH
+                            </span>
+                          )}
+                        </div>
+                        <p
+                          className="text-[10px] mt-0.5"
+                          style={{ color: '#94a3b8' }}
+                        >
+                          {isWfh
+                            ? `${formatDate(req.startDate)} · ${req.totalDays}d`
+                            : `${req.leaveType?.charAt(0) + req.leaveType?.slice(1).toLowerCase()} · ${formatDate(req.startDate)} · ${req.totalDays}d`}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            <div
+              className="px-5 py-3"
+              style={{ borderTop: '1px solid #f1f5f9' }}
+            >
+              <Link
+                href="/dashboard/admin/requests"
+                className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[12px] font-semibold"
+                style={{
+                  border: '1px solid #e2e8f0',
+                  color: '#64748b',
+                  background: '#f8f9fc',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLAnchorElement).style.background =
+                    '#ffffff';
+                  (e.currentTarget as HTMLAnchorElement).style.color =
+                    '#4f46e5';
+                  (e.currentTarget as HTMLAnchorElement).style.borderColor =
+                    '#c7d2fe';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLAnchorElement).style.background =
+                    '#f8f9fc';
+                  (e.currentTarget as HTMLAnchorElement).style.color =
+                    '#64748b';
+                  (e.currentTarget as HTMLAnchorElement).style.borderColor =
+                    '#e2e8f0';
+                }}
+              >
+                View All Requests <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          </div>
+
+          {/* ── Recent Activity — Leave + WFH ── */}
+          <div
+            className="flex flex-col rounded-2xl overflow-hidden"
+            style={{
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
+            }}
+          >
+            <div
+              className="px-5 py-4"
+              style={{ borderBottom: '1px solid #f1f5f9' }}
+            >
+              <h2
+                className="text-[13px] font-semibold"
+                style={{ color: '#0f172a' }}
+              >
+                Recent Activity
+              </h2>
+              <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>
+                Latest leave & WFH actions
+              </p>
+            </div>
+            <div className="flex-1">
               {activityLoading ? (
                 <div className="flex flex-col gap-3 p-5">
-                  {[...Array(3)].map((_, i) => (
+                  {[...Array(4)].map((_, i) => (
                     <Skeleton
                       key={i}
                       className="h-14 rounded-xl"
-                      style={{ background: "#f1f5f9" }}
+                      style={{ background: '#f1f5f9' }}
                     />
                   ))}
                 </div>
               ) : !activity || activity.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-14">
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-2xl"
-                    style={{ background: "#f1f5f9" }}
+                  <p
+                    className="text-[13px] font-medium"
+                    style={{ color: '#94a3b8' }}
                   >
-                    <BarChart3 className="h-6 w-6" style={{ color: "#cbd5e1" }} />
-                  </div>
-                  <p className="text-[13px] font-medium" style={{ color: "#94a3b8" }}>
                     No recent activity.
                   </p>
                 </div>
               ) : (
-                <div>
-                  {activity.map((entry: any) => (
+                activity.map((entry: any) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-start gap-3 px-5 py-3.5 transition-colors duration-100"
+                    style={{ borderBottom: '1px solid #f8fafc' }}
+                    onMouseEnter={(e) =>
+                      ((e.currentTarget as HTMLDivElement).style.background =
+                        '#f8f9fc')
+                    }
+                    onMouseLeave={(e) =>
+                      ((e.currentTarget as HTMLDivElement).style.background =
+                        'transparent')
+                    }
+                  >
+                    {/* Icon: laptop for WFH, calendar for leave */}
                     <div
-                      key={entry.id}
-                      className="flex flex-col gap-1 px-5 py-3.5 transition-colors duration-100 cursor-default"
-                      style={{ borderBottom: "1px solid #f8fafc" }}
-                      onMouseEnter={(e) =>
-                        ((e.currentTarget as HTMLDivElement).style.background = "#f8f9fc")
-                      }
-                      onMouseLeave={(e) =>
-                        ((e.currentTarget as HTMLDivElement).style.background = "transparent")
-                      }
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mt-0.5"
+                      style={{
+                        background:
+                          entry.type === 'wfh' ? '#dbeafe' : '#eef2ff',
+                        color: entry.type === 'wfh' ? '#1d4ed8' : '#4f46e5',
+                      }}
                     >
+                      {entry.type === 'wfh' ? (
+                        <Laptop className="h-3.5 w-3.5" />
+                      ) : (
+                        <CalendarDays className="h-3.5 w-3.5" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span
-                          className="text-[13px] font-semibold truncate"
-                          style={{ color: "#1e293b" }}
+                          className="text-[12px] font-semibold truncate"
+                          style={{ color: '#1e293b' }}
                         >
                           {entry.userName}
                         </span>
                         <span
-                          className="text-[10px] shrink-0 tabular-nums font-medium"
-                          style={{ color: "#94a3b8" }}
+                          className="text-[10px] shrink-0 tabular-nums"
+                          style={{ color: '#94a3b8' }}
                         >
                           {formatDateTime(entry.timestamp)}
                         </span>
                       </div>
                       <p
-                        className="text-[12px] leading-relaxed"
-                        style={{ color: "#64748b" }}
+                        className="text-[11px] mt-0.5 leading-relaxed"
+                        style={{ color: '#64748b' }}
                       >
                         {entry.details}
                       </p>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
-
         </div>
       </div>
     </div>

@@ -16,19 +16,12 @@ import { LeavePolicyModel } from './leave-policy.model';
 export class LeavePolicyService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Fetch all leave policies ordered by creation date (newest last).
-   */
   async findAll(): Promise<LeavePolicyModel[]> {
     return this.prisma.leavePolicy.findMany({
       orderBy: { createdAt: 'asc' },
     });
   }
 
-  /**
-   * Fetch a single policy by its UUID.
-   * Throws 404 if not found.
-   */
   async findOne(id: string): Promise<LeavePolicyModel> {
     const policy = await this.prisma.leavePolicy.findUnique({
       where: { id },
@@ -41,10 +34,6 @@ export class LeavePolicyService {
     return policy;
   }
 
-  /**
-   * Create a new leave policy.
-   * Throws 409 if a policy with the same leaveType already exists.
-   */
   async create(dto: CreateLeavePolicyDto): Promise<LeavePolicyModel> {
     const existing = await this.prisma.leavePolicy.findUnique({
       where: { leaveType: dto.leaveType },
@@ -89,11 +78,6 @@ export class LeavePolicyService {
     return policy;
   }
 
-  /**
-   * Update an existing leave policy by id.
-   * Throws 404 if policy not found.
-   * Throws 409 if leaveType conflicts with another record.
-   */
   // Also update update() — if defaultQuota changes, sync balance totals
   async update(
     id: string,
@@ -127,10 +111,7 @@ export class LeavePolicyService {
 
     return updated;
   }
-  /**
-   * Soft-delete by setting isActive = false, or hard delete.
-   * Using hard delete here; swap to soft if preferred.
-   */
+
   async remove(id: string): Promise<void> {
     await this.findOne(id); // throws 404 if not found
     await this.prisma.leavePolicy.delete({ where: { id } });

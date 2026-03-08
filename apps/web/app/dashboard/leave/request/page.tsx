@@ -1,160 +1,826 @@
-"use client";
+'use client';
 
-import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
-import { useCreateLeaveRequest } from "@/hooks/use-leave-mutations";
-import { useLeavePolicies, useManagers } from "@/hooks/use-leave-queries";
-import { calculateBusinessDays } from "@/lib/leave-helpers";
+import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
+import {
+  useCreateLeaveRequest,
+  useCreateWfhRequest,
+} from '@/hooks/use-leave-mutations';
+import { useLeavePolicies, useManagers } from '@/hooks/use-leave-queries';
+import { calculateBusinessDays } from '@/lib/leave-helpers';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Skeleton } from "@/components/ui/skeleton";
-import { CalendarPlus, CalendarDays, Sun, Sunset } from "lucide-react";
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  CalendarPlus,
+  CalendarDays,
+  Sun,
+  Sunset,
+  Laptop,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+
+type DayType = 'FULL' | 'FIRST_HALF' | 'SECOND_HALF';
+interface LeaveDay {
+  date: string;
+  dayType: DayType;
+}
+
+const DAY_TYPE_LABELS: Record<DayType, string> = {
+  FULL: 'Full Day',
+  FIRST_HALF: 'First Half (AM)',
+  SECOND_HALF: 'Second Half (PM)',
+};
+
+const DAY_TYPE_DAYS: Record<DayType, number> = {
+  FULL: 1,
+  FIRST_HALF: 0.5,
+  SECOND_HALF: 0.5,
+};
 
 export default function LeaveRequestPage() {
   const { user } = useAuth();
   const router = useRouter();
   const createLeave = useCreateLeaveRequest();
+  const createWfh = useCreateWfhRequest();
 
   const { data: policies = [], isLoading: policiesLoading } =
     useLeavePolicies();
   const { data: managers = [], isLoading: managersLoading } = useManagers();
   const activeLeaveTypes = policies.filter((p) => p.isActive);
 
-  // ─── Form state ───────────────────────────────────────────────────────────────
-  const [leaveType, setLeaveType] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [reason, setReason] = useState("");
+  const [mode, setMode] = useState<'leave' | 'wfh'>('leave');
+
+  // ── Leave state ──
+  const [leaveType, setLeaveType] = useState('');
+  const [reason, setReason] = useState('');
+  const [managerId, setManagerId] = useState('');
+  const [useMultiDay, setUseMultiDay] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [isHalfDay, setIsHalfDay] = useState(false);
-  const [halfDayPeriod, setHalfDayPeriod] = useState<"FIRST" | "SECOND">(
-    "FIRST",
+  const [halfDayPeriod, setHalfDayPeriod] = useState<'FIRST' | 'SECOND'>(
+    'FIRST',
   );
-  const [managerId, setManagerId] = useState("");
+  const [leaveDays, setLeaveDays] = useState<LeaveDay[]>([
+    { date: '', dayType: 'FULL' },
+  ]);
 
-  // ─── Derived values ───────────────────────────────────────────────────────────
-  const totalDays = useMemo(() => {
-  if (!startDate || !endDate) return 0;
-  if (isHalfDay) return 0.5;
+  // ── WFH state ──
+  const [wfhStartDate, setWfhStartDate] = useState('');
+  const [wfhEndDate, setWfhEndDate] = useState('');
+  const [wfhReason, setWfhReason] = useState('');
+  const [wfhManagerId, setWfhManagerId] = useState('');
 
-  const count = calculateBusinessDays(startDate, endDate);
-  
-  // Logic: If start/end are same, it's 1 day. If end > start, it's the count.
-  if (startDate === endDate) return 1;
-  return count;
-}, [startDate, endDate, isHalfDay]);
+  // ── Derived: leave total ──
+  const leaveTotalDays = useMemo(() => {
+    if (useMultiDay) {
+      return leaveDays
+        .filter((d) => d.date !== '')
+        .reduce((sum, d) => sum + DAY_TYPE_DAYS[d.dayType], 0);
+    }
+    if (!startDate || !endDate) return 0;
+    if (isHalfDay) return 0.5;
+    if (startDate === endDate) return 1;
+    return calculateBusinessDays(startDate, endDate);
+  }, [useMultiDay, leaveDays, startDate, endDate, isHalfDay]);
 
-  const isFormValid =
-    leaveType !== "" &&
-    startDate !== "" &&
-    endDate !== "" &&
-    managerId !== "" &&
-    // reason.trim().length > 0 &&
-    totalDays > 0;
+  // ── Derived: WFH total ──
+  const wfhTotalDays = useMemo(() => {
+    if (!wfhStartDate || !wfhEndDate) return 0;
+    if (wfhStartDate === wfhEndDate) return 1;
+    return calculateBusinessDays(wfhStartDate, wfhEndDate);
+  }, [wfhStartDate, wfhEndDate]);
 
-  // ─── Submit ───────────────────────────────────────────────────────────────────
-  const handleSubmit = (e: React.FormEvent) => {
+  // ── Validation ──
+  const isLeaveFormValid =
+    leaveType !== '' &&
+    managerId !== '' &&
+    leaveTotalDays > 0 &&
+    (useMultiDay
+      ? leaveDays.every((d) => d.date !== '')
+      : startDate !== '' && endDate !== '');
+
+  const isWfhFormValid =
+    wfhStartDate !== '' && wfhEndDate !== '' && wfhManagerId !== '';
+
+  // ── Multi-day helpers ──
+  const addLeaveDay = () =>
+    setLeaveDays((prev) => [...prev, { date: '', dayType: 'FULL' }]);
+  const removeLeaveDay = (i: number) =>
+    setLeaveDays((prev) => prev.filter((_, idx) => idx !== i));
+  const updateLeaveDay = (i: number, field: keyof LeaveDay, value: string) =>
+    setLeaveDays((prev) =>
+      prev.map((d, idx) => (idx === i ? { ...d, [field]: value } : d)),
+    );
+
+  // ── Submit leave ──
+  const handleLeaveSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid || !user) return;
-    createLeave.mutate({
+    if (!isLeaveFormValid || !user) return;
+
+    if (useMultiDay) {
+      const validDays = leaveDays.filter((d) => d.date !== '');
+      const dates = validDays.map((d) => d.date).sort();
+      createLeave.mutate({
+        employeeId: user.id,
+        department: user.department ?? null,
+        leaveType,
+        startDate: dates[0],
+        endDate: dates[dates.length - 1],
+        totalDays: leaveTotalDays,
+        reason: reason.trim() || '',
+        isHalfDay: false,
+        managerId,
+        leaveDays: validDays, // ← individual day breakdown stored in DB
+      });
+    } else {
+      createLeave.mutate({
+        employeeId: user.id,
+        department: user.department ?? null,
+        leaveType,
+        startDate,
+        endDate,
+        totalDays: leaveTotalDays,
+        reason: reason.trim() || '',
+        isHalfDay,
+        halfDayPeriod: isHalfDay ? halfDayPeriod : undefined,
+        managerId,
+      });
+    }
+  };
+
+  // ── Submit WFH ──
+  const handleWfhSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isWfhFormValid || !user) return;
+    createWfh.mutate({
       employeeId: user.id,
-      department: user.department ?? null,
-      leaveType,
-      startDate,
-      endDate,
-      totalDays,
-      reason: reason.trim() || "",
-      isHalfDay,
-      halfDayPeriod: isHalfDay ? halfDayPeriod : undefined,
-      managerId,
+      startDate: wfhStartDate,
+      endDate: wfhEndDate,
+      reason: wfhReason.trim() || undefined,
+      managerId: wfhManagerId,
     });
   };
 
+  const inputStyle = {
+    background: '#f8f9fc',
+    border: '1px solid #bfc2c7',
+    color: '#1e293b',
+  };
+
   return (
-    <div className="min-h-screen" style={{ background: "#f8f9fc" }}>
-      <div className="max-w-2xl mx-auto flex flex-col gap-8 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen" style={{ background: '#f8f9fc' }}>
+      <div className="max-w-2xl mx-auto flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+        {/* Mode Toggle */}
         <div
-          className="flex flex-col rounded-2xl overflow-hidden"
-          style={{
-            background: "#ffffff",
-            border: "1px solid #aeb1b5",
-            boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
-          }}
+          className="flex rounded-2xl p-1 gap-1"
+          style={{ background: '#ffffff', border: '1px solid #aeb1b5' }}
         >
-          {/* Card header */}
+          {(['leave', 'wfh'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold transition-all"
+              style={{
+                background:
+                  mode === m
+                    ? m === 'leave'
+                      ? '#6366f1'
+                      : '#0ea5e9'
+                    : 'transparent',
+                color: mode === m ? '#ffffff' : '#64748b',
+              }}
+            >
+              {m === 'leave' ? (
+                <>
+                  <CalendarPlus className="h-4 w-4" /> Leave Request
+                </>
+              ) : (
+                <>
+                  <Laptop className="h-4 w-4" /> Work From Home
+                </>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* ══ LEAVE FORM ══ */}
+        {mode === 'leave' && (
           <div
-            className="flex items-center gap-3 px-6 py-4"
-            style={{ borderBottom: "1px solid #f1f5f9" }}
+            className="flex flex-col rounded-2xl overflow-hidden"
+            style={{ background: '#ffffff', border: '1px solid #aeb1b5' }}
           >
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-lg"
-              style={{ background: "#eef2ff", color: "#4f46e5" }}
+              className="flex items-center gap-3 px-6 py-4"
+              style={{ borderBottom: '1px solid #f1f5f9' }}
             >
-              <CalendarPlus className="h-4 w-4" />
-            </div>
-            <div>
-              <h2
-                className="text-[13px] font-semibold"
-                style={{ color: "#0f172a" }}
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-lg"
+                style={{ background: '#eef2ff', color: '#4f46e5' }}
               >
-                New Leave Application
-              </h2>
-              <p className="text-[11px] mt-0.5" style={{ color: "#94a3b8" }}>
-                All fields marked * are required.
-              </p>
+                <CalendarPlus className="h-4 w-4" />
+              </div>
+              <div>
+                <h2
+                  className="text-[13px] font-semibold"
+                  style={{ color: '#0f172a' }}
+                >
+                  New Leave Application
+                </h2>
+                <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>
+                  All fields marked * are required.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="px-6 py-5">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-              {/* Leave Type + Manager */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="px-6 py-5">
+              <form
+                onSubmit={handleLeaveSubmit}
+                className="flex flex-col gap-5"
+              >
+                {/* Leave Type + Manager */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className="text-[12px] font-semibold uppercase tracking-[0.08em]"
+                      style={{ color: '#475569' }}
+                    >
+                      Leave Type *
+                    </label>
+                    {policiesLoading ? (
+                      <Skeleton className="h-10 rounded-xl" />
+                    ) : (
+                      <Select value={leaveType} onValueChange={setLeaveType}>
+                        <SelectTrigger
+                          className="rounded-xl text-[13px]"
+                          style={inputStyle}
+                        >
+                          <SelectValue placeholder="Select leave type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {activeLeaveTypes.map((p) => (
+                            <SelectItem
+                              key={p.id}
+                              value={p.leaveType}
+                              className="text-[13px]"
+                            >
+                              {p.leaveType.charAt(0) +
+                                p.leaveType.slice(1).toLowerCase()}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className="text-[12px] font-semibold uppercase tracking-[0.08em]"
+                      style={{ color: '#475569' }}
+                    >
+                      Send To Manager *
+                    </label>
+                    {managersLoading ? (
+                      <Skeleton className="h-10 rounded-xl" />
+                    ) : (
+                      <Select value={managerId} onValueChange={setManagerId}>
+                        <SelectTrigger
+                          className="rounded-xl text-[13px]"
+                          style={inputStyle}
+                        >
+                          <SelectValue placeholder="Select manager" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {managers.map((m) => (
+                            <SelectItem
+                              key={m.id}
+                              value={m.id}
+                              className="text-[13px]"
+                            >
+                              {m.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </div>
+
+                {/* Mixed Day Toggle */}
+                <div
+                  className="flex items-center justify-between rounded-xl p-4"
+                  style={{ background: '#f8f9fc', border: '1px solid #bfc2c7' }}
+                >
+                  <div>
+                    <p
+                      className="text-[13px] font-semibold"
+                      style={{ color: '#1e293b' }}
+                    >
+                      Mixed Day Request
+                    </p>
+                    <p
+                      className="text-[11px] mt-0.5"
+                      style={{ color: '#94a3b8' }}
+                    >
+                      Mix full days, first halves and second halves in one
+                      request
+                    </p>
+                  </div>
+                  <Switch
+                    checked={useMultiDay}
+                    onCheckedChange={(v) => {
+                      setUseMultiDay(v);
+                      setIsHalfDay(false);
+                    }}
+                  />
+                </div>
+
+                {useMultiDay ? (
+                  /* ── Multi-day builder ── */
+                  <div className="flex flex-col gap-3">
+                    <p
+                      className="text-[12px] font-semibold uppercase tracking-[0.08em]"
+                      style={{ color: '#475569' }}
+                    >
+                      Select Days *
+                    </p>
+
+                    {leaveDays.map((day, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <div
+                          className="flex items-center justify-center h-7 w-7 shrink-0 rounded-full text-[11px] font-bold"
+                          style={{ background: '#eef2ff', color: '#4f46e5' }}
+                        >
+                          {index + 1}
+                        </div>
+                        <input
+                          type="date"
+                          value={day.date}
+                          onChange={(e) =>
+                            updateLeaveDay(index, 'date', e.target.value)
+                          }
+                          min={new Date().toISOString().split('T')[0]}
+                          className="h-10 flex-1 rounded-xl px-3 text-[13px] outline-none"
+                          style={inputStyle}
+                        />
+                        <select
+                          value={day.dayType}
+                          onChange={(e) =>
+                            updateLeaveDay(
+                              index,
+                              'dayType',
+                              e.target.value as DayType,
+                            )
+                          }
+                          className="h-10 rounded-xl px-3 text-[13px] outline-none"
+                          style={{ ...inputStyle, minWidth: '170px' }}
+                        >
+                          <option value="FULL">🗓 Full Day (1.0)</option>
+                          <option value="FIRST_HALF">
+                            🌅 First Half AM (0.5)
+                          </option>
+                          <option value="SECOND_HALF">
+                            🌇 Second Half PM (0.5)
+                          </option>
+                        </select>
+                        {leaveDays.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeLeaveDay(index)}
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                            style={{ background: '#fff1f2', color: '#f43f5e' }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={addLeaveDay}
+                      className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold self-start transition-all"
+                      style={{ background: '#eef2ff', color: '#4f46e5' }}
+                    >
+                      <Plus className="h-4 w-4" /> Add Another Day
+                    </button>
+
+                    {/* Per-day breakdown preview */}
+                    {leaveDays.some((d) => d.date !== '') && (
+                      <div
+                        className="flex flex-col gap-2 rounded-xl p-4"
+                        style={{
+                          background: '#f8faff',
+                          border: '1px solid #c7d2fe',
+                        }}
+                      >
+                        <p
+                          className="text-[11px] font-semibold uppercase tracking-wider"
+                          style={{ color: '#4f46e5' }}
+                        >
+                          Request Breakdown
+                        </p>
+                        {leaveDays
+                          .filter((d) => d.date !== '')
+                          .sort((a, b) => a.date.localeCompare(b.date))
+                          .map((d, i) => (
+                            <div
+                              key={i}
+                              className="flex items-center justify-between"
+                            >
+                              <span
+                                className="text-[13px]"
+                                style={{ color: '#1e293b' }}
+                              >
+                                {new Date(d.date).toLocaleDateString('en-US', {
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric',
+                                })}
+                              </span>
+                              <span
+                                className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                                style={{
+                                  background:
+                                    d.dayType === 'FULL'
+                                      ? '#eef2ff'
+                                      : '#fef3c7',
+                                  color:
+                                    d.dayType === 'FULL'
+                                      ? '#4f46e5'
+                                      : '#d97706',
+                                }}
+                              >
+                                {d.dayType === 'FULL'
+                                  ? 'Full Day'
+                                  : d.dayType === 'FIRST_HALF'
+                                    ? '🌅 AM Half'
+                                    : '🌇 PM Half'}
+                                {' · '}
+                                {DAY_TYPE_DAYS[d.dayType]} day
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* ── Simple mode ── */
+                  <>
+                    <div
+                      className="flex items-center justify-between rounded-xl p-4"
+                      style={{
+                        background: '#f8f9fc',
+                        border: '1px solid #bfc2c7',
+                      }}
+                    >
+                      <div>
+                        <p
+                          className="text-[13px] font-semibold"
+                          style={{ color: '#1e293b' }}
+                        >
+                          Half Day Leave
+                        </p>
+                        <p
+                          className="text-[11px] mt-0.5"
+                          style={{ color: '#94a3b8' }}
+                        >
+                          Counts as 0.5 days
+                        </p>
+                      </div>
+                      <Switch
+                        checked={isHalfDay}
+                        onCheckedChange={(checked) => {
+                          setIsHalfDay(checked);
+                          if (checked && startDate) setEndDate(startDate);
+                        }}
+                      />
+                    </div>
+
+                    {isHalfDay && (
+                      <div className="grid grid-cols-2 gap-3">
+                        {(['FIRST', 'SECOND'] as const).map((period) => (
+                          <button
+                            key={period}
+                            type="button"
+                            onClick={() => setHalfDayPeriod(period)}
+                            className="flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all"
+                            style={{
+                              background:
+                                halfDayPeriod === period
+                                  ? '#eef2ff'
+                                  : '#f8f9fc',
+                              border:
+                                halfDayPeriod === period
+                                  ? '2px solid #6366f1'
+                                  : '2px solid transparent',
+                              outline:
+                                halfDayPeriod !== period
+                                  ? '1px solid #bfc2c7'
+                                  : 'none',
+                            }}
+                          >
+                            <div
+                              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                              style={{
+                                background:
+                                  halfDayPeriod === period
+                                    ? '#6366f1'
+                                    : '#e2e8f0',
+                                color:
+                                  halfDayPeriod === period
+                                    ? '#ffffff'
+                                    : '#64748b',
+                              }}
+                            >
+                              {period === 'FIRST' ? (
+                                <Sun className="h-4 w-4" />
+                              ) : (
+                                <Sunset className="h-4 w-4" />
+                              )}
+                            </div>
+                            <div>
+                              <p
+                                className="text-[13px] font-semibold"
+                                style={{
+                                  color:
+                                    halfDayPeriod === period
+                                      ? '#4338ca'
+                                      : '#1e293b',
+                                }}
+                              >
+                                {period === 'FIRST'
+                                  ? 'First Half'
+                                  : 'Second Half'}
+                              </p>
+                              <p
+                                className="text-[11px]"
+                                style={{ color: '#94a3b8' }}
+                              >
+                                {period === 'FIRST'
+                                  ? 'Morning · AM'
+                                  : 'Afternoon · PM'}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-[12px] font-semibold uppercase tracking-[0.08em]"
+                          style={{ color: '#475569' }}
+                        >
+                          Start Date *
+                        </label>
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setStartDate(val);
+                            if (isHalfDay || !endDate || endDate < val)
+                              setEndDate(val);
+                          }}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="h-10 w-full rounded-xl px-3 text-[13px] outline-none"
+                          style={inputStyle}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label
+                          className="text-[12px] font-semibold uppercase tracking-[0.08em]"
+                          style={{ color: '#475569' }}
+                        >
+                          End Date *
+                        </label>
+                        <input
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          min={
+                            startDate || new Date().toISOString().split('T')[0]
+                          }
+                          disabled={isHalfDay}
+                          className="h-10 w-full rounded-xl px-3 text-[13px] outline-none disabled:opacity-50"
+                          style={inputStyle}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Total days pill */}
+                {leaveTotalDays > 0 && (
+                  <div
+                    className="flex items-center gap-3 rounded-xl px-4 py-3"
+                    style={{
+                      background: '#eef2ff',
+                      border: '1px solid #c7d2fe',
+                    }}
+                  >
+                    <CalendarDays
+                      className="h-4 w-4 shrink-0"
+                      style={{ color: '#4f46e5' }}
+                    />
+                    <span
+                      className="text-[13px] font-semibold"
+                      style={{ color: '#4f46e5' }}
+                    >
+                      {leaveTotalDays}{' '}
+                      {leaveTotalDays === 1 ? 'business day' : 'business days'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Reason */}
                 <div className="flex flex-col gap-2">
                   <label
                     className="text-[12px] font-semibold uppercase tracking-[0.08em]"
-                    style={{ color: "#475569" }}
+                    style={{ color: '#475569' }}
                   >
-                    Leave Type *
+                    Reason (Optional)
                   </label>
-                  {policiesLoading ? (
-                    <Skeleton
-                      className="h-10 rounded-xl"
-                      style={{ background: "#f1f5f9" }}
+                  <textarea
+                    placeholder="Add any notes..."
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    rows={3}
+                    className="w-full resize-none rounded-xl px-3 py-2.5 text-[13px] outline-none placeholder:text-slate-400"
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <button
+                    type="submit"
+                    disabled={!isLeaveFormValid || createLeave.isPending}
+                    className="flex-1 sm:flex-none sm:min-w-[160px] rounded-xl py-2.5 px-5 text-[13px] font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    }}
+                  >
+                    {createLeave.isPending ? 'Submitting…' : 'Submit Request'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.back()}
+                    className="rounded-xl py-2.5 px-4 text-[13px] font-semibold"
+                    style={{
+                      background: '#f8f9fc',
+                      border: '1px solid #e2e8f0',
+                      color: '#64748b',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ══ WFH FORM ══ */}
+        {mode === 'wfh' && (
+          <div
+            className="flex flex-col rounded-2xl overflow-hidden"
+            style={{ background: '#ffffff', border: '1px solid #aeb1b5' }}
+          >
+            <div
+              className="flex items-center gap-3 px-6 py-4"
+              style={{ borderBottom: '1px solid #f1f5f9' }}
+            >
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-lg"
+                style={{ background: '#e0f2fe', color: '#0ea5e9' }}
+              >
+                <Laptop className="h-4 w-4" />
+              </div>
+              <div>
+                <h2
+                  className="text-[13px] font-semibold"
+                  style={{ color: '#0f172a' }}
+                >
+                  Work From Home Request
+                </h2>
+                <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>
+                  Request WFH for a date range — weekends excluded
+                  automatically.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-6 py-5">
+              <form onSubmit={handleWfhSubmit} className="flex flex-col gap-5">
+                {/* Start + End Date */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className="text-[12px] font-semibold uppercase tracking-[0.08em]"
+                      style={{ color: '#475569' }}
+                    >
+                      Start Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={wfhStartDate}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setWfhStartDate(val);
+                        if (!wfhEndDate || wfhEndDate < val) setWfhEndDate(val);
+                      }}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="h-10 w-full rounded-xl px-3 text-[13px] outline-none"
+                      style={inputStyle}
                     />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className="text-[12px] font-semibold uppercase tracking-[0.08em]"
+                      style={{ color: '#475569' }}
+                    >
+                      End Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={wfhEndDate}
+                      onChange={(e) => setWfhEndDate(e.target.value)}
+                      min={
+                        wfhStartDate || new Date().toISOString().split('T')[0]
+                      }
+                      className="h-10 w-full rounded-xl px-3 text-[13px] outline-none"
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+
+                {/* WFH day count pill */}
+                {wfhTotalDays > 0 && (
+                  <div
+                    className="flex items-center gap-3 rounded-xl px-4 py-3"
+                    style={{
+                      background: '#e0f2fe',
+                      border: '1px solid #bae6fd',
+                    }}
+                  >
+                    <Laptop
+                      className="h-4 w-4 shrink-0"
+                      style={{ color: '#0ea5e9' }}
+                    />
+                    <span
+                      className="text-[13px] font-semibold"
+                      style={{ color: '#0369a1' }}
+                    >
+                      {wfhTotalDays}{' '}
+                      {wfhTotalDays === 1 ? 'WFH day' : 'WFH days'}
+                    </span>
+                    <span className="text-[11px]" style={{ color: '#0284c7' }}>
+                      (weekends excluded)
+                    </span>
+                  </div>
+                )}
+
+                {/* Manager */}
+                <div className="flex flex-col gap-2">
+                  <label
+                    className="text-[12px] font-semibold uppercase tracking-[0.08em]"
+                    style={{ color: '#475569' }}
+                  >
+                    Send To Manager *
+                  </label>
+                  {managersLoading ? (
+                    <Skeleton className="h-10 rounded-xl" />
                   ) : (
-                    <Select value={leaveType} onValueChange={setLeaveType}>
+                    <Select
+                      value={wfhManagerId}
+                      onValueChange={setWfhManagerId}
+                    >
                       <SelectTrigger
                         className="rounded-xl text-[13px]"
-                        style={{
-                          background: "#f8f9fc",
-                          border: "1px solid #bfc2c7",
-                          color: leaveType ? "#1e293b" : "#94a3b8",
-                        }}
+                        style={inputStyle}
                       >
-                        <SelectValue placeholder="Select leave type" />
+                        <SelectValue placeholder="Select manager" />
                       </SelectTrigger>
-                      <SelectContent
-                        style={{
-                          background: "#ffffff",
-                          border: "1px solid #e2e8f0",
-                          boxShadow: "0 8px 24px rgba(15,23,42,0.10)",
-                        }}
-                      >
-                        {activeLeaveTypes.map((p) => (
+                      <SelectContent>
+                        {managers.map((m) => (
                           <SelectItem
-                            key={p.id}
-                            value={p.leaveType}
+                            key={m.id}
+                            value={m.id}
                             className="text-[13px]"
-                            style={{ color: "#1e293b" }}
                           >
-                            {p.leaveType.charAt(0) +
-                              p.leaveType.slice(1).toLowerCase()}
+                            {m.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -162,372 +828,53 @@ export default function LeaveRequestPage() {
                   )}
                 </div>
 
+                {/* Reason */}
                 <div className="flex flex-col gap-2">
                   <label
                     className="text-[12px] font-semibold uppercase tracking-[0.08em]"
-                    style={{ color: "#475569" }}
+                    style={{ color: '#475569' }}
                   >
-                    Send To Manager *
+                    Reason (Optional)
                   </label>
-                  {managersLoading ? (
-                    <Skeleton
-                      className="h-10 rounded-xl"
-                      style={{ background: "#f1f5f9" }}
-                    />
-                  ) : (
-                    <Select value={managerId} onValueChange={setManagerId}>
-                      <SelectTrigger
-                        className="rounded-xl text-[13px]"
-                        style={{
-                          background: "#f8f9fc",
-                          border: "1px solid #bfc2c7",
-                          color: managerId ? "#1e293b" : "#94a3b8",
-                        }}
-                      >
-                        <SelectValue placeholder="Select manager" />
-                      </SelectTrigger>
-                      <SelectContent
-                        style={{
-                          background: "#ffffff",
-                          border: "1px solid #e2e8f0",
-                          boxShadow: "0 8px 24px rgba(15,23,42,0.10)",
-                        }}
-                      >
-                        {managers.length === 0 ? (
-                          <SelectItem
-                            value="none"
-                            disabled
-                            className="text-[13px]"
-                          >
-                            No managers found
-                          </SelectItem>
-                        ) : (
-                          managers.map((m) => (
-                            <SelectItem
-                              key={m.id}
-                              value={m.id}
-                              className="text-[13px]"
-                              style={{ color: "#1e293b" }}
-                            >
-                              {m.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-              </div>
-
-              {/* ── Half Day toggle + period picker ── */}
-              <div className="flex flex-col gap-3">
-                {/* Toggle */}
-                <div
-                  className="flex items-center justify-between rounded-xl p-4"
-                  style={{ background: "#f8f9fc", border: "1px solid #bfc2c7" }}
-                >
-                  <div>
-                    <p
-                      className="text-[13px] font-semibold"
-                      style={{ color: "#1e293b" }}
-                    >
-                      Half Day Leave
-                    </p>
-                    <p
-                      className="text-[11px] mt-0.5"
-                      style={{ color: "#94a3b8" }}
-                    >
-                      Counts as 0.5 days — select which half below when enabled
-                    </p>
-                  </div>
-                  <Switch
-                    checked={isHalfDay}
-                    onCheckedChange={(checked) => {
-                      setIsHalfDay(checked);
-                      if (checked && startDate) setEndDate(startDate);
-                    }}
+                  <textarea
+                    placeholder="Why do you need to work from home?"
+                    value={wfhReason}
+                    onChange={(e) => setWfhReason(e.target.value)}
+                    rows={3}
+                    className="w-full resize-none rounded-xl px-3 py-2.5 text-[13px] outline-none placeholder:text-slate-400"
+                    style={inputStyle}
                   />
                 </div>
 
-                {/* Period selector — only visible when isHalfDay is ON */}
-                {isHalfDay && (
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* First Half */}
-                    <button
-                      type="button"
-                      onClick={() => setHalfDayPeriod("FIRST")}
-                      className="flex items-center gap-3 rounded-xl px-4 py-3 transition-all text-left"
-                      style={{
-                        background:
-                          halfDayPeriod === "FIRST" ? "#eef2ff" : "#f8f9fc",
-                        border:
-                          halfDayPeriod === "FIRST"
-                            ? "2px solid #6366f1"
-                            : "2px solid transparent",
-                        outline:
-                          halfDayPeriod !== "FIRST"
-                            ? "1px solid #bfc2c7"
-                            : "none",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <div
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                        style={{
-                          background:
-                            halfDayPeriod === "FIRST" ? "#6366f1" : "#e2e8f0",
-                          color:
-                            halfDayPeriod === "FIRST" ? "#ffffff" : "#64748b",
-                        }}
-                      >
-                        <Sun className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p
-                          className="text-[13px] font-semibold"
-                          style={{
-                            color:
-                              halfDayPeriod === "FIRST" ? "#4338ca" : "#1e293b",
-                          }}
-                        >
-                          First Half
-                        </p>
-                        <p className="text-[11px]" style={{ color: "#94a3b8" }}>
-                          Morning · AM
-                        </p>
-                      </div>
-                    </button>
-
-                    {/* Second Half */}
-                    <button
-                      type="button"
-                      onClick={() => setHalfDayPeriod("SECOND")}
-                      className="flex items-center gap-3 rounded-xl px-4 py-3 transition-all text-left"
-                      style={{
-                        background:
-                          halfDayPeriod === "SECOND" ? "#eef2ff" : "#f8f9fc",
-                        border:
-                          halfDayPeriod === "SECOND"
-                            ? "2px solid #6366f1"
-                            : "2px solid transparent",
-                        outline:
-                          halfDayPeriod !== "SECOND"
-                            ? "1px solid #bfc2c7"
-                            : "none",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <div
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-                        style={{
-                          background:
-                            halfDayPeriod === "SECOND" ? "#6366f1" : "#e2e8f0",
-                          color:
-                            halfDayPeriod === "SECOND" ? "#ffffff" : "#64748b",
-                        }}
-                      >
-                        <Sunset className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p
-                          className="text-[13px] font-semibold"
-                          style={{
-                            color:
-                              halfDayPeriod === "SECOND"
-                                ? "#4338ca"
-                                : "#1e293b",
-                          }}
-                        >
-                          Second Half
-                        </p>
-                        <p className="text-[11px]" style={{ color: "#94a3b8" }}>
-                          Afternoon · PM
-                        </p>
-                      </div>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Date pickers */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-2">
-                  <label
-                    className="text-[12px] font-semibold uppercase tracking-[0.08em]"
-                    style={{ color: "#475569" }}
-                  >
-                    Start Date *
-                  </label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setStartDate(val);
-                      if (isHalfDay || !endDate || endDate < val)
-                        setEndDate(val);
-                    }}
-                    min={new Date().toISOString().split("T")[0]}
-                    className="h-10 w-full rounded-xl px-3 text-[13px] outline-none transition-all"
+                <div className="flex items-center gap-3 pt-1">
+                  <button
+                    type="submit"
+                    disabled={!isWfhFormValid || createWfh.isPending}
+                    className="flex-1 sm:flex-none sm:min-w-[160px] rounded-xl py-2.5 px-5 text-[13px] font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
-                      background: "#f8f9fc",
-                      border: "1px solid #bfc2c7",
-                      color: startDate ? "#1e293b" : "#94a3b8",
+                      background:
+                        'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
                     }}
-                    onFocus={(e) =>
-                      (e.currentTarget.style.borderColor = "#a5b4fc")
-                    }
-                    onBlur={(e) =>
-                      (e.currentTarget.style.borderColor = "#e2e8f0")
-                    }
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label
-                    className="text-[12px] font-semibold uppercase tracking-[0.08em]"
-                    style={{ color: "#475569" }}
                   >
-                    End Date *
-                  </label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    min={startDate || new Date().toISOString().split("T")[0]}
-                    disabled={isHalfDay}
-                    className="h-10 w-full rounded-xl px-3 text-[13px] outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    {createWfh.isPending ? 'Submitting…' : 'Submit WFH Request'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.back()}
+                    className="rounded-xl py-2.5 px-4 text-[13px] font-semibold"
                     style={{
-                      background: "#f8f9fc",
-                      border: "1px solid #bfc2c7",
-                      color: endDate ? "#1e293b" : "#94a3b8",
+                      background: '#f8f9fc',
+                      border: '1px solid #e2e8f0',
+                      color: '#64748b',
                     }}
-                    onFocus={(e) =>
-                      (e.currentTarget.style.borderColor = "#a5b4fc")
-                    }
-                    onBlur={(e) =>
-                      (e.currentTarget.style.borderColor = "#e2e8f0")
-                    }
-                  />
-                </div>
-              </div>
-
-              {/* Day count pill */}
-              {totalDays > 0 && (
-                <div
-                  className="flex items-center gap-3 rounded-xl px-4 py-3"
-                  style={{ background: "#eef2ff", border: "1px solid #c7d2fe" }}
-                >
-                  <CalendarDays
-                    className="h-4 w-4 shrink-0"
-                    style={{ color: "#4f46e5" }}
-                  />
-                  <span
-                    className="text-[13px] font-semibold"
-                    style={{ color: "#4f46e5" }}
                   >
-                    {totalDays}{" "}
-                    {totalDays === 1 ? "business day" : "business days"}
-                  </span>
-                  {isHalfDay && (
-                    <span
-                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold ml-1"
-                      style={{
-                        background: "#ffffff",
-                        border: "1px solid #c7d2fe",
-                        color: "#6366f1",
-                      }}
-                    >
-                      {halfDayPeriod === "FIRST" ? (
-                        <>
-                          <Sun className="h-3 w-3" /> First Half (AM)
-                        </>
-                      ) : (
-                        <>
-                          <Sunset className="h-3 w-3" /> Second Half (PM)
-                        </>
-                      )}
-                    </span>
-                  )}
+                    Cancel
+                  </button>
                 </div>
-              )}
-              <div className="flex flex-col gap-2">
-                <label
-                  className="text-[12px] font-semibold uppercase tracking-[0.08em]"
-                  style={{ color: "#475569" }}
-                >
-                  Reason (Optional)
-                </label>
-                <textarea
-                  placeholder="Add any additional notes (optional)..."
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  rows={4}
-                  className="w-full resize-none rounded-xl px-3 py-2.5 text-[13px] outline-none transition-all placeholder:text-slate-400"
-                  style={{ background: "#f8f9fc", border: "1px solid #bfc2c7", color: "#1e293b" }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#a5b4fc")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "#e2e8f0")}
-                />
-                {/* Optional: only show character count if they actually typed something */}
-                {reason.length > 0 && (
-                  <p
-                    className="text-right text-[11px]"
-                    style={{ color: "#94a3b8" }}
-                  >
-                    {reason.trim().length} characters
-                  </p>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-3 pt-1 pb-1">
-                <button
-                  type="submit"
-                  disabled={!isFormValid || createLeave.isPending}
-                  className="flex-1 sm:flex-none sm:min-w-[160px] rounded-xl py-2.5 px-5 text-[13px] font-semibold text-white transition-all disabled:opacity-90 disabled:cursor-not-allowed hover:opacity-90 active:scale-95"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-                    boxShadow:
-                      isFormValid && !createLeave.isPending
-                        ? "0 4px 16px rgba(99,102,241,0.3)"
-                        : "none",
-                  }}
-                >
-                  {createLeave.isPending ? "Submitting…" : "Submit Request"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => router.back()}
-                  disabled={createLeave.isPending}
-                  className="rounded-xl py-2.5 px-4 text-[13px] font-semibold transition-all disabled:opacity-40"
-                  style={{
-                    background: "#f8f9fc",
-                    border: "1px solid #e2e8f0",
-                    color: "#64748b",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background =
-                      "#ffffff";
-                    (e.currentTarget as HTMLButtonElement).style.color =
-                      "#1e293b";
-                    (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "#cbd5e1";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background =
-                      "#f8f9fc";
-                    (e.currentTarget as HTMLButtonElement).style.color =
-                      "#64748b";
-                    (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "#e2e8f0";
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
