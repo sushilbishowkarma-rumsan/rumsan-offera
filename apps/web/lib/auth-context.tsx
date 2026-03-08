@@ -23,7 +23,7 @@ export function useAuth(): AuthContextType {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Start as true to check storage
+  const [isLoading, setIsLoading] = useState(true);
   const queryClient = useQueryClient();
   // --- PERSISTENCE: Check for logged in user on mount ---
   useEffect(() => {
