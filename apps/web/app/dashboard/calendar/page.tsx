@@ -635,9 +635,9 @@ export default function CalendarPage() {
       // Check WFH
       const wfh = filteredWfh.find((w) => {
         if (w.employeeId !== u.id) return false;
-         const start = normalizeDate(w.startDate);
-      const end = normalizeDate(w.endDate);
-      return dateStr >= start && dateStr <= end;
+        const start = normalizeDate(w.startDate);
+        const end = normalizeDate(w.endDate);
+        return dateStr >= start && dateStr <= end;
       });
 
       if (wfh) {
@@ -1459,11 +1459,19 @@ export default function CalendarPage() {
                       const dtConfig =
                         DAY_TYPE_CONFIG[dayType] ?? DAY_TYPE_CONFIG.FULL;
 
+                      const canNavigate =
+                        user?.role === 'HRADMIN' || user?.role === 'MANAGER';
+
+                      const Wrapper = canNavigate ? Link : 'div';
+                      const wrapperProps = canNavigate
+                        ? { href: `/dashboard/users/${u.id}` }
+                        : {};
+
                       return (
-                        <Link
+                        <Wrapper
                           key={u.id}
-                          href={`/dashboard/users/${u.id}`}
-                          className="leave-row flex items-start gap-3 px-4 py-3 hover:bg-[#fffbeb] transition-colors cursor-pointer"
+                          {...(wrapperProps as any)}
+                          className={`leave-row flex items-start gap-3 px-4 py-3 hover:bg-[#fffbeb] transition-colors ${user?.role === 'HRADMIN' || user?.role === 'MANAGER' ? 'cursor-pointer' : 'cursor-default'}`}
                           style={{ borderBottom: '1px solid #fef3c7' }}
                         >
                           <Avatar className="h-9 w-9 rounded-xl shrink-0">
@@ -1538,7 +1546,7 @@ export default function CalendarPage() {
                               ? 'WFH'
                               : (leaveConfig?.label ?? leave?.leaveType)}
                           </span>
-                        </Link>
+                        </Wrapper>
                       );
                     },
                   )

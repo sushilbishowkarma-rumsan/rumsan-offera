@@ -49,25 +49,26 @@ export default function UserProfilePage({ params }: PageProps) {
 
   // Check authorization
   if (currentUser && currentUser.role !== "HRADMIN" && currentUser.role !== "MANAGER") {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <Card className="max-w-md">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center gap-4 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
-                <AlertCircle className="h-7 w-7 text-red-500" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Access Denied</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  You don't have permission to view this profiles.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return null;
+    // return (
+    //   <div className="flex min-h-screen items-center justify-center p-6">
+    //     <Card className="max-w-md">
+    //       <CardContent className="pt-6">
+    //         <div className="flex flex-col items-center gap-4 text-center">
+    //           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+    //             <AlertCircle className="h-7 w-7 text-red-500" />
+    //           </div>
+    //           <div>
+    //             <h3 className="font-semibold text-lg">Access Denied</h3>
+    //             <p className="text-sm text-muted-foreground mt-1">
+    //               You don't have permission to view this profiles.
+    //             </p>
+    //           </div>
+    //         </div>
+    //       </CardContent>
+    //     </Card>
+    //   </div>
+    // );
   }
 
   // Loading state

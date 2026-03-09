@@ -94,6 +94,9 @@ export default function TeamAvailabilityPage() {
   const availableCount = filtered.filter((m: any) => !m.isOnLeave).length;
   const onLeaveCount = filtered.filter((m: any) => m.isOnLeave).length;
 
+  const canNavigate = user?.role === 'HRADMIN' || user?.role === 'MANAGER';
+  const CardWrapper = canNavigate ? Link : 'div';
+
   // ── Loading state ──
   if (isLoading) {
     return (
@@ -368,10 +371,12 @@ export default function TeamAvailabilityPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map((member: any) => (
-              <Link
-                href={`/dashboard/users/${member.id}`}
+              <CardWrapper
                 key={member.id}
-                className="group relative flex flex-col items-center text-center gap-3 rounded-2xl p-6 overflow-hidden transition-all duration-200 hover:-translate-y-0.5 cursor-default"
+                {...(canNavigate
+                  ? { href: `/dashboard/users/${member.id}` }
+                  : ({} as any))}
+                className={`group relative flex flex-col items-center text-center gap-3 rounded-2xl p-6 overflow-hidden transition-all duration-200 hover:-translate-y-0.5 ${canNavigate ? 'cursor-pointer' : 'cursor-default'}`}
                 style={{
                   background: '#ffffff',
                   border: '1px solid #e2e8f0',
@@ -503,7 +508,7 @@ export default function TeamAvailabilityPage() {
                     Available
                   </span>
                 )}
-              </Link>
+              </CardWrapper>
             ))}
           </div>
         )}
