@@ -753,7 +753,7 @@ export default function CalendarPage() {
         </div>
 
         {/* Stats */}
-        {isLoading ? (
+        {/* {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[1, 2, 3, 4].map((i) => (
               <Skeleton
@@ -829,7 +829,7 @@ export default function CalendarPage() {
               </div>
             ))}
           </div>
-        )}
+        )} */}
 
         {/* Holidays Banner — unchanged */}
         {!isLoading && monthHolidays.length > 0 && (

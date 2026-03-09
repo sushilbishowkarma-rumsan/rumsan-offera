@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
 import {
   Sidebar,
   SidebarContent,
@@ -15,17 +15,17 @@ import {
   SidebarHeader,
   SidebarFooter,
   SidebarMenuBadge,
-} from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+} from '@/components/ui/sidebar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { getInitials } from "@/lib/leave-helpers";
-import type { UserRole } from "@/lib/types";
+} from '@/components/ui/dropdown-menu';
+import { getInitials } from '@/lib/leave-helpers';
+import type { UserRole } from '@/lib/types';
 import {
   LayoutDashboard,
   CalendarDays,
@@ -43,7 +43,7 @@ import {
   LogOut,
   ChevronsUpDown,
   ShieldCheck,
-} from "lucide-react";
+} from 'lucide-react';
 
 /** Navigation item type with role-based visibility */
 interface NavItem {
@@ -56,86 +56,86 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   {
-    title: "Dashboard",
-    href: "/dashboard",
+    title: 'Dashboard',
+    href: '/dashboard',
     icon: <LayoutDashboard className="h-4 w-4" />,
-    roles: ["EMPLOYEE", "MANAGER", "HRADMIN"],
+    roles: ['EMPLOYEE', 'MANAGER', 'HRADMIN'],
   },
 ];
 
 const leaveNavItems: NavItem[] = [
   {
-    title: "New Request",
-    href: "/dashboard/leave/request",
+    title: 'New Request',
+    href: '/dashboard/leave/request',
     icon: <CalendarPlus className="h-4 w-4" />,
-    roles: ["EMPLOYEE", "HRADMIN"],
+    roles: ['EMPLOYEE', 'HRADMIN'],
   },
   {
-    title: "My History",
-    href: "/dashboard/leave/history",
+    title: 'My History',
+    href: '/dashboard/leave/history',
     icon: <History className="h-4 w-4" />,
-    roles: ["EMPLOYEE", "HRADMIN"],
+    roles: ['EMPLOYEE', 'HRADMIN'],
   },
   {
-    title: "Leave Balance",
-    href: "/dashboard/leave/balance",
+    title: 'Leave Balance',
+    href: '/dashboard/leave/balance',
     icon: <Wallet className="h-4 w-4" />,
-    roles: ["EMPLOYEE", "HRADMIN"],
+    roles: ['EMPLOYEE', 'HRADMIN'],
   },
 ];
 
 const managerNavItems: NavItem[] = [
   {
-    title: "Approvals",
-    href: "/dashboard/approvals",
+    title: 'Approvals',
+    href: '/dashboard/approvals',
     icon: <CheckSquare className="h-4 w-4" />,
-    roles: ["MANAGER"],
+    roles: ['MANAGER'],
     // badge: 4,
   },
   {
-    title: "Calendar",
-    href: "/dashboard/calendar",
+    title: 'Calendar',
+    href: '/dashboard/calendar',
     icon: <CalendarRange className="h-4 w-4" />,
-    roles: ["EMPLOYEE", "MANAGER", "HRADMIN"],
+    roles: ['EMPLOYEE', 'MANAGER', 'HRADMIN'],
   },
   {
-    title: "Team Availability",
-    href: "/dashboard/team",
+    title: 'Team Availability',
+    href: '/dashboard/team',
     icon: <Users className="h-4 w-4" />,
-    roles: ["MANAGER", "HRADMIN", "EMPLOYEE"],
+    roles: ['MANAGER', 'HRADMIN', 'EMPLOYEE'],
   },
 ];
 
 const adminNavItems: NavItem[] = [
   {
-    title: "All Requests",
-    href: "/dashboard/admin/requests",
+    title: 'All Requests',
+    href: '/dashboard/admin/requests',
     icon: <FileText className="h-4 w-4" />,
-    roles: ["HRADMIN"],
+    roles: ['HRADMIN'],
   },
   {
-    title: "Leave Policies",
-    href: "/dashboard/admin/policies",
+    title: 'Leave Policies',
+    href: '/dashboard/admin/policies',
     icon: <ShieldCheck className="h-4 w-4" />,
-    roles: ["HRADMIN"],
+    roles: ['HRADMIN'],
   },
   {
-    title: "Leave History",
-    href: "/dashboard/admin/leave-history",
+    title: 'Leave History',
+    href: '/dashboard/admin/leave-history',
     icon: <History className="h-4 w-4" />,
-    roles: ["HRADMIN"],
+    roles: ['HRADMIN'],
   },
   {
-    title: "Holidays",
-    href: "/dashboard/admin/holidays",
+    title: 'Holidays',
+    href: '/dashboard/admin/holidays',
     icon: <CalendarDays className="h-4 w-4" />,
-    roles: ["HRADMIN"],
+    roles: ['HRADMIN'],
   },
   {
-    title: "Employees",
-    href: "/dashboard/admin/employees",
+    title: 'Employees',
+    href: '/dashboard/admin/employees',
     icon: <Users className="h-4 w-4" />,
-    roles: ["MANAGER", "HRADMIN"],
+    roles: ['MANAGER', 'HRADMIN'],
   },
 ];
 
@@ -149,19 +149,19 @@ const adminNavItems: NavItem[] = [
 // ];
 
 const settingsNavItems: NavItem[] = [
-  {
-    title: "Notifications",
-    href: "/dashboard/notifications",
-    icon: <Bell className="h-4 w-4" />,
-    roles: ["EMPLOYEE", "MANAGER", "HRADMIN"],
-    // badge: 3,
-  },
-  {
-    title: "Profile",
-    href: "/dashboard/profile",
-    icon: <UserCircle className="h-4 w-4" />,
-    roles: ["EMPLOYEE", "MANAGER", "HRADMIN"],
-  },
+  // {
+  //   title: "Notifications",
+  //   href: "/dashboard/notifications",
+  //   icon: <Bell className="h-4 w-4" />,
+  //   roles: ["EMPLOYEE", "MANAGER", "HRADMIN"],
+  //   // badge: 3,
+  // },
+  // {
+  //   title: 'Profile',
+  //   href: '/dashboard/profile',
+  //   icon: <UserCircle className="h-4 w-4" />,
+  //   roles: ['EMPLOYEE', 'MANAGER', 'HRADMIN'],
+  // },
   // },
   // {
   //   title: "Settings",
@@ -237,7 +237,7 @@ export function AppSidebar() {
                         className={`
                           flex h-5 w-5 shrink-0 items-center justify-center
                           transition-colors duration-150
-                          ${isActive ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-300"}
+                          ${isActive ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'}
                         `}
                       >
                         {item.icon}
@@ -317,12 +317,12 @@ export function AppSidebar() {
       {/* Navigation */}
       {/* <SidebarContent className="py-3 gap-0 overflow-hidden hover:overflow-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10"> */}
       <SidebarContent className="py-3 gap-0 overflow-y-auto custom-scrollbar">
-        {renderNavGroup("Overview", mainNavItems)}
-        {renderNavGroup("Leave Management", leaveNavItems)}
-        {renderNavGroup("Team", [...managerNavItems])}{" "}
+        {renderNavGroup('Overview', mainNavItems)}
+        {renderNavGroup('Leave Management', leaveNavItems)}
+        {renderNavGroup('Team', [...managerNavItems])}{' '}
         {/*...analyticsNavItems] */}
-        {renderNavGroup("Administration", adminNavItems)}
-        {renderNavGroup("Account", settingsNavItems)}
+        {renderNavGroup('Administration', adminNavItems)}
+        {renderNavGroup('Account', settingsNavItems)}
       </SidebarContent>
 
       {/* Divider */}
@@ -362,8 +362,8 @@ export function AppSidebar() {
                       {user.name}
                     </span>
                     <span className="text-[11px] text-slate-500 capitalize">
-                      {user.role === "HRADMIN"
-                        ? "HR Admin"
+                      {user.role === 'HRADMIN'
+                        ? 'HR Admin'
                         : user.role.toLowerCase()}
                     </span>
                   </div>
@@ -392,7 +392,18 @@ export function AppSidebar() {
                 <DropdownMenuSeparator className="bg-white/[0.06]" />
 
                 <DropdownMenuSeparator className="bg-white/[0.06]" />
-
+                <DropdownMenuItem
+                  asChild
+                  className="mx-1 mb-1 rounded-lg text-sm text-white/70 hover:text-white focus:bg-white/10 focus:text-white transition-colors cursor-pointer"
+                >
+                  <Link
+                    href="/dashboard/profile"
+                    className="flex w-full items-center"
+                  >
+                    <UserCircle className="mr-2.5 h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={logout}
                   className="
