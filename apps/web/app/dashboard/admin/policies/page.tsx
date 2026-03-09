@@ -752,7 +752,7 @@ export default function PoliciesPage() {
       // These three are optional — if left blank they default to 0
       carryForwardLimit: editing.carryForwardLimit.trim() === "" ? 0 : parseFloat(editing.carryForwardLimit) || 0,
       accrualRate: editing.accrualRate.trim() === "" ? 0 : parseFloat(editing.accrualRate) || 0,
-      maxConsecutiveDays: editing.maxConsecutiveDays.trim() === "" ? 0 : parseInt(editing.maxConsecutiveDays) || 0,
+      maxConsecutiveDays: editing.maxConsecutiveDays.trim() === "" ? 1 : parseInt(editing.maxConsecutiveDays) || 1,
       requiresApproval: editing.requiresApproval,
       isActive: editing.isActive,
     };
