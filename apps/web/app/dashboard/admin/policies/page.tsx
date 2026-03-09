@@ -781,7 +781,7 @@ export default function PoliciesPage() {
       // These three are optional — if left blank they default to 0
       carryForwardLimit: newPolicy.carryForwardLimit.trim() === "" ? 0 : parseFloat(newPolicy.carryForwardLimit) || 0,
       accrualRate: newPolicy.accrualRate.trim() === "" ? 0 : parseFloat(newPolicy.accrualRate) || 0,
-      maxConsecutiveDays: newPolicy.maxConsecutiveDays.trim() === "" ? 0 : parseInt(newPolicy.maxConsecutiveDays) || 0,
+      maxConsecutiveDays: newPolicy.maxConsecutiveDays.trim() === "" ? 1 : parseInt(newPolicy.maxConsecutiveDays) || 1,
       requiresApproval: newPolicy.requiresApproval,
       isActive: newPolicy.isActive,
     };
