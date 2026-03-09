@@ -28,14 +28,21 @@ import {
   ArrowRight,
   Sparkles,
   Laptop,
+  Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUsers } from '@/hooks/use-users';
 import { Avatar, AvatarFallback } from '../ui/avatar';
+import { useAuth } from '@/lib/auth-context';
+import { useLeaveBalances } from '@/hooks/use-leave-queries';
 
 export function AdminDashboard() {
+  const { user } = useAuth();
+
   const { data, isLoading, error } = useAdminDashboardData();
   const { data: activity, isLoading: activityLoading } = useRecentActivity(5);
+  const { data: userBalances = [], isLoading: balancesLoading } =
+    useLeaveBalances(user?.id);
 
   if (isLoading) {
     return (
@@ -123,10 +130,10 @@ export function AdminDashboard() {
   }
 
   const { stats, combinedPending = [] } = data || {};
-//   console.log('[AdminDashboard] data:', data);
-// console.log('[AdminDashboard] combinedPending:', combinedPending);
-// console.log('[AdminDashboard] activity:', activity);
-// console.log('[AdminDashboard] activityLoading:', activityLoading);
+  //   console.log('[AdminDashboard] data:', data);
+  // console.log('[AdminDashboard] combinedPending:', combinedPending);
+  // console.log('[AdminDashboard] activity:', activity);
+  // console.log('[AdminDashboard] activityLoading:', activityLoading);
 
   const statCards = [
     {
@@ -610,6 +617,119 @@ export function AdminDashboard() {
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+          </div>
+          {/* ✅ NEW: Leave Balance Summary ── */}
+          <div
+            className="flex flex-col rounded-2xl overflow-hidden"
+            style={{
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
+            }}
+          >
+            <div
+              className="px-5 py-4"
+              style={{ borderBottom: '1px solid #f1f5f9' }}
+            >
+              <h2
+                className="text-[13px] font-semibold"
+                style={{ color: '#0f172a' }}
+              >
+                Leave Balance
+              </h2>
+              <p className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>
+                Your current balance by leave type
+              </p>
+            </div>
+            <div className="flex-1 p-5">
+              {balancesLoading ? (
+                <div className="flex flex-col gap-3">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton
+                      key={i}
+                      className="h-20 rounded-xl"
+                      style={{ background: '#f1f5f9' }}
+                    />
+                  ))}
+                </div>
+              ) : userBalances.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-10">
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-xl"
+                    style={{ background: '#eef2ff' }}
+                  >
+                    <Wallet className="h-5 w-5" style={{ color: '#6366f1' }} />
+                  </div>
+                  <p
+                    className="text-[12px] font-medium text-center"
+                    style={{ color: '#94a3b8' }}
+                  >
+                    No leave balances found.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {userBalances.map((balance) => {
+                    const used = balance.total - balance.remaining;
+                    const usedPercent =
+                      balance.total > 0
+                        ? Math.round((used / balance.total) * 100)
+                        : 0;
+
+                    return (
+                      <div key={balance.id} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span
+                            className="text-[13px] font-semibold capitalize"
+                            style={{ color: '#1e293b' }}
+                          >
+                            {balance.leaveType.charAt(0) +
+                              balance.leaveType.slice(1).toLowerCase()}
+                          </span>
+                          <span
+                            className="text-[12px] tabular-nums"
+                            style={{ color: '#64748b' }}
+                          >
+                            {balance.remaining} / {balance.total} days
+                          </span>
+                        </div>
+                        <div
+                          className="h-2 w-full rounded-full overflow-hidden"
+                          style={{ background: '#f1f5f9' }}
+                        >
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${usedPercent}%`,
+                              background:
+                                usedPercent > 80
+                                  ? 'linear-gradient(90deg, #f87171, #ef4444)'
+                                  : usedPercent > 50
+                                    ? 'linear-gradient(90deg, #fbbf24, #f59e0b)'
+                                    : 'linear-gradient(90deg, #6366f1, #8b5cf6)',
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-between">
+                          <span
+                            className="text-[10px]"
+                            style={{ color: '#94a3b8' }}
+                          >
+                            Used: {used} days
+                          </span>
+                          <span
+                            className="text-[10px] font-semibold"
+                            style={{ color: '#94a3b8' }}
+                          >
+                            {usedPercent}%
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>

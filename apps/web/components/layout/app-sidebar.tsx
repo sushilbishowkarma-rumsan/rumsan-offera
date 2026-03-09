@@ -76,12 +76,12 @@ const leaveNavItems: NavItem[] = [
     icon: <History className="h-4 w-4" />,
     roles: ['EMPLOYEE', 'HRADMIN'],
   },
-  {
-    title: 'Leave Balance',
-    href: '/dashboard/leave/balance',
-    icon: <Wallet className="h-4 w-4" />,
-    roles: ['EMPLOYEE', 'HRADMIN'],
-  },
+  // {
+  //   title: 'Leave Balance',
+  //   href: '/dashboard/leave/balance',
+  //   icon: <Wallet className="h-4 w-4" />,
+  //   roles: ['EMPLOYEE', 'HRADMIN'],
+  // },
 ];
 
 const managerNavItems: NavItem[] = [

@@ -259,13 +259,13 @@ export function EmployeeDashboard() {
                 })
               )}
             </div>
-            <div className="px-5 py-3" style={{ borderTop: "1px solid #f1f5f9" }}>
+            {/* <div className="px-5 py-3" style={{ borderTop: "1px solid #f1f5f9" }}>
               <Link href="/dashboard/leave/balance"
                 className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[12px] font-semibold"
                 style={{ border: "1px solid #e2e8f0", color: "#64748b", background: "#f8f9fc" }}>
                 View Details <ArrowRight className="h-3 w-3" />
               </Link>
-            </div>
+            </div> */}
           </div>
 
           {/* Recent Leave Requests — with per-day breakdown */}
