@@ -52,19 +52,20 @@ export class AuthService {
     const role = rsAuthResult.roles[0] || 'EMPLOYEE';
 
     // ── Step C: Save/update user in your own Prisma DB ──
-    const HR_ADMIN_EMAILS = [
-      'sushil.bishowkarma@rumsan.net',
-      'anusha.thapa@rumsan.net',
-    ];
-    const isHardcodedAdmin = HR_ADMIN_EMAILS.includes(email.toLowerCase());
+    // const HR_ADMIN_EMAILS = [
+    //   'sushil.bishowkarma@rumsan.net',
+    //   'anusha.thapa@rumsan.net',
+    // ];
+    // const isHardcodedAdmin = HR_ADMIN_EMAILS.includes(email.toLowerCase());
     let assignedRole: Role;
-    if (isHardcodedAdmin) {
+    if (role === 'env_admin' || role === 'app_admin') {
       assignedRole = 'HRADMIN';
     } else {
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email },
-      });
-      assignedRole = existingUser ? existingUser.role : (role as Role);
+      // const existingUser = await this.prisma.user.findUnique({
+      //   where: { email },
+      // });
+      // assignedRole = existingUser ? existingUser.role : (role as Role);
+      assignedRole = role as Role;
     }
     // Upsert: Create user if new, Update if exists
     const user = await this.prisma.user.upsert({
