@@ -27,6 +27,15 @@ export class LeaveBalanceService {
   }
 
   async seedBalancesForEmployee(employeeId: string) {
+    const employee = await this.prisma.user.findUnique({
+      where: { id: employeeId },
+    });
+
+    if (!employee) {
+      console.error(`Cannot seed balances: Employee ${employeeId} not found.`);
+      return;
+    }
+
     const policies = await this.prisma.leavePolicy.findMany({
       where: { isActive: true },
     });
@@ -42,6 +51,7 @@ export class LeaveBalanceService {
         leaveType: p.leaveType,
         total: p.defaultQuota,
         remaining: p.defaultQuota,
+        leavePolicyId: p.id,
       })),
       skipDuplicates: true,
     });
@@ -70,6 +80,7 @@ export class LeaveBalanceService {
           leaveType: policy.leaveType,
           total: policy.defaultQuota,
           remaining: policy.defaultQuota,
+          leavePolicyId: policy.id,
         })),
         skipDuplicates: true,
       });
