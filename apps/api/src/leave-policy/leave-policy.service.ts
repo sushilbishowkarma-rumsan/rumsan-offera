@@ -70,6 +70,7 @@ export class LeavePolicyService {
           leaveType: dto.leaveType,
           total: dto.defaultQuota,
           remaining: dto.defaultQuota,
+          leavePolicyId: policy.id,
         })),
         skipDuplicates: true,
       });
@@ -113,7 +114,19 @@ export class LeavePolicyService {
   }
 
   async remove(id: string): Promise<void> {
-    await this.findOne(id); // throws 404 if not found
-    await this.prisma.leavePolicy.delete({ where: { id } });
+    const policy = await this.prisma.leavePolicy.findUnique({ where: { id } });
+    if (!policy) throw new NotFoundException('Leave policy not found');
+    await this.prisma.$transaction([
+      // This removes the "orphaned" balances from the balance table
+      this.prisma.leaveBalance.deleteMany({
+        where: { leavePolicyId: id },
+      }),
+      // This removes the actual type/policy
+      this.prisma.leavePolicy.delete({
+        where: { id },
+      }),
+    ]);
+    // await this.findOne(id); // throws 404 if not found
+    // await this.prisma.leavePolicy.delete({ where: { id } });
   }
 }

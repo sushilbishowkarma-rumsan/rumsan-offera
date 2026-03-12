@@ -8,11 +8,11 @@
 // }
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") 
+  url      = env("DATABASE_URL")
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider     = "prisma-client-js"
   moduleFormat = "cjs"
 }
 
@@ -21,6 +21,7 @@ enum Role {
   HRADMIN
   EMPLOYEE
 }
+
 enum LeaveStatus {
   PENDING
   APPROVED
@@ -36,49 +37,49 @@ enum LeaveType {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  googleId      String         @unique
-  rsofficeId   String? @unique
-  email         String         @unique
-  name          String?
-  avatar        String?
-  department    String?
-  role          Role           @default(EMPLOYEE)
-  leaveRequests LeaveRequest[] @relation("EmployeeLeaves")    // ← update relation name
-  managedLeaves LeaveRequest[] @relation("ManagerLeaves")     // ← add this
-  leaveBalances LeaveBalance[]
+  id                  String                @id @default(uuid())
+  googleId            String                @unique
+  rsofficeId          String?               @unique
+  email               String                @unique
+  name                String?
+  avatar              String?
+  department          String?
+  role                Role                  @default(EMPLOYEE)
+  leaveRequests       LeaveRequest[]        @relation("EmployeeLeaves") // ← update relation name
+  managedLeaves       LeaveRequest[]        @relation("ManagerLeaves") // ← add this
+  leaveBalances       LeaveBalance[]
   leaveBalanceHistory LeaveBalanceHistory[]
-  notifications     Notification[]
-  wfhRequests     WfhRequest[] @relation("EmployeeWfh")
-  managedWfh      WfhRequest[] @relation("ManagerWfh")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  notifications       Notification[]
+  wfhRequests         WfhRequest[]          @relation("EmployeeWfh")
+  managedWfh          WfhRequest[]          @relation("ManagerWfh")
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
 }
 
 model LeaveRequest {
-  id          String      @id @default(uuid())
-  startDate   DateTime
-  endDate     DateTime
-  leaveType   String
-  reason      String?
-  status      LeaveStatus @default(PENDING)
-  isHalfDay   Boolean     @default(false)
-  halfDayPeriod  String?
-  department  String?
-  totalDays   Float       
-  employeeId  String
-  employee    User        @relation("EmployeeLeaves", fields: [employeeId], references: [id])
-  managerId   String?
-  manager     User?       @relation("ManagerLeaves", fields: [managerId], references: [id])
+  id              String      @id @default(uuid())
+  startDate       DateTime
+  endDate         DateTime
+  leaveType       String
+  reason          String?
+  status          LeaveStatus @default(PENDING)
+  isHalfDay       Boolean     @default(false)
+  halfDayPeriod   String?
+  department      String?
+  totalDays       Float
+  employeeId      String
+  employee        User        @relation("EmployeeLeaves", fields: [employeeId], references: [id])
+  managerId       String?
+  manager         User?       @relation("ManagerLeaves", fields: [managerId], references: [id])
   approverComment String?
   leaveDays       LeaveDay[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 model LeaveDay {
   id             String       @id @default(uuid())
-  date           String 
+  date           String
   dayType        String
   leaveRequestId String
   leaveRequest   LeaveRequest @relation(fields: [leaveRequestId], references: [id], onDelete: Cascade)
@@ -86,9 +87,9 @@ model LeaveDay {
 
 model WfhRequest {
   id              String      @id @default(uuid())
-  startDate       String      // ← changed from date to startDate
-  endDate         String      // ← added
-  totalDays       Float       @default(1) 
+  startDate       String // ← changed from date to startDate
+  endDate         String // ← added
+  totalDays       Float       @default(1)
   reason          String?
   status          LeaveStatus @default(PENDING)
   employeeId      String
@@ -101,56 +102,63 @@ model WfhRequest {
 }
 
 model LeaveBalance {
-  id          String    @id @default(uuid())
-  leaveType   String    // ← plain string, matches LeavePolicy
-  total       Float
-  remaining   Float
-  employeeId  String
-  employee    User      @relation(fields: [employeeId], references: [id])
+  id            String      @id @default(uuid())
+  leaveType     String // ← plain string, matches LeavePolicy
+  total         Float
+  remaining     Float
+  employeeId    String
+  employee      User        @relation(fields: [employeeId], references: [id])
+  leavePolicyId String
+  leavePolicy   LeavePolicy @relation(fields: [leavePolicyId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, leaveType])
 }
+
 // ─── Leave Policy ─────────────────────────────────────────────────────────────
 
 model LeavePolicy {
-  id                 String   @id @default(uuid())
-  leaveType          String   @unique
+  id                 String         @id @default(uuid())
+  leaveType          String         @unique
   defaultQuota       Int
-  carryForwardLimit  Int      @default(0)
-  accrualRate        Float    @default(0)
-  maxConsecutiveDays Int      @default(1)
-  requiresApproval   Boolean  @default(true)
-  isActive           Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  carryForwardLimit  Int            @default(0)
+  accrualRate        Float          @default(0)
+  maxConsecutiveDays Int            @default(1)
+  requiresApproval   Boolean        @default(true)
+  isActive           Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  leaveBalances      LeaveBalance[]
+
   @@map("leave_policies")
 }
+
 model LeaveBalanceHistory {
-  id          String   @id @default(uuid())
-  employeeId  String
-  leaveType   String
-  month       Int      // 1-12
-  year        Int
-  total       Float
-  used        Float
-  remaining   Float
-  employee    User     @relation(fields: [employeeId], references: [id])
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  employeeId String
+  leaveType  String
+  month      Int // 1-12
+  year       Int
+  total      Float
+  used       Float
+  remaining  Float
+  employee   User     @relation(fields: [employeeId], references: [id])
+  createdAt  DateTime @default(now())
 
   @@unique([employeeId, leaveType, month, year])
 }
+
 model Notification {
-  id                String   @id @default(uuid())
-  userId            String
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type              String   // leave_submitted, leave_approved, leave_rejected, etc.
-  title             String
-  message           String
-  isRead            Boolean  @default(false)
-  linkTo            String?  // Optional link to related page
-  relatedRequestId  String?  // Optional reference to leave request
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type             String // leave_submitted, leave_approved, leave_rejected, etc.
+  title            String
+  message          String
+  isRead           Boolean  @default(false)
+  linkTo           String? // Optional link to related page
+  relatedRequestId String? // Optional reference to leave request
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@index([userId, isRead])
   @@index([createdAt])

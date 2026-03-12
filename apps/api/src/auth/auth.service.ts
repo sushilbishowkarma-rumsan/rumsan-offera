@@ -97,6 +97,7 @@ export class AuthService {
           leaveType: p.leaveType,
           total: p.defaultQuota,
           remaining: p.defaultQuota,
+          leavePolicyId: p.id,
         })),
         skipDuplicates: true,
       });
