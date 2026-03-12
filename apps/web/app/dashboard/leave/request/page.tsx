@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -157,6 +157,47 @@ export default function LeaveRequestPage() {
       });
     }
   };
+
+// ✅ Reset leave form when switching TO leave mode
+  useEffect(() => {
+    if (mode === 'leave') {
+      // Reset WFH fields when switching to leave
+      setWfhStartDate('');
+      setWfhEndDate('');
+      setWfhReason('');
+      setWfhManagerId('');
+    }
+  }, [mode]);
+
+  // ✅ Reset WFH form when switching TO wfh mode
+  useEffect(() => {
+    if (mode === 'wfh') {
+      // Reset leave fields when switching to WFH
+      setLeaveType('');
+      setReason('');
+      setManagerId('');
+      setStartDate('');
+      setEndDate('');
+      setIsHalfDay(false);
+      setHalfDayPeriod('FIRST');
+      setLeaveDays([{ date: '', dayType: 'FULL' }]);
+      setUseMultiDay(false);
+    }
+  }, [mode]);
+
+  // ✅ Reset leave data when switching between normal/mixed/half-day
+  useEffect(() => {
+    if (useMultiDay) {
+      // Switching to mixed day - reset normal/half-day fields
+      setStartDate('');
+      setEndDate('');
+      setIsHalfDay(false);
+      setLeaveDays([{ date: '', dayType: 'FULL' }]);
+    } else {
+      // Switching to normal - reset mixed day fields
+      setLeaveDays([{ date: '', dayType: 'FULL' }]);
+    }
+  }, [useMultiDay]);
 
   // ── Submit WFH ──
   const handleWfhSubmit = (e: React.FormEvent) => {
