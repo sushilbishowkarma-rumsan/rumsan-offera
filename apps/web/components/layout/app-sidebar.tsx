@@ -279,28 +279,24 @@ export function AppSidebar() {
         [&>[data-sidebar=sidebar]]:bg-[#0d0f14]
       "
     >
-      {/* Header */}
       <SidebarHeader className="px-4 py-5">
         <Link href="/dashboard" className="flex items-center gap-3">
-          {/* Logo mark */}
-          <div
-            className="
-              relative flex h-8 w-8 shrink-0 items-center justify-center
-              rounded-xl
-              bg-gradient-to-br from-indigo-500 to-violet-600
-              shadow-[0_0_16px_rgba(99,102,241,0.4)]
-            "
-          >
-            <CalendarDays className="h-4 w-4 text-white" />
+          {/* Logo mark - Using image from public folder */}
+          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl overflow-hidden">
+            <img
+              src="/logo192.png"
+              alt="Offera Logo"
+              className="h-full w-full object-contain"
+            />
           </div>
 
           {/* Wordmark */}
           <div className="group-data-[collapsible=icon]:hidden flex flex-col leading-none">
             <span
               className="
-                text-[17px] font-bold tracking-tight
-                bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent
-              "
+          text-[17px] font-bold tracking-tight
+          bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent
+        "
             >
               Offera
             </span>
