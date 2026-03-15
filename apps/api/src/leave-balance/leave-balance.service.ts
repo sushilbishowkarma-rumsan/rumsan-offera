@@ -1,5 +1,5 @@
-// leave-balance/leave-balance.service.ts
-import { Injectable } from '@nestjs/common';
+// backend/src/leave-balance/leave-balance.service.ts
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as ExcelJS from 'exceljs';
 import { Prisma } from '@prisma/client';
@@ -18,12 +18,43 @@ export class LeaveBalanceService {
       console.log(`No balances found for ${employeeId} — auto seeding...`);
       await this.seedBalancesForEmployee(employeeId);
       return this.prisma.leaveBalance.findMany({
+        where: { employeeId, total: { gt: 0 } },
+        orderBy: { leaveType: 'asc' },
+      });
+    }
+
+    return balances.filter((b) => b.total > 0);
+  }
+
+  // ─── NEW: Rich summary for dashboard/profile display ────────────────────────
+  // Returns: leaveType, total, used, remaining, exceeded per type
+  async getLeaveBalanceSummary(employeeId: string) {
+    let balances = await this.prisma.leaveBalance.findMany({
+      where: { employeeId },
+      orderBy: { leaveType: 'asc' },
+    });
+
+    if (balances.length === 0) {
+      await this.seedBalancesForEmployee(employeeId);
+      balances = await this.prisma.leaveBalance.findMany({
         where: { employeeId },
         orderBy: { leaveType: 'asc' },
       });
     }
 
-    return balances;
+    return balances
+      .filter((b) => b.total > 0)
+      .map((b) => ({
+        leaveType: b.leaveType,
+        label:
+          b.leaveType.charAt(0).toUpperCase() +
+          b.leaveType.slice(1).toLowerCase(),
+        total: b.total,
+        used: Math.max(0, b.total - b.remaining), // within-quota days consumed
+        remaining: b.remaining,
+        exceeded: b.exceeded, // days approved beyond quota
+        hasExceeded: b.exceeded > 0,
+      }));
   }
 
   async seedBalancesForEmployee(employeeId: string) {
@@ -51,6 +82,7 @@ export class LeaveBalanceService {
         leaveType: p.leaveType,
         total: p.defaultQuota,
         remaining: p.defaultQuota,
+        exceeded: 0,
         leavePolicyId: p.id,
       })),
       skipDuplicates: true,
@@ -80,6 +112,7 @@ export class LeaveBalanceService {
           leaveType: policy.leaveType,
           total: policy.defaultQuota,
           remaining: policy.defaultQuota,
+          exceeded: 0,
           leavePolicyId: policy.id,
         })),
         skipDuplicates: true,
@@ -116,7 +149,7 @@ export class LeaveBalanceService {
       balances.map((b) =>
         this.prisma.leaveBalance.update({
           where: { id: b.id },
-          data: { remaining: b.total },
+          data: { remaining: b.total, exceeded: 0 },
         }),
       ),
     );
@@ -133,10 +166,6 @@ export class LeaveBalanceService {
     });
   }
 
-  // Add these two methods to leave-balance.service.ts
-
-  // HR Admin — get all employees balance history
-  // Optionally filter by month and year
   async getAllEmployeesHistory(month?: number, year?: number) {
     const where: Prisma.LeaveBalanceHistoryWhereInput = {};
 
@@ -161,7 +190,6 @@ export class LeaveBalanceService {
     return history;
   }
 
-  // HR Admin — get all leave requests for a specific month/year
   async getLeaveRequestsHistory(
     month?: number,
     year?: number,
@@ -169,7 +197,6 @@ export class LeaveBalanceService {
   ) {
     const where: Prisma.LeaveRequestWhereInput = {};
 
-    // Filter by month/year using date range
     if (month && year) {
       const startOfMonth = new Date(year, month - 1, 1);
       const endOfMonth = new Date(year, month, 0, 23, 59, 59);
@@ -202,20 +229,114 @@ export class LeaveBalanceService {
     });
   }
 
-  // Add this import at the top of leave-balance.service.ts
-  // Add this method inside LeaveBalanceService class
+  // ─── NEW: Set individual quota for one employee + one leave type ─────────────
+  //
+  // Called by HR Admin from the policies page user-selector panel.
+  // Uses upsert so it works whether the balance row exists already or not.
+  // IMPORTANT: "remaining" is reset to match the new total.
+  // If the employee has already used some days this cycle, HR should be aware —
+  // the UI shows the current "remaining" value before saving so HR can decide.
+
+  async setEmployeeLeaveQuota(
+    employeeId: string,
+    leaveType: string,
+    quota: number,
+  ): Promise<void> {
+    // Verify the policy exists — we need its id for the FK
+    const policy = await this.prisma.leavePolicy.findUnique({
+      where: { leaveType },
+    });
+    if (!policy) {
+      throw new NotFoundException(
+        `No leave policy found for type "${leaveType}". Create the policy first.`,
+      );
+    }
+
+    // Verify the employee exists
+    const employee = await this.prisma.user.findUnique({
+      where: { id: employeeId },
+      select: { id: true },
+    });
+    if (!employee) {
+      throw new NotFoundException(`Employee "${employeeId}" not found.`);
+    }
+
+    await this.prisma.leaveBalance.upsert({
+      where: {
+        // Uses the @@unique([employeeId, leaveType]) composite key from schema
+        employeeId_leaveType: { employeeId, leaveType },
+      },
+      update: {
+        total: quota,
+        remaining: quota, // Reset remaining to new total
+        exceeded: 0,
+      },
+      create: {
+        employeeId,
+        leaveType,
+        total: quota,
+        remaining: quota,
+        exceeded: 0,
+        leavePolicyId: policy.id,
+      },
+    });
+  }
+
+  // ─── NEW: Set ALL leave quotas for one employee in a single call ─────────────
+  //
+  // The UI sends one bulk payload instead of N separate requests.
+  // Each entry is processed sequentially so we get proper error messages
+  // if any individual leaveType doesn't have a policy yet.
+
+  async setEmployeeLeaveQuotaBulk(
+    employeeId: string,
+    entries: { leaveType: string; quota: number }[],
+  ): Promise<{ updated: number }> {
+    for (const { leaveType, quota } of entries) {
+      await this.setEmployeeLeaveQuota(employeeId, leaveType, quota);
+    }
+    return { updated: entries.length };
+  }
+
+  // ─── NEW: Get all employees with their leave balances ────────────────────────
+  //
+  // Used by the HR policies page to show all employees and their current
+  // per-type balances in the individual quota assignment panel.
+
+  async getAllEmployeesWithBalances() {
+    const users = await this.prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        department: true,
+        role: true,
+        leaveBalances: {
+          select: {
+            leaveType: true,
+            total: true,
+            remaining: true,
+            exceeded: true,
+          },
+          orderBy: { leaveType: 'asc' },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return users;
+  }
+
   async generateEmployeeLeaveExcel(
     employeeId: string,
     month: number,
     year: number,
   ): Promise<Buffer> {
-    // 1. Fetch employee info
     const employee = await this.prisma.user.findUnique({
       where: { id: employeeId },
       select: { id: true, name: true, email: true, role: true },
     });
 
-    // 2. Fetch leave requests for that employee in that month
     const startOfMonth = new Date(year, month - 1, 1);
     const endOfMonth = new Date(year, month, 0, 23, 59, 59);
 
@@ -227,7 +348,6 @@ export class LeaveBalanceService {
       orderBy: { createdAt: 'asc' },
     });
 
-    // 3. Fetch leave balances
     const balances = await this.prisma.leaveBalance.findMany({
       where: { employeeId },
       orderBy: { leaveType: 'asc' },
@@ -249,7 +369,6 @@ export class LeaveBalanceService {
       'December',
     ];
 
-    // 4. Build Excel workbook
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Offera HR System';
     workbook.created = new Date();
@@ -258,12 +377,10 @@ export class LeaveBalanceService {
       `Leave Report - ${MONTH_NAMES[month]} ${year}`,
     );
 
-    // ── Header colors ──
     const primaryColor = '3B6CF5';
     const lightBlue = 'EBF0FF';
     const headerFont = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
 
-    // ── Column widths ──
     sheet.columns = [
       { key: 'a', width: 22 },
       { key: 'b', width: 22 },
@@ -274,7 +391,6 @@ export class LeaveBalanceService {
       { key: 'g', width: 28 },
     ];
 
-    // ── Title block ──
     sheet.mergeCells('A1:G1');
     const titleCell = sheet.getCell('A1');
     titleCell.value = `Leave Report — ${MONTH_NAMES[month]} ${year}`;
@@ -292,9 +408,8 @@ export class LeaveBalanceService {
     subTitleCell.font = { size: 10, color: { argb: 'FF888888' } };
     subTitleCell.alignment = { horizontal: 'center' };
 
-    sheet.addRow([]); // blank row
+    sheet.addRow([]);
 
-    // ── Employee Info block ──
     const infoHeaderRow = sheet.addRow(['Employee Information']);
     infoHeaderRow.getCell(1).font = { bold: true, size: 11 };
     infoHeaderRow.getCell(1).fill = {
@@ -314,10 +429,8 @@ export class LeaveBalanceService {
     addInfoRow('Email', employee?.email ?? '—');
     addInfoRow('Role', employee?.role ?? '—');
     addInfoRow('Report Period', `${MONTH_NAMES[month]} ${year}`);
+    sheet.addRow([]);
 
-    sheet.addRow([]); // blank row
-
-    // ── Leave Balance Summary ──
     const balHeaderRow = sheet.addRow(['Leave Balance Summary']);
     balHeaderRow.getCell(1).font = { bold: true, size: 11 };
     balHeaderRow.getCell(1).fill = {
@@ -327,12 +440,12 @@ export class LeaveBalanceService {
     };
     sheet.mergeCells(`A${balHeaderRow.number}:G${balHeaderRow.number}`);
 
-    // Balance table header
     const balColHeader = sheet.addRow([
       'Leave Type',
       'Total Allocated',
       'Used',
       'Remaining',
+      'Exceeded',
       'Usage %',
     ]);
     balColHeader.eachCell((cell, colNum) => {
@@ -359,6 +472,7 @@ export class LeaveBalanceService {
         bal.total,
         used,
         bal.remaining,
+        bal.exceeded,
         `${usedPct}%`,
       ]);
       row.eachCell((cell, colNum) => {
@@ -369,19 +483,20 @@ export class LeaveBalanceService {
           };
         }
       });
-      // Color the remaining cell
+
+      const exceededCell = row.getCell(5);
+      if (bal.exceeded > 0) {
+        exceededCell.font = { bold: true, color: { argb: 'FFCC0000' } };
+      }
       const remainingCell = row.getCell(4);
       remainingCell.font = {
         bold: true,
-        color: {
-          argb: bal.remaining <= 2 ? 'FFCC0000' : 'FF006600',
-        },
+        color: { argb: bal.remaining <= 2 ? 'FFCC0000' : 'FF006600' },
       };
     });
 
-    sheet.addRow([]); // blank row
+    sheet.addRow([]);
 
-    // ── Leave Requests Detail ──
     const reqHeaderRow = sheet.addRow(['Leave Requests This Month']);
     reqHeaderRow.getCell(1).font = { bold: true, size: 11 };
     reqHeaderRow.getCell(1).fill = {
@@ -395,13 +510,9 @@ export class LeaveBalanceService {
       const noDataRow = sheet.addRow([
         'No leave requests found for this period.',
       ]);
-      noDataRow.getCell(1).font = {
-        italic: true,
-        color: { argb: 'FF888888' },
-      };
+      noDataRow.getCell(1).font = { italic: true, color: { argb: 'FF888888' } };
       sheet.mergeCells(`A${noDataRow.number}:G${noDataRow.number}`);
     } else {
-      // Request table header
       const reqColHeader = sheet.addRow([
         'Leave Type',
         'Start Date',
@@ -449,7 +560,6 @@ export class LeaveBalanceService {
           req.approverComment ?? '—',
         ]);
 
-        // Alternating row color
         const bgColor = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF5F7FF';
         row.eachCell((cell, colNum) => {
           if (colNum <= 7) {
@@ -465,19 +575,15 @@ export class LeaveBalanceService {
           }
         });
 
-        // Color status cell
         const statusCell = row.getCell(6);
         statusCell.font = {
           bold: true,
           color: { argb: STATUS_COLORS[req.status] ?? 'FF333333' },
         };
-
-        // Left-align comment
         row.getCell(7).alignment = { horizontal: 'left', wrapText: true };
       });
     }
 
-    // ── Footer ──
     sheet.addRow([]);
     const footerRow = sheet.addRow([
       `Report generated on ${new Date().toLocaleString('en-US')}`,
@@ -489,7 +595,6 @@ export class LeaveBalanceService {
     };
     sheet.mergeCells(`A${footerRow.number}:G${footerRow.number}`);
 
-    // 5. Write to buffer and return
     const arrayBuffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(arrayBuffer);
   }

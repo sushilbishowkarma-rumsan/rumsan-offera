@@ -106,6 +106,7 @@ model LeaveBalance {
   leaveType     String // ← plain string, matches LeavePolicy
   total         Float
   remaining     Float
+  exceeded  Float  @default(0)
   employeeId    String
   employee      User        @relation(fields: [employeeId], references: [id])
   leavePolicyId String

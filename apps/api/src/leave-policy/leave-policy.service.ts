@@ -16,8 +16,29 @@ import { LeavePolicyModel } from './leave-policy.model';
 export class LeavePolicyService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(): Promise<LeavePolicyModel[]> {
+  async findAll(userId?: string): Promise<LeavePolicyModel[]> {
+    if (!userId) {
+      // HR Admin — return all policies unchanged
+      return this.prisma.leavePolicy.findMany({
+        orderBy: { createdAt: 'asc' },
+      });
+    }
+    // Employee leave request form — only return types admin has assigned (total > 0)
+    const assignedBalances = await this.prisma.leaveBalance.findMany({
+      where: {
+        employeeId: userId,
+        total: { gt: 0 },
+      },
+      select: { leaveType: true },
+    });
+    const assignedTypes = assignedBalances.map((b) => b.leaveType);
+    if (assignedTypes.length === 0) return [];
+
     return this.prisma.leavePolicy.findMany({
+      where: {
+        leaveType: { in: assignedTypes },
+        isActive: true,
+      },
       orderBy: { createdAt: 'asc' },
     });
   }

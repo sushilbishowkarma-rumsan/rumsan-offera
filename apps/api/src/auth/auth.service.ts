@@ -5,6 +5,13 @@ import { CryptoService } from './crypto.service';
 import { RS_OFFICE_CLIENT } from '../rsoffice/rsoffice.module';
 import type { RsOfficeClient } from '@rumsan/user';
 
+const DEFAULT_LEAVE_TYPES = [
+  'SICK',
+  'PERSONAL',
+  'PATERNITY',
+  'EMERGENCY',
+] as const;
+
 @Injectable()
 export class AuthService {
   private readonly appId: string;
@@ -67,6 +74,12 @@ export class AuthService {
       // assignedRole = existingUser ? existingUser.role : (role as Role);
       assignedRole = role as Role;
     }
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    const isNewUser = !existingUser;
     // Upsert: Create user if new, Update if exists
     const user = await this.prisma.user.upsert({
       where: { email },
@@ -86,26 +99,46 @@ export class AuthService {
       },
     });
 
-    // Seed leave balances for new users
-    const policies = await this.prisma.leavePolicy.findMany({
-      where: { isActive: true },
-    });
-    if (policies.length > 0) {
-      await this.prisma.leaveBalance.createMany({
-        data: policies.map((p) => ({
-          employeeId: user.id,
-          leaveType: p.leaveType,
-          total: p.defaultQuota,
-          remaining: p.defaultQuota,
-          leavePolicyId: p.id,
-        })),
-        skipDuplicates: true,
-      });
+    if (isNewUser) {
+      await this.seedDefaultLeaveBalances(user.id);
     }
-    // ── Step D: Return RsOffice JWT + your Prisma user ──
     return {
       user,
       access_token: rsAuthResult.token, // ← RsOffice JWT (ES256K signed)
     };
+  }
+  private async seedDefaultLeaveBalances(employeeId: string): Promise<void> {
+    // Fetch only the 4 default policy types that exist in the DB.
+    // If a policy hasn't been created by HR yet, we skip it gracefully
+    // (the balance will be created when HR assigns a quota manually).
+    const policies = await this.prisma.leavePolicy.findMany({
+      where: {
+        leaveType: { in: [...DEFAULT_LEAVE_TYPES] },
+        isActive: true,
+      },
+      select: { id: true, leaveType: true },
+    });
+
+    if (policies.length === 0) {
+      console.warn(
+        `[AuthService] No default leave policies found for types: ${DEFAULT_LEAVE_TYPES.join(', ')}. ` +
+          `New employee ${employeeId} will have no leave balances until HR creates those policies.`,
+      );
+      return;
+    }
+    await this.prisma.leaveBalance.createMany({
+      data: policies.map((policy) => ({
+        employeeId,
+        leaveType: policy.leaveType,
+        total: 0, // ← HR sets the real value later via /leave-balances/employee/:id/quota
+        remaining: 0,
+        leavePolicyId: policy.id,
+      })),
+      skipDuplicates: true,
+    });
+
+    console.log(
+      `[AuthService] Seeded ${policies.length} default leave balances (quota=0) for new employee ${employeeId}`,
+    );
   }
 }

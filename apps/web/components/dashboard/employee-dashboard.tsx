@@ -8,6 +8,7 @@ import {
   XCircle, AlertCircle, ArrowRight, Laptop, Sun, Sunset,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LeaveBalanceSummaryCard } from "../leave-balance-summary-card";
 
 // ── Day type config — matches your LeaveDay.dayType values ──
 const DAY_TYPE_CONFIG: Record<string, { label: string; bg: string; color: string; border: string; icon: any }> = {
@@ -401,7 +402,7 @@ export function EmployeeDashboard() {
             </div>
           </div>
         )}
-
+<LeaveBalanceSummaryCard employeeId={user.id} />
       </div>
     </div>
   );

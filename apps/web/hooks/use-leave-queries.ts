@@ -29,11 +29,14 @@ export function useRecentLeaveRequests(
 
 // hooks/use-leave-queries.ts — add these two hooks
 
-export function useLeavePolicies() {
+export function useLeavePolicies(userId?: string) {
   return useQuery({
-    queryKey: ['leave-policies'],
+    queryKey:  userId ? ['leave-policies', userId] : ['leave-policies'],
     queryFn: async () => {
-      const { data } = await api.get('/leave-policies');
+      const url = userId
+        ? `/leave-policies?userId=${userId}`
+        : '/leave-policies';
+      const { data } = await api.get(url);
       return data as { id: string; leaveType: string; isActive: boolean }[];
     },
     staleTime: 1000 * 60 * 10, // 10 min — policies rarely change

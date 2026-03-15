@@ -1,3 +1,4 @@
+//apps/web/app/dashboard/users/[id]/page.tsx
 "use client";
 
 import { use } from "react";
@@ -29,6 +30,7 @@ import {
   User,
 } from "lucide-react";
 import { formatDate } from "@/lib/leave-helpers";
+import { LeaveBalanceSummaryCard } from "@/components/leave-balance-summary-card";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -453,6 +455,7 @@ export default function UserProfilePage({ params }: PageProps) {
                 )}
               </CardContent>
             </Card>
+            <LeaveBalanceSummaryCard employeeId={userId} showExceededAlert />
           </div>
         </div>
       </div>

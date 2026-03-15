@@ -52,8 +52,9 @@ export default function LeaveRequestPage() {
   const createLeave = useCreateLeaveRequest();
   const createWfh = useCreateWfhRequest();
 
-  const { data: policies = [], isLoading: policiesLoading } =
-    useLeavePolicies();
+  const { data: policies = [], isLoading: policiesLoading } = useLeavePolicies(
+    user?.id,
+  );
   const { data: managers = [], isLoading: managersLoading } = useManagers();
   const activeLeaveTypes = policies.filter((p) => p.isActive);
 
@@ -158,7 +159,7 @@ export default function LeaveRequestPage() {
     }
   };
 
-// ✅ Reset leave form when switching TO leave mode
+  // ✅ Reset leave form when switching TO leave mode
   useEffect(() => {
     if (mode === 'leave') {
       // Reset WFH fields when switching to leave
@@ -300,6 +301,18 @@ export default function LeaveRequestPage() {
                     </label>
                     {policiesLoading ? (
                       <Skeleton className="h-10 rounded-xl" />
+                    ) : activeLeaveTypes.length === 0 ? (
+                      // No leave types assigned yet by admin
+                      <div
+                        className="flex h-10 items-center rounded-xl px-3 text-[13px]"
+                        style={{
+                          background: '#fef9ec',
+                          border: '1px solid #fbbf24',
+                          color: '#92400e',
+                        }}
+                      >
+                        No leave types assigned yet
+                      </div>
                     ) : (
                       <Select value={leaveType} onValueChange={setLeaveType}>
                         <SelectTrigger
@@ -328,7 +341,7 @@ export default function LeaveRequestPage() {
                       className="text-[12px] font-semibold uppercase tracking-[0.08em]"
                       style={{ color: '#475569' }}
                     >
-                      Send To Manager *
+                      Manager *
                     </label>
                     {managersLoading ? (
                       <Skeleton className="h-10 rounded-xl" />
@@ -839,7 +852,7 @@ export default function LeaveRequestPage() {
                     className="text-[12px] font-semibold uppercase tracking-[0.08em]"
                     style={{ color: '#475569' }}
                   >
-                    Send To Manager *
+                    Manager *
                   </label>
                   {managersLoading ? (
                     <Skeleton className="h-10 rounded-xl" />
