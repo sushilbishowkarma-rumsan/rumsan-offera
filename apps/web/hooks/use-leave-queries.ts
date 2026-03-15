@@ -65,7 +65,7 @@ export function useLeaveBalances(employeeId: string | undefined) {
   return useQuery({
     queryKey: ['leave-balances', employeeId],
     queryFn: async () => {
-      const { data } = await api.get(`/leave-balances/employee/${employeeId}`);
+      const { data } = await api.get(`/leave-balance/employee/${employeeId}`);
       // Handle both array response and wrapped { data: [] } response
       const balances = Array.isArray(data) ? data : (data?.data ?? []);
 
@@ -90,7 +90,7 @@ export function useAllEmployeesHistory(month?: number, year?: number) {
       const params = new URLSearchParams();
       if (month) params.append('month', month.toString());
       if (year) params.append('year', year.toString());
-      const { data } = await api.get(`/leave-balances/history/all?${params}`);
+      const { data } = await api.get(`/leave-balance/history/all?${params}`);
       return data as {
         id: string;
         employeeId: string;
@@ -125,7 +125,7 @@ export function useLeaveRequestsHistory(
       if (year) params.append('year', year.toString());
       if (employeeId) params.append('employeeId', employeeId);
       const { data } = await api.get(
-        `/leave-balances/requests/history?${params}`,
+        `/leave-balance/requests/history?${params}`,
       );
       return data as any[];
     },
@@ -138,7 +138,7 @@ export function useEmployeeBalanceHistory(employeeId: string | undefined) {
     queryKey: ['balance-history', employeeId],
     queryFn: async () => {
       const { data } = await api.get(
-        `/leave-balances/employee/${employeeId}/history`,
+        `/leave-balance/employee/${employeeId}/history`,
       );
       return data as {
         id: string;

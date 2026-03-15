@@ -5,9 +5,10 @@ import { LeaverequestController } from './leaverequest.controller';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsModule } from 'src/notifications/notifications.module';
 import { AuthModule } from '../auth/auth.module'; // ← add this import
+import { ExceededLeaveModule } from '../exceeded-leave/exceeded-leave.module';
 
 @Module({
-  imports: [NotificationsModule, AuthModule],
+  imports: [NotificationsModule, AuthModule, ExceededLeaveModule],
   providers: [LeaverequestService, PrismaService],
   controllers: [LeaverequestController],
 })

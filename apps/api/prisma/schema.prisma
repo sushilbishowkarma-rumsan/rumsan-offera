@@ -52,6 +52,9 @@ model User {
   notifications       Notification[]
   wfhRequests         WfhRequest[]          @relation("EmployeeWfh")
   managedWfh          WfhRequest[]          @relation("ManagerWfh")
+  leaveYearlySnapshots  LeaveBalanceYearlySnapshot[] // ← ADD
+  exceededLeaves        ExceededLeaveRequest[]  @relation("EmployeeExceededLeaves") // ← ADD
+  managedExceededLeaves ExceededLeaveRequest[]  @relation("ManagerExceededLeaves")  // ← ADD
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
 }
@@ -171,4 +174,55 @@ model PublicHoliday {
   isOptional Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADD THESE MODELS TO YOUR EXISTING schema.prisma
+// Place them after the existing LeaveBalanceHistory model
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Stores a snapshot of each employee's leave balance at end of every year.
+// This preserves history before balances are reset for the new year.
+model LeaveBalanceYearlySnapshot {
+  id         String   @id @default(uuid())
+  employeeId String
+  leaveType  String
+  year       Int      // e.g. 2024
+  total      Float    // total allocated for that year
+  used       Float    // how many days were used
+  remaining  Float    // how many days were left (unused)
+  employee   User     @relation(fields: [employeeId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([employeeId, leaveType, year])
+  @@map("leave_balance_yearly_snapshots")
+}
+
+// Stores exceeded (over-quota) leave requests.
+// When an employee has 0 remaining balance but submits a leave request,
+// it goes here instead of the normal LeaveRequest flow.
+model ExceededLeaveRequest {
+  id              String      @id @default(uuid())
+  startDate       DateTime
+  endDate         DateTime
+  leaveType       String
+  reason          String?
+  totalDays       Float       // total days requested (which exceed balance)
+  exceededDays    Float       // how many days exceed the balance (could be partial)
+  isHalfDay       Boolean     @default(false)
+  halfDayPeriod   String?
+  department      String?
+  status          LeaveStatus @default(PENDING) // admin can still approve/reject exceeded
+  employeeId      String
+  employee        User        @relation("EmployeeExceededLeaves", fields: [employeeId], references: [id])
+  managerId       String?
+  manager         User?       @relation("ManagerExceededLeaves", fields: [managerId], references: [id])
+  approverComment String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@map("exceeded_leave_requests")
 }

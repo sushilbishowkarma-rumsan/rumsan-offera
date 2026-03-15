@@ -35,6 +35,7 @@ import { useUsers } from '@/hooks/use-users';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { useAuth } from '@/lib/auth-context';
 import { useLeaveBalances } from '@/hooks/use-leave-queries';
+import { AdminExceededPanel } from '@/components/exceeded-leave/admin-exceeded-panel';
 
 export function AdminDashboard() {
   const { user } = useAuth();
@@ -732,6 +733,10 @@ export function AdminDashboard() {
                 </div>
               )}
             </div>
+          </div>
+          {/* Exceeded Leave — spans full width */}
+          <div className="lg:col-span-2">
+            <AdminExceededPanel mode="summary" maxItems={5} />
           </div>
         </div>
       </div>
