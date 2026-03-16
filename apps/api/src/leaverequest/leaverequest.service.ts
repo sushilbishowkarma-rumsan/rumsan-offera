@@ -139,14 +139,17 @@ export class LeaverequestService {
           },
         });
 
-        if (balance && balance.remaining < request.totalDays) {
-          throw new BadRequestException(
-            `Insufficient leave balance. Available: ${balance.remaining}, Requested: ${request.totalDays}`,
-          );
-        }
+        // if (balance && balance.remaining < request.totalDays) {
+        //   throw new BadRequestException(
+        //     `Insufficient leave balance. Available: ${balance.remaining}, Requested: ${request.totalDays}`,
+        //   );
+        // }
 
         // Deduct from balance
         if (balance) {
+          const withinQuota = Math.min(request.totalDays, balance.remaining);
+          const overQuota = Math.max(0, request.totalDays - balance.remaining);
+
           await tx.leaveBalance.update({
             where: {
               employeeId_leaveType: {
@@ -155,7 +158,8 @@ export class LeaverequestService {
               },
             },
             data: {
-              remaining: { decrement: request.totalDays },
+              remaining: { decrement: withinQuota },
+              exceeded: { increment: overQuota },
             },
           });
         }

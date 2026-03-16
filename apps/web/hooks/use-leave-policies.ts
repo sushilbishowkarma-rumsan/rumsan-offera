@@ -30,6 +30,7 @@ export function useLeavePolicy(id: string) {
     queryKey: leavePolicyKeys.detail(id),
     queryFn: () => leavePolicyApi.getOne(id),
     enabled: Boolean(id),
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
 

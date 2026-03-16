@@ -12,6 +12,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { LeavePolicyService } from './leave-policy.service';
 import {
@@ -29,8 +30,8 @@ export class LeavePolicyController {
   @Get()
   @UseGuards(JwtAuthGuard)
   // @Roles('HR_ADMIN')
-  async findAll(): Promise<LeavePolicyModel[]> {
-    return this.leavePolicyService.findAll();
+  async findAll(@Query('userId') userId?: string): Promise<LeavePolicyModel[]> {
+    return this.leavePolicyService.findAll(userId);
   }
 
   @Get(':id')

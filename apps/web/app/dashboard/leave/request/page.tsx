@@ -7,6 +7,8 @@ import {
   useCreateLeaveRequest,
   useCreateWfhRequest,
 } from '@/hooks/use-leave-mutations';
+import { useCalendarHolidays } from '@/hooks/use-calendar-queries'; // ← NEW
+
 import { useLeavePolicies, useManagers } from '@/hooks/use-leave-queries';
 import { calculateBusinessDays } from '@/lib/leave-helpers';
 import {
@@ -34,12 +36,6 @@ interface LeaveDay {
   dayType: DayType;
 }
 
-const DAY_TYPE_LABELS: Record<DayType, string> = {
-  FULL: 'Full Day',
-  FIRST_HALF: 'First Half (AM)',
-  SECOND_HALF: 'Second Half (PM)',
-};
-
 const DAY_TYPE_DAYS: Record<DayType, number> = {
   FULL: 1,
   FIRST_HALF: 0.5,
@@ -52,10 +48,18 @@ export default function LeaveRequestPage() {
   const createLeave = useCreateLeaveRequest();
   const createWfh = useCreateWfhRequest();
 
-  const { data: policies = [], isLoading: policiesLoading } =
-    useLeavePolicies();
+  const { data: policies = [], isLoading: policiesLoading } = useLeavePolicies(
+    user?.id,
+  );
   const { data: managers = [], isLoading: managersLoading } = useManagers();
   const activeLeaveTypes = policies.filter((p) => p.isActive);
+
+    const { data: allHolidays = [] } = useCalendarHolidays(); // ← NEW
+ // ── Build Set of "YYYY-MM-DD" strings for fast holiday lookup ──
+  const holidayDateSet = useMemo(
+    () => new Set(allHolidays.map((h) => h.date.split('T')[0])),
+    [allHolidays],
+  ); // ← NEW
 
   const [mode, setMode] = useState<'leave' | 'wfh'>('leave');
 
@@ -90,15 +94,15 @@ export default function LeaveRequestPage() {
     if (!startDate || !endDate) return 0;
     if (isHalfDay) return 0.5;
     if (startDate === endDate) return 1;
-    return calculateBusinessDays(startDate, endDate);
-  }, [useMultiDay, leaveDays, startDate, endDate, isHalfDay]);
+    return calculateBusinessDays(startDate, endDate, holidayDateSet);
+  }, [useMultiDay, leaveDays, startDate, endDate, isHalfDay, holidayDateSet]);
 
   // ── Derived: WFH total ──
   const wfhTotalDays = useMemo(() => {
     if (!wfhStartDate || !wfhEndDate) return 0;
     if (wfhStartDate === wfhEndDate) return 1;
-    return calculateBusinessDays(wfhStartDate, wfhEndDate);
-  }, [wfhStartDate, wfhEndDate]);
+    return calculateBusinessDays(wfhStartDate, wfhEndDate, holidayDateSet);
+  }, [wfhStartDate, wfhEndDate, holidayDateSet]);
 
   // ── Validation ──
   const isLeaveFormValid =
@@ -158,7 +162,7 @@ export default function LeaveRequestPage() {
     }
   };
 
-// ✅ Reset leave form when switching TO leave mode
+  // ✅ Reset leave form when switching TO leave mode
   useEffect(() => {
     if (mode === 'leave') {
       // Reset WFH fields when switching to leave
@@ -300,6 +304,18 @@ export default function LeaveRequestPage() {
                     </label>
                     {policiesLoading ? (
                       <Skeleton className="h-10 rounded-xl" />
+                    ) : activeLeaveTypes.length === 0 ? (
+                      // No leave types assigned yet by admin
+                      <div
+                        className="flex h-10 items-center rounded-xl px-3 text-[13px]"
+                        style={{
+                          background: '#fef9ec',
+                          border: '1px solid #fbbf24',
+                          color: '#92400e',
+                        }}
+                      >
+                        No leave types assigned yet
+                      </div>
                     ) : (
                       <Select value={leaveType} onValueChange={setLeaveType}>
                         <SelectTrigger
@@ -328,7 +344,7 @@ export default function LeaveRequestPage() {
                       className="text-[12px] font-semibold uppercase tracking-[0.08em]"
                       style={{ color: '#475569' }}
                     >
-                      Send To Manager *
+                      Manager *
                     </label>
                     {managersLoading ? (
                       <Skeleton className="h-10 rounded-xl" />
@@ -839,7 +855,7 @@ export default function LeaveRequestPage() {
                     className="text-[12px] font-semibold uppercase tracking-[0.08em]"
                     style={{ color: '#475569' }}
                   >
-                    Send To Manager *
+                    Manager *
                   </label>
                   {managersLoading ? (
                     <Skeleton className="h-10 rounded-xl" />

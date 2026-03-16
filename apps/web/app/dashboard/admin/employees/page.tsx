@@ -65,12 +65,6 @@ export default function EmployeesPage() {
   const [editing, setEditing] = useState<User | null>(null);
   const [editRole, setEditRole] = useState<Role>("EMPLOYEE");
 
-  // ── Open edit dialog ────────────────────────────────────────────────────
-  const openEdit = (emp: User) => {
-    setEditing(emp);
-    setEditRole(emp.role);
-  };
-
   // ── Save role update ────────────────────────────────────────────────────
   const handleSaveRole = () => {
     if (!editing) return;
@@ -267,15 +261,7 @@ export default function EmployeesPage() {
                           <Eye className="h-4 w-4" />
                           <span className="sr-only">View employee</span>
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => openEdit(emp)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                          <span className="sr-only">Edit role</span>
-                        </Button>
+                        
                       </div>
                     </TableCell>
                   </TableRow>

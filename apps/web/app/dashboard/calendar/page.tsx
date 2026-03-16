@@ -8,7 +8,6 @@ import {
   useCalendarWfhRequests,
   useCalendarHolidays,
   type CalendarHoliday,
-  type CalendarLeaveDay,
 } from '@/hooks/use-calendar-queries';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -408,7 +407,6 @@ function getDaysInMonth(year: number, month: number): Date[] {
   return days;
 }
 
-// ✅ NEW: Get week days (Sun-Sat)
 function getWeekDays(startDate: Date): Date[] {
   const days: Date[] = [];
   const current = new Date(startDate);
@@ -431,26 +429,6 @@ function getLeaveConfig(leaveType: string) {
   );
 }
 
-function getLeaveTypeForDate(
-  leaveDays: CalendarLeaveDay[],
-  dateStr: string,
-  isHalfDay: boolean,
-  halfDayPeriod: string | null,
-): string {
-  if (leaveDays?.length > 0) {
-    const match = leaveDays.find((d) => d.date === dateStr);
-    return match?.dayType ?? 'FULL';
-  }
-  if (isHalfDay) {
-    return halfDayPeriod === 'FIRST'
-      ? 'FIRST_HALF'
-      : halfDayPeriod === 'SECOND'
-        ? 'SECOND_HALF'
-        : 'FULL';
-  }
-  return 'FULL';
-}
-
 export default function CalendarPage() {
   const { user } = useAuth();
 
@@ -466,31 +444,23 @@ export default function CalendarPage() {
     usersLoading || leavesLoading || wfhLoading || holidaysLoading;
 
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
-  
-  // ✅ NEW: View mode state (monthly/weekly)
   const [viewMode, setViewMode] = useState<'monthly' | 'weekly'>('monthly');
-  
   const [currentDate, setCurrentDate] = useState(() => {
     const n = new Date();
     return new Date(n.getFullYear(), n.getMonth(), 1);
   });
-  
-  // ✅ NEW: Current week start (for weekly view)
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const today = new Date();
     const day = today.getDay();
     const diff = today.getDate() - day;
     return new Date(today.getFullYear(), today.getMonth(), diff);
   });
-  
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const days = getDaysInMonth(year, month);
   const startOffset = new Date(year, month, 1).getDay();
-  
-  // ✅ NEW: Week days
   const weekDays = getWeekDays(currentWeekStart);
 
   const today = useMemo(() => {
@@ -563,7 +533,6 @@ export default function CalendarPage() {
     [allHolidays, year, month],
   );
 
-  // ✅ NEW: Week holidays
   const weekHolidays = useMemo(() => {
     if (weekDays.length === 0) return [];
     const firstDay = toLocalDateStr(weekDays[0]);
@@ -574,49 +543,14 @@ export default function CalendarPage() {
     });
   }, [allHolidays, weekDays]);
 
-  const stats = useMemo(() => {
-    const todayStr = toLocalDateStr(today);
-    const onLeaveToday = filteredLeaves.filter((l) => {
-      const start = l.startDate.split('T')[0];
-      const end = l.endDate.split('T')[0];
-      return todayStr >= start && todayStr <= end;
-    });
-    const onWfhToday = filteredWfh.filter((w) => {
-      const start = w.startDate.split('T')[0];
-      const end = w.endDate.split('T')[0];
-      return todayStr >= start && todayStr <= end;
-    });
-    const absentIds = new Set([
-      ...onLeaveToday.map((l) => l.employeeId),
-      ...onWfhToday.map((w) => w.employeeId),
-    ]);
-
-    return {
-      totalEmployees: filteredUsers.length,
-      onLeaveToday: absentIds.size,
-      holidaysThisMonth: monthHolidays.length,
-      approvedThisMonth: filteredLeaves.filter((l) => {
-        const d = parseLocalDate(l.startDate);
-        return d.getFullYear() === year && d.getMonth() === month;
-      }).length,
-    };
-  }, [
-    filteredUsers,
-    filteredLeaves,
-    filteredWfh,
-    today,
-    monthHolidays,
-    year,
-    month,
-  ]);
-
   function normalizeDate(dateStr: string): string {
     if (!dateStr) return '';
-    const raw = dateStr.split('T')[0];
-    return raw;
+    return dateStr.split('T')[0];
   }
 
   function getMembersOnLeave(date: Date) {
+    const dow = date.getDay();
+    if (dow === 0 || dow === 6) return [];
     const dateStr = toLocalDateStr(date);
     const results: {
       user: (typeof filteredUsers)[0];
@@ -629,9 +563,8 @@ export default function CalendarPage() {
     for (const u of filteredUsers) {
       const leave = filteredLeaves.find((l) => {
         if (l.employeeId !== u.id) return false;
-        if (l.leaveDays?.length > 0) {
+        if (l.leaveDays?.length > 0)
           return l.leaveDays.some((d) => normalizeDate(d.date) === dateStr);
-        }
         const start = normalizeDate(l.startDate);
         const end = normalizeDate(l.endDate);
         return dateStr >= start && dateStr <= end;
@@ -653,7 +586,6 @@ export default function CalendarPage() {
                 : 'FULL';
         }
         results.push({ user: u, leaveType: 'leave', leave, dayType });
-        continue;
       }
 
       const wfh = filteredWfh.find((w) => {
@@ -668,34 +600,36 @@ export default function CalendarPage() {
       }
     }
 
-    return results;
+    return [
+      ...results.filter((r) => r.leaveType === 'wfh'),
+      ...results.filter((r) => r.leaveType === 'leave'),
+    ];
   }
 
   function getHolidayForDate(date: Date): CalendarHoliday | undefined {
     const dateStr = toLocalDateStr(date);
-    return monthHolidays.find((h) => h.date.split('T')[0] === dateStr) || weekHolidays.find((h) => h.date.split('T')[0] === dateStr);
+    return (
+      monthHolidays.find((h) => h.date.split('T')[0] === dateStr) ||
+      weekHolidays.find((h) => h.date.split('T')[0] === dateStr)
+    );
   }
 
-  // ✅ NEW: Navigation handlers for weekly view
   const goToPrevWeek = () => {
     setSelectedDay(null);
-    const newStart = new Date(currentWeekStart);
-    newStart.setDate(newStart.getDate() - 7);
-    setCurrentWeekStart(newStart);
+    const s = new Date(currentWeekStart);
+    s.setDate(s.getDate() - 7);
+    setCurrentWeekStart(s);
   };
-
   const goToNextWeek = () => {
     setSelectedDay(null);
-    const newStart = new Date(currentWeekStart);
-    newStart.setDate(newStart.getDate() + 7);
-    setCurrentWeekStart(newStart);
+    const s = new Date(currentWeekStart);
+    s.setDate(s.getDate() + 7);
+    setCurrentWeekStart(s);
   };
-
   const goToPrevMonth = () => {
     setSelectedDay(null);
     setCurrentDate(new Date(year, month - 1, 1));
   };
-  
   const goToNextMonth = () => {
     setSelectedDay(null);
     setCurrentDate(new Date(year, month + 1, 1));
@@ -705,26 +639,25 @@ export default function CalendarPage() {
     month: 'long',
     year: 'numeric',
   });
-  
-  // ✅ NEW: Week date range display
+
   const weekRangeDisplay = useMemo(() => {
     if (weekDays.length === 0) return '';
-    const first = weekDays[0];
-    const last = weekDays[6];
-    const firstMonth = first.toLocaleDateString('en-US', { month: 'short' });
-    const lastMonth = last.toLocaleDateString('en-US', { month: 'short' });
-    const firstDay = first.getDate();
-    const lastDay = last.getDate();
-    
-    if (firstMonth === lastMonth) {
-      return `${firstMonth} ${firstDay} - ${lastDay}, ${first.getFullYear()}`;
-    }
-    return `${firstMonth} ${firstDay} - ${lastMonth} ${lastDay}, ${first.getFullYear()}`;
+    const first = weekDays[0],
+      last = weekDays[6];
+    const fm = first.toLocaleDateString('en-US', { month: 'short' });
+    const lm = last.toLocaleDateString('en-US', { month: 'short' });
+    if (fm === lm)
+      return `${fm} ${first.getDate()} - ${last.getDate()}, ${first.getFullYear()}`;
+    return `${fm} ${first.getDate()} - ${lm} ${last.getDate()}, ${first.getFullYear()}`;
   }, [weekDays]);
-  
+
   const selectedDayMembers = selectedDay ? getMembersOnLeave(selectedDay) : [];
+  console.log( selectedDayMembers, "This is selectedDayMembers for test data check");
   const selectedHoliday = selectedDay ? getHolidayForDate(selectedDay) : null;
   const selectedDayStr = selectedDay ? toLocalDateStr(selectedDay) : null;
+
+
+  const absentMembers = selectedDayMembers.filter(m => m.leaveType !== "wfh");
 
   return (
     <div
@@ -736,20 +669,18 @@ export default function CalendarPage() {
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap');
-        .cal-np { font-family:'Noto Serif Devanagari',serif; }
+        .cal-np    { font-family:'Noto Serif Devanagari',serif; }
         .cal-serif { font-family:'Libre Baskerville',serif; }
-        .cal-sans { font-family:'DM Sans',sans-serif; }
-        .day-cell { transition:transform 0.12s ease,box-shadow 0.12s ease; }
+        .cal-sans  { font-family:'DM Sans',sans-serif; }
+        .day-cell  { transition:transform 0.12s ease,box-shadow 0.12s ease; }
         .day-cell:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(15,45,94,0.12)!important; }
-        .stat-card { transition:transform 0.18s ease,box-shadow 0.18s ease; }
-        .stat-card:hover { transform:translateY(-3px); }
-        .nav-btn { transition:all 0.15s ease; }
+        .nav-btn   { transition:all 0.15s ease; }
         .nav-btn:hover { transform:scale(1.12); }
         .leave-row { transition:background 0.12s ease; }
       `}</style>
 
       <div className="cal-sans max-w-7xl mx-auto flex flex-col gap-5 p-4 sm:p-6 lg:p-8">
-        {/* Header */}
+        {/* ── Header ── */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1
@@ -765,63 +696,56 @@ export default function CalendarPage() {
               कार्यालय उपस्थिति तालिका
             </p>
           </div>
-          
-          {/* ✅ NEW: Weekly/Monthly Toggle + Department Filter */}
+
           <div className="flex items-center gap-3">
-            {/* View Mode Toggle */}
+            {/* Monthly / Weekly toggle */}
             <div
               className="flex rounded-xl p-1 gap-1"
               style={{ background: '#ffffff', border: '1.5px solid #bfdbfe' }}
             >
-              <button
-                onClick={() => setViewMode('monthly')}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-all"
-                style={{
-                  background: viewMode === 'monthly' ? '#0f2d5e' : 'transparent',
-                  color: viewMode === 'monthly' ? '#fff' : '#64748b',
-                }}
-              >
-                <Calendar className="h-3.5 w-3.5" />
-                Monthly
-              </button>
-              <button
-                onClick={() => setViewMode('weekly')}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-all"
-                style={{
-                  background: viewMode === 'weekly' ? '#0f2d5e' : 'transparent',
-                  color: viewMode === 'weekly' ? '#fff' : '#64748b',
-                }}
-              >
-                <CalendarRange className="h-3.5 w-3.5" />
-                Weekly
-              </button>
+              {(['monthly', 'weekly'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-all"
+                  style={{
+                    background: viewMode === mode ? '#0f2d5e' : 'transparent',
+                    color: viewMode === mode ? '#fff' : '#64748b',
+                  }}
+                >
+                  {mode === 'monthly' ? (
+                    <Calendar className="h-3.5 w-3.5" />
+                  ) : (
+                    <CalendarRange className="h-3.5 w-3.5" />
+                  )}
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </button>
+              ))}
             </div>
-            
-            {/* Department Filter */}
+
+            {/* Department filter */}
             {user &&
               (user.role === 'HRADMIN' || user.role === 'MANAGER') &&
               departments.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={departmentFilter}
-                    onValueChange={setDepartmentFilter}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="All Departments" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Departments</SelectItem>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Select
+                  value={departmentFilter}
+                  onValueChange={setDepartmentFilter}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="All Departments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Departments</SelectItem>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept} value={dept}>
+                        {dept}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
           </div>
-          
+
           {user && user.role === 'EMPLOYEE' && user.department && (
             <div
               className="flex items-center gap-2 px-4 py-2 rounded-lg"
@@ -840,72 +764,82 @@ export default function CalendarPage() {
           )}
         </div>
 
-        {/* Holidays Banner */}
-        {!isLoading && (viewMode === 'monthly' ? monthHolidays.length > 0 : weekHolidays.length > 0) && (
-          <div
-            className="relative overflow-hidden rounded-2xl px-5 py-4"
-            style={{
-              background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
-              border: '1.5px solid #93c5fd',
-              boxShadow: '0 4px 20px rgba(59,130,246,0.14)',
-            }}
-          >
+        {/* ── Holidays Banner ── */}
+        {!isLoading &&
+          (viewMode === 'monthly'
+            ? monthHolidays.length > 0
+            : weekHolidays.length > 0) && (
             <div
-              className="absolute top-0 left-0 right-0 h-[4px] rounded-t-2xl"
+              className="relative overflow-hidden rounded-2xl px-5 py-4"
               style={{
-                background: 'linear-gradient(90deg,#1e40af,#3b82f6,#1e40af)',
+                background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
+                border: '1.5px solid #93c5fd',
+                boxShadow: '0 4px 20px rgba(59,130,246,0.14)',
               }}
-            />
-            <div className="relative flex items-center gap-2 mb-2.5">
+            >
               <div
-                className="flex h-7 w-7 items-center justify-center rounded-lg"
+                className="absolute top-0 left-0 right-0 h-[4px] rounded-t-2xl"
                 style={{
-                  background: '#dbeafe',
-                  color: '#2563eb',
-                  border: '1px solid #bfdbfe',
+                  background: 'linear-gradient(90deg,#1e40af,#3b82f6,#1e40af)',
                 }}
-              >
-                <Star className="h-3.5 w-3.5" />
-              </div>
-              <span
-                className="cal-np text-[13px] font-semibold"
-                style={{ color: '#1e3a8a' }}
-              >
-                सार्वजनिक विदाहरू
-              </span>
-              <span
-                className="cal-serif italic text-[12px]"
-                style={{ color: '#2563eb' }}
-              >
-                — Public Holidays {viewMode === 'monthly' ? 'this Month' : 'this Week'}
-              </span>
-            </div>
-            <div className="relative flex flex-wrap gap-2">
-              {(viewMode === 'monthly' ? monthHolidays : weekHolidays).map((h) => (
-                <span
-                  key={h.id}
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold"
+              />
+              <div className="relative flex items-center gap-2 mb-2.5">
+                <div
+                  className="flex h-7 w-7 items-center justify-center rounded-lg"
                   style={{
-                    background: h.isOptional ? '#eff6ff' : '#fef2f2',
-                    border: `1px solid ${h.isOptional ? '#bfdbfe' : '#fca5a5'}`,
-                    color: h.isOptional ? '#1e40af' : '#991b1b',
+                    background: '#dbeafe',
+                    color: '#2563eb',
+                    border: '1px solid #bfdbfe',
                   }}
                 >
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ background: h.isOptional ? '#3b82f6' : '#ef4444' }}
-                  />
-                  {h.name} — {formatDate(h.date)}
-                  {h.isOptional && (
-                    <span className="opacity-60 text-[10px]">(Optional)</span>
-                  )}
+                  <Star className="h-3.5 w-3.5" />
+                </div>
+                <span
+                  className="cal-np text-[13px] font-semibold"
+                  style={{ color: '#1e3a8a' }}
+                >
+                  सार्वजनिक विदाहरू
                 </span>
-              ))}
+                <span
+                  className="cal-serif italic text-[12px]"
+                  style={{ color: '#2563eb' }}
+                >
+                  — Public Holidays{' '}
+                  {viewMode === 'monthly' ? 'this Month' : 'this Week'}
+                </span>
+              </div>
+              <div className="relative flex flex-wrap gap-2">
+                {(viewMode === 'monthly' ? monthHolidays : weekHolidays).map(
+                  (h) => (
+                    <span
+                      key={h.id}
+                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold"
+                      style={{
+                        background: h.isOptional ? '#eff6ff' : '#fef2f2',
+                        border: `1px solid ${h.isOptional ? '#bfdbfe' : '#fca5a5'}`,
+                        color: h.isOptional ? '#1e40af' : '#991b1b',
+                      }}
+                    >
+                      <span
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{
+                          background: h.isOptional ? '#3b82f6' : '#ef4444',
+                        }}
+                      />
+                      {h.name} — {formatDate(h.date)}
+                      {h.isOptional && (
+                        <span className="opacity-60 text-[10px]">
+                          (Optional)
+                        </span>
+                      )}
+                    </span>
+                  ),
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Main Layout */}
+        {/* ── Main Layout ── */}
         <div className="flex flex-col xl:flex-row gap-5">
           {/* Calendar Card */}
           <div
@@ -916,7 +850,7 @@ export default function CalendarPage() {
               boxShadow: '0 8px 40px rgba(15,45,94,0.08)',
             }}
           >
-            {/* Header Band */}
+            {/* Header band */}
             <div
               className="relative overflow-hidden"
               style={{
@@ -937,7 +871,9 @@ export default function CalendarPage() {
               />
               <div className="relative flex items-center justify-between px-5 py-4">
                 <button
-                  onClick={viewMode === 'monthly' ? goToPrevMonth : goToPrevWeek}
+                  onClick={
+                    viewMode === 'monthly' ? goToPrevMonth : goToPrevWeek
+                  }
                   className="nav-btn flex h-9 w-9 items-center justify-center rounded-xl"
                   style={{
                     background: 'rgba(255,255,255,0.12)',
@@ -961,7 +897,9 @@ export default function CalendarPage() {
                   <Sun className="h-4 w-4" style={{ color: '#bfdbfe' }} />
                 </div>
                 <button
-                  onClick={viewMode === 'monthly' ? goToNextMonth : goToNextWeek}
+                  onClick={
+                    viewMode === 'monthly' ? goToNextMonth : goToNextWeek
+                  }
                   className="nav-btn flex h-9 w-9 items-center justify-center rounded-xl"
                   style={{
                     background: 'rgba(255,255,255,0.12)',
@@ -974,7 +912,7 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            {/* Day Labels */}
+            {/* Day labels */}
             <div
               className="grid grid-cols-7"
               style={{
@@ -1016,9 +954,8 @@ export default function CalendarPage() {
               })}
             </div>
 
-            {/* ✅ CONDITIONAL RENDER: Monthly or Weekly Grid */}
+            {/* Grid */}
             {viewMode === 'monthly' ? (
-              /* MONTHLY VIEW */
               isLoading ? (
                 <div
                   className="grid grid-cols-7 gap-1 p-2"
@@ -1048,7 +985,6 @@ export default function CalendarPage() {
                       }}
                     />
                   ))}
-
                   {days.map((day) => {
                     const dateStr = toLocalDateStr(day);
                     const dow = day.getDay();
@@ -1127,53 +1063,25 @@ export default function CalendarPage() {
                           </div>
                         )}
 
-                        {membersOnLeave.length > 0 && (
-                          <div className="flex flex-wrap gap-0.5 mt-auto">
-                            {membersOnLeave
-                              .slice(0, 3)
-                              .map(({ user: u, leaveType, dayType }) => {
-                                const isWfh = leaveType === 'wfh';
-                                const dtConfig =
-                                  DAY_TYPE_CONFIG[dayType] ??
-                                  DAY_TYPE_CONFIG.FULL;
-                                return (
-                                  <div
-                                    key={u.id}
-                                    className="relative flex h-[18px] w-[18px] items-center justify-center rounded-full text-[7px] font-bold"
-                                    style={{
-                                      background: isWfh ? '#dbeafe' : '#dbeafe',
-                                      color: isWfh ? '#1d4ed8' : '#1e40af',
-                                      border: `1px solid ${isWfh ? '#93c5fd' : '#93c5fd'}`,
-                                    }}
-                                    title={`${u.name} — ${isWfh ? 'WFH' : dtConfig.label}`}
-                                  >
-                                    {getInitials(u.name).slice(0, 1)}
-                                    {!isWfh && dayType !== 'FULL' && (
-                                      <span
-                                        className="absolute -top-0.5 -right-0.5 h-[6px] w-[6px] rounded-full border border-white"
-                                        style={{ background: dtConfig.color }}
-                                      />
-                                    )}
-                                    {isWfh && (
-                                      <span
-                                        className="absolute -top-0.5 -right-0.5 h-[6px] w-[6px] rounded-full border border-white"
-                                        style={{ background: '#3b82f6' }}
-                                      />
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            {membersOnLeave.length > 3 && (
-                              <div
-                                className="flex h-[18px] items-center justify-center rounded-full px-1 text-[7px] font-bold"
-                                style={{
-                                  background: '#f1f5f9',
-                                  color: '#64748b',
-                                  border: '1px solid #e2e8f0',
-                                }}
+                        {!holiday && membersOnLeave.length > 0 && (
+                          <div className="mt-auto flex flex-col gap-0.5">
+                            {leaveMembers.length > 0 && (
+                              <span
+                                className="inline-flex items-center gap-1 rounded-md px-0 py-0.5 text-[9px] font-bold"
+                                style={{ color: '#dc2626' }}
                               >
-                                +{membersOnLeave.length - 3}
-                              </div>
+                                <span className="h-[5px] w-[5px] rounded-full shrink-0" />
+                                On leave
+                              </span>
+                            )}
+                            {wfhMembers.length > 0 && (
+                              <span
+                                className="inline-flex items-center gap-1 rounded-md px-0 py-0.5 text-[9px] font-bold"
+                                style={{ color: '#1d4ed8' }}
+                              >
+                                <span className="h-[5px] w-[5px] rounded-full shrink-0" />
+                                WFH
+                              </span>
                             )}
                           </div>
                         )}
@@ -1196,166 +1104,141 @@ export default function CalendarPage() {
                   })}
                 </div>
               )
+            ) : isLoading ? (
+              <div
+                className="grid grid-cols-7 gap-1 p-2"
+                style={{ background: '#f0f5ff' }}
+              >
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <Skeleton
+                    key={i}
+                    className="rounded-xl"
+                    style={{ background: '#bfdbfe', minHeight: '120px' }}
+                  />
+                ))}
+              </div>
             ) : (
-              /* ✅ WEEKLY VIEW */
-              isLoading ? (
-                <div
-                  className="grid grid-cols-7 gap-1 p-2"
-                  style={{ background: '#f0f5ff' }}
-                >
-                  {Array.from({ length: 7 }).map((_, i) => (
-                    <Skeleton
-                      key={i}
-                      className="rounded-xl"
-                      style={{ background: '#bfdbfe', minHeight: '120px' }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div
-                  className="grid grid-cols-7 gap-[3px] p-2"
-                  style={{ background: '#c7d7f8' }}
-                >
-                  {weekDays.map((day) => {
-                    const dateStr = toLocalDateStr(day);
-                    const dow = day.getDay();
-                    const isSat = dow === 6,
-                      isSun = dow === 0;
-                    const holiday = getHolidayForDate(day);
-                    const membersOnLeave = getMembersOnLeave(day);
-                    const isToday = day.getTime() === today.getTime();
-                    const isSelected = selectedDayStr === dateStr;
-                    const bsDay = adToBs(day);
+              <div
+                className="grid grid-cols-7 gap-[3px] p-2"
+                style={{ background: '#c7d7f8' }}
+              >
+                {weekDays.map((day) => {
+                  const dateStr = toLocalDateStr(day);
+                  const dow = day.getDay();
+                  const isSat = dow === 6,
+                    isSun = dow === 0;
+                  const holiday = getHolidayForDate(day);
+                  const membersOnLeave = getMembersOnLeave(day);
+                  const leaveMembers = membersOnLeave.filter(
+                    (m) => m.leaveType === 'leave',
+                  );
+                  const wfhMembers = membersOnLeave.filter(
+                    (m) => m.leaveType === 'wfh',
+                  );
+                  const isToday = day.getTime() === today.getTime();
+                  const isSelected = selectedDayStr === dateStr;
+                  const bsDay = adToBs(day);
 
-                    let bg = '#fff';
-                    if (isSelected) bg = '#eff6ff';
-                    else if (isSat) bg = '#fff0f0';
-                    else if (isSun) bg = '#f0f9ff';
-                    else if (holiday) bg = '#eff8ff';
+                  let bg = '#fff';
+                  if (isSelected) bg = '#eff6ff';
+                  else if (isSat) bg = '#fff0f0';
+                  else if (isSun) bg = '#f0f9ff';
+                  else if (holiday) bg = '#eff8ff';
 
-                    let borderStyle = '1.5px solid transparent';
-                    if (isSelected) borderStyle = '1.5px solid #3b82f6';
-                    else if (holiday) borderStyle = '1.5px solid #bfdbfe';
-                    else if (isSat) borderStyle = '1.5px solid #fecaca';
+                  let borderStyle = '1.5px solid transparent';
+                  if (isSelected) borderStyle = '1.5px solid #3b82f6';
+                  else if (holiday) borderStyle = '1.5px solid #bfdbfe';
+                  else if (isSat) borderStyle = '1.5px solid #fecaca';
 
-                    return (
-                      <div
-                        key={dateStr}
-                        onClick={() => setSelectedDay(isSelected ? null : day)}
-                        className="day-cell relative flex flex-col rounded-xl p-2 cursor-pointer"
+                  return (
+                    <div
+                      key={dateStr}
+                      onClick={() => setSelectedDay(isSelected ? null : day)}
+                      className="day-cell relative flex flex-col rounded-xl p-2 cursor-pointer"
+                      style={{
+                        background: bg,
+                        border: borderStyle,
+                        minHeight: '120px',
+                        boxShadow: isSelected
+                          ? '0 4px 16px rgba(59,130,246,0.2)'
+                          : 'none',
+                      }}
+                    >
+                      <span
+                        className="flex h-[26px] w-[26px] items-center justify-center rounded-full text-[14px] font-bold leading-none self-start"
                         style={{
-                          background: bg,
-                          border: borderStyle,
-                          minHeight: '120px',
-                          boxShadow: isSelected
-                            ? '0 4px 16px rgba(59,130,246,0.2)'
-                            : 'none',
-                        }}
-                      >
-                        <span
-                          className="flex h-[26px] w-[26px] items-center justify-center rounded-full text-[14px] font-bold leading-none self-start"
-                          style={{
-                            background: isToday ? '#0f2d5e' : 'transparent',
-                            color: isToday
-                              ? '#fff'
-                              : isSat
-                                ? '#dc2626'
-                                : isSun
-                                  ? '#2563eb'
-                                  : '#1e293b',
-                          }}
-                        >
-                          {day.getDate()}
-                        </span>
-
-                        {holiday && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <span
-                              className="h-[6px] w-[6px] rounded-full shrink-0"
-                              style={{
-                                background: holiday.isOptional
-                                  ? '#3b82f6'
-                                  : '#ef4444',
-                              }}
-                            />
-                            <span
-                              className="text-[9px] font-bold truncate leading-tight"
-                              style={{ color: '#1e40af', maxWidth: '80px' }}
-                            >
-                              {holiday.name}
-                            </span>
-                          </div>
-                        )}
-
-                        {membersOnLeave.length > 0 && (
-                          <div className="flex flex-col gap-1 mt-auto">
-                            {membersOnLeave
-                              .slice(0, 4)
-                              .map(({ user: u, leaveType, dayType }) => {
-                                const isWfh = leaveType === 'wfh';
-                                const dtConfig =
-                                  DAY_TYPE_CONFIG[dayType] ??
-                                  DAY_TYPE_CONFIG.FULL;
-                                return (
-                                  <div
-                                    key={u.id}
-                                    className="relative flex h-[20px] w-[20px] items-center justify-center rounded-full text-[8px] font-bold"
-                                    style={{
-                                      background: isWfh ? '#dbeafe' : '#dbeafe',
-                                      color: isWfh ? '#1d4ed8' : '#1e40af',
-                                      border: `1px solid ${isWfh ? '#93c5fd' : '#93c5fd'}`,
-                                    }}
-                                    title={`${u.name} — ${isWfh ? 'WFH' : dtConfig.label}`}
-                                  >
-                                    {getInitials(u.name).slice(0, 1)}
-                                    {!isWfh && dayType !== 'FULL' && (
-                                      <span
-                                        className="absolute -top-0.5 -right-0.5 h-[7px] w-[7px] rounded-full border border-white"
-                                        style={{ background: dtConfig.color }}
-                                      />
-                                    )}
-                                    {isWfh && (
-                                      <span
-                                        className="absolute -top-0.5 -right-0.5 h-[7px] w-[7px] rounded-full border border-white"
-                                        style={{ background: '#3b82f6' }}
-                                      />
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            {membersOnLeave.length > 4 && (
-                              <div
-                                className="flex h-[20px] items-center justify-center rounded-full px-1.5 text-[8px] font-bold"
-                                style={{
-                                  background: '#f1f5f9',
-                                  color: '#64748b',
-                                  border: '1px solid #e2e8f0',
-                                }}
-                              >
-                                +{membersOnLeave.length - 4}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        <span
-                          className="cal-np absolute bottom-1.5 right-2 text-[12px] font-semibold leading-none"
-                          style={{
-                            color: isSat
+                          background: isToday ? '#0f2d5e' : 'transparent',
+                          color: isToday
+                            ? '#fff'
+                            : isSat
                               ? '#dc2626'
                               : isSun
-                                ? '#1d4ed8'
-                                : '#2563eb',
-                            opacity: 0.9,
-                          }}
-                        >
-                          {toNepali(bsDay.day)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )
+                                ? '#2563eb'
+                                : '#1e293b',
+                        }}
+                      >
+                        {day.getDate()}
+                      </span>
+
+                      {holiday && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <span
+                            className="h-[6px] w-[6px] rounded-full shrink-0"
+                            style={{
+                              background: holiday.isOptional
+                                ? '#3b82f6'
+                                : '#ef4444',
+                            }}
+                          />
+                          <span
+                            className="text-[9px] font-bold truncate leading-tight"
+                            style={{ color: '#1e40af', maxWidth: '80px' }}
+                          >
+                            {holiday.name}
+                          </span>
+                        </div>
+                      )}
+
+                      {!holiday && membersOnLeave.length > 0 && (
+                        <div className="mt-auto flex flex-col gap-0.5">
+                          {leaveMembers.length > 0 && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-md px-0 py-0.5 text-[9px] font-bold"
+                              style={{ color: '#dc2626' }}
+                            >
+                              <span className="h-[5px] w-[5px] rounded-full shrink-0" />
+                              On leave
+                            </span>
+                          )}
+                          {wfhMembers.length > 0 && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-md px-0 py-0.5 text-[9px] font-bold"
+                              style={{ color: '#1d4ed8' }}
+                            >
+                              <span className="h-[5px] w-[5px] rounded-full shrink-0" />
+                              WFH
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      <span
+                        className="cal-np absolute bottom-1.5 right-2 text-[12px] font-semibold leading-none"
+                        style={{
+                          color: isSat
+                            ? '#dc2626'
+                            : isSun
+                              ? '#1d4ed8'
+                              : '#2563eb',
+                          opacity: 0.9,
+                        }}
+                      >
+                        {toNepali(bsDay.day)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             )}
 
             {/* Legend */}
@@ -1374,56 +1257,6 @@ export default function CalendarPage() {
               </span>
               <div className="flex flex-wrap gap-3">
                 {[
-                  {
-                    swatch: (
-                      <div
-                        className="h-[18px] w-[18px] rounded-full flex items-center justify-center text-[7px] font-bold"
-                        style={{
-                          background: '#dbeafe',
-                          color: '#1e40af',
-                          border: '1px solid #93c5fd',
-                        }}
-                      >
-                        A
-                      </div>
-                    ),
-                    label: 'On Leave',
-                  },
-                  {
-                    swatch: (
-                      <div
-                        className="h-[18px] w-[18px] rounded-full flex items-center justify-center text-[7px] font-bold"
-                        style={{
-                          background: '#dbeafe',
-                          color: '#1d4ed8',
-                          border: '1px solid #93c5fd',
-                        }}
-                      >
-                        A
-                      </div>
-                    ),
-                    label: 'WFH',
-                  },
-                  {
-                    swatch: (
-                      <div className="flex items-center">
-                        <div
-                          className="h-[18px] w-[18px] rounded-full flex items-center justify-center text-[7px] font-bold relative"
-                          style={{
-                            background: '#dbeafe',
-                            color: '#1e40af',
-                            border: '1px solid #93c5fd',
-                          }}
-                        >
-                          <span
-                            className="absolute -top-0.5 -right-0.5 h-[6px] w-[6px] rounded-full border border-white"
-                            style={{ background: '#2563eb' }}
-                          />
-                        </div>
-                      </div>
-                    ),
-                    label: 'AM/PM Half',
-                  },
                   {
                     swatch: (
                       <div
@@ -1480,7 +1313,7 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          {/* Detail Panel - UNCHANGED */}
+          {/* ── Detail Panel ── */}
           {selectedDay ? (
             <div
               className="w-full xl:w-80 shrink-0 flex flex-col rounded-2xl overflow-hidden"
@@ -1530,9 +1363,14 @@ export default function CalendarPage() {
                             : '#bfdbfe',
                       }}
                     >
-                      {selectedDayMembers.length === 0
-                        ? '✓ सबै उपस्थित'
-                        : `⚬ ${selectedDayMembers.length} जना अनुपस्थित`}
+                      {selectedDay &&
+                      (selectedDay.getDay() === 0 || selectedDay.getDay() === 6)
+                        ? '🌅 Weekend'
+                        : selectedHoliday
+                          ? 'Public holiday — no attendance'
+                          : absentMembers.length === 0
+                            ? '✓ सबै उपस्थित'
+                            : `⚬ ${absentMembers.length} जना अनुपस्थित`}
                     </div>
                   </div>
                   <button
@@ -1588,7 +1426,11 @@ export default function CalendarPage() {
               )}
 
               <div className="flex-1 py-3">
-                {selectedDayMembers.length === 0 ? (
+                {selectedDayMembers.length === 0 ||
+                !!selectedHoliday ||
+                (selectedDay &&
+                  (selectedDay.getDay() === 0 ||
+                    selectedDay.getDay() === 6)) ? (
                   <div className="flex flex-col items-center justify-center gap-2 py-10">
                     <div
                       className="flex h-12 w-12 items-center justify-center rounded-2xl"
@@ -1599,14 +1441,14 @@ export default function CalendarPage() {
                     >
                       <Users className="h-6 w-6" style={{ color: '#16a34a' }} />
                     </div>
-                    <p
-                      className="cal-np text-[13px] font-semibold"
-                      style={{ color: '#15803d' }}
-                    >
-                      सबै उपस्थित छन्
-                    </p>
+                    
                     <p className="text-[11px]" style={{ color: '#94a3b8' }}>
-                      No leaves on this day
+                      {selectedDay &&
+                      (selectedDay.getDay() === 0 || selectedDay.getDay() === 6)
+                        ? 'Weekend — no attendance'
+                        : selectedHoliday
+                          ? 'Holiday — no attendance'
+                          : 'No leaves on this day'}
                     </p>
                   </div>
                 ) : (
@@ -1621,10 +1463,8 @@ export default function CalendarPage() {
                         : (leaveConfig?.icon ?? CalendarDays);
                       const dtConfig =
                         DAY_TYPE_CONFIG[dayType] ?? DAY_TYPE_CONFIG.FULL;
-
                       const canNavigate =
                         user?.role === 'HRADMIN' || user?.role === 'MANAGER';
-
                       const Wrapper = canNavigate ? Link : 'div';
                       const wrapperProps = canNavigate
                         ? { href: `/dashboard/users/${u.id}` }
@@ -1632,18 +1472,18 @@ export default function CalendarPage() {
 
                       return (
                         <Wrapper
-                          key={u.id}
+                          key={`${u.id}-${leaveType}`}
                           {...(wrapperProps as any)}
-                          className={`leave-row flex items-start gap-3 px-4 py-3 hover:bg-[#eff6ff] transition-colors ${user?.role === 'HRADMIN' || user?.role === 'MANAGER' ? 'cursor-pointer' : 'cursor-default'}`}
+                          className={`leave-row flex items-start gap-3 px-4 py-3 hover:bg-[#eff6ff] transition-colors ${canNavigate ? 'cursor-pointer' : 'cursor-default'}`}
                           style={{ borderBottom: '1px solid #e0eaff' }}
                         >
                           <Avatar className="h-9 w-9 rounded-xl shrink-0">
                             <AvatarFallback
                               className="text-[11px] font-bold rounded-xl"
                               style={{
-                                background: isWfh ? '#dbeafe' : '#dbeafe',
+                                background: '#dbeafe',
                                 color: isWfh ? '#1d4ed8' : '#1e40af',
-                                border: `1.5px solid ${isWfh ? '#93c5fd' : '#93c5fd'}`,
+                                border: '1.5px solid #93c5fd',
                               }}
                             >
                               {getInitials(u.name)}
@@ -1663,7 +1503,6 @@ export default function CalendarPage() {
                             >
                               {u.department || '—'}
                             </p>
-
                             <p
                               className="text-[10px] mt-0.5"
                               style={{ color: '#3b82f6' }}
@@ -1672,7 +1511,6 @@ export default function CalendarPage() {
                                 ? `${formatDate(wfh!.startDate)}${wfh!.startDate !== wfh!.endDate ? ` → ${formatDate(wfh!.endDate)}` : ''}`
                                 : `${formatDate(leave!.startDate)}${leave!.startDate !== leave!.endDate ? ` → ${formatDate(leave!.endDate)}` : ''}`}
                             </p>
-
                             {!isWfh && dayType !== 'FULL' && (
                               <span
                                 className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-semibold mt-1"
@@ -1726,16 +1564,21 @@ export default function CalendarPage() {
                 >
                   <Users className="h-3.5 w-3.5" />
                 </div>
-                <p className="text-[12px]" style={{ color: '#1e3a8a' }}>
-                  <span className="font-bold" style={{ color: '#16a34a' }}>
-                    {filteredUsers.length - selectedDayMembers.length}
-                  </span>
-                  {' of '}
-                  <span className="font-bold" style={{ color: '#0f2d5e' }}>
-                    {filteredUsers.length}
-                  </span>
-                  {' members available'}
-                </p>
+                {selectedHoliday || (selectedDay && (selectedDay.getDay() === 0 || selectedDay.getDay() === 6)) ? (
+                  'Holiday — no attendance'
+                ) : (
+                  <p className="text-[12px]" style={{ color: '#1e3a8a' }}>
+                    Office Day
+                    {/* <span className="font-bold" style={{ color: '#16a34a' }}>
+                      {filteredUsers.length - selectedDayMembers.length}
+                    </span>
+                    {' of '}
+                    <span className="font-bold" style={{ color: '#0f2d5e' }}>
+                      {filteredUsers.length}
+                    </span>
+                    {' members available'} */}
+                  </p>
+                )}
               </div>
             </div>
           ) : (
