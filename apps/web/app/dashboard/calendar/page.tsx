@@ -652,7 +652,7 @@ export default function CalendarPage() {
   }, [weekDays]);
 
   const selectedDayMembers = selectedDay ? getMembersOnLeave(selectedDay) : [];
-  console.log( selectedDayMembers, "This is selectedDayMembers for test data check");
+  // console.log( selectedDayMembers, "This is selectedDayMembers for test data check");
   const selectedHoliday = selectedDay ? getHolidayForDate(selectedDay) : null;
   const selectedDayStr = selectedDay ? toLocalDateStr(selectedDay) : null;
 
