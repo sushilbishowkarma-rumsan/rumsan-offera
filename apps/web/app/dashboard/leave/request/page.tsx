@@ -49,15 +49,15 @@ export default function LeaveRequestPage() {
   const createWfh = useCreateWfhRequest();
 
   const { data: policies = [], isLoading: policiesLoading } = useLeavePolicies(
-    user?.id,
+    user?.id ?? undefined,
   );
-  console.log(policies, "These are policies for the user");
+  console.log(policies, 'These are policies for the user');
   const { data: managers = [], isLoading: managersLoading } = useManagers();
   const activeLeaveTypes = policies.filter((p) => p.isActive);
-  console.log(activeLeaveTypes, "These are active leave types for the user");
+  console.log(activeLeaveTypes, 'These are active leave types for the user');
 
-    const { data: allHolidays = [] } = useCalendarHolidays(); // ← NEW
- // ── Build Set of "YYYY-MM-DD" strings for fast holiday lookup ──
+  const { data: allHolidays = [] } = useCalendarHolidays(); // ← NEW
+  // ── Build Set of "YYYY-MM-DD" strings for fast holiday lookup ──
   const holidayDateSet = useMemo(
     () => new Set(allHolidays.map((h) => h.date.split('T')[0])),
     [allHolidays],

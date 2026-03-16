@@ -39,8 +39,9 @@ export function useLeavePolicies(userId?: string) {
       const { data } = await api.get(url);
       return data as { id: string; leaveType: string; isActive: boolean }[];
     },
-    enabled: userId !== undefined ? !!userId : true,
-    staleTime: 1000 * 60 * 10, // 10 min — policies rarely change
+    // enabled: userId !== undefined ? !!userId : true,
+    enabled: userId === undefined || !!userId,
+    staleTime: 1000 * 60 * 5, // 5 min — policies rarely change
   });
 }
 
