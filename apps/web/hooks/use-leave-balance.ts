@@ -16,6 +16,7 @@ export function useEmployeeLeaveBalances(employeeId: string) {
     queryKey: leaveBalanceKeys.byEmployee(employeeId),
     queryFn: () => leaveBalanceApi.getByEmployee(employeeId),
     enabled: Boolean(employeeId),
+    staleTime: 1000 * 60 * 2,
   });
 }
 

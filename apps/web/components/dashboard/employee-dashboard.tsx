@@ -209,65 +209,8 @@ export function EmployeeDashboard() {
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
 
           {/* Leave Balance */}
-          <div className="flex flex-col rounded-2xl overflow-hidden"
-            style={{ background: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(15,23,42,0.05)" }}>
-            <div className="flex items-center justify-between px-5 py-4"
-              style={{ borderBottom: "1px solid #f1f5f9" }}>
-              <div>
-                <h2 className="text-[13px] font-semibold" style={{ color: "#0f172a" }}>Leave Balance</h2>
-                <p className="text-[11px] mt-0.5" style={{ color: "#94a3b8" }}>Your current balance by leave type</p>
-              </div>
-            </div>
-            <div className="flex-1 px-5 py-4 flex flex-col gap-4">
-              {balances.filter((bal: any) => bal.total > 0).length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-3 py-10">
-                  <CalendarDays className="h-6 w-6" style={{ color: "#6366f1" }} />
-                  <p className="text-[13px] font-medium" style={{ color: "#94a3b8" }}>
-                    No leave balances configured yet.
-                  </p>
-                </div>
-              ) : (
-                balances.filter((bal: any) => bal.total > 0).map((bal: any) => {
-                  const used = bal.total - bal.remaining;
-                  const usedPercent = bal.total > 0 ? Math.round((used / bal.total) * 100) : 0;
-                  return (
-                    <div key={bal.id} className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-medium capitalize" style={{ color: "#334155" }}>
-                          {bal.leaveType.charAt(0) + bal.leaveType.slice(1).toLowerCase()}
-                        </span>
-                        <span className="text-[11px]" style={{ color: "#54585e" }}>
-                          {bal.remaining} / {bal.total} days
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: "#a7a9ab" }}>
-                        <div className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${usedPercent}%`,
-                            background: usedPercent > 80
-                              ? "linear-gradient(90deg, #f87171, #ef4444)"
-                              : usedPercent > 50
-                              ? "linear-gradient(90deg, #fbbf24, #f59e0b)"
-                              : "linear-gradient(90deg, #6366f1, #8b5cf6)",
-                          }} />
-                      </div>
-                      <div className="flex items-center justify-between text-[10px]" style={{ color: "#1d1e1f" }}>
-                        <span>Used: {used} days</span>
-                        <span>{usedPercent}%</span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            {/* <div className="px-5 py-3" style={{ borderTop: "1px solid #f1f5f9" }}>
-              <Link href="/dashboard/leave/balance"
-                className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[12px] font-semibold"
-                style={{ border: "1px solid #e2e8f0", color: "#64748b", background: "#f8f9fc" }}>
-                View Details <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div> */}
-          </div>
+          <LeaveBalanceSummaryCard employeeId={user?.id ?? ""} />
+
 
           {/* Recent Leave Requests — with per-day breakdown */}
           <div className="flex flex-col rounded-2xl overflow-hidden"
@@ -402,7 +345,7 @@ export function EmployeeDashboard() {
             </div>
           </div>
         )}
-<LeaveBalanceSummaryCard employeeId={user.id} />
+{/* <LeaveBalanceSummaryCard employeeId={user.id} /> */}
       </div>
     </div>
   );

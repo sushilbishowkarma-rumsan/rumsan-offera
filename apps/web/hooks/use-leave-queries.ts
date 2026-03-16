@@ -39,6 +39,7 @@ export function useLeavePolicies(userId?: string) {
       const { data } = await api.get(url);
       return data as { id: string; leaveType: string; isActive: boolean }[];
     },
+    enabled: userId !== undefined ? !!userId : true,
     staleTime: 1000 * 60 * 10, // 10 min — policies rarely change
   });
 }
@@ -77,6 +78,7 @@ export function useLeaveBalances(employeeId: string | undefined) {
         leaveType: string;
         total: number;
         remaining: number;
+        exceeded: number;
       }[];
     },
     enabled: !!employeeId,
@@ -132,7 +134,7 @@ export function useLeaveRequestsHistory(
       );
       return data as any[];
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 1,
   });
 }
 

@@ -89,7 +89,12 @@ export function useCalendarLeaveRequests() {
 
       return data;
     },
-    staleTime: 1000 * 60 * 2,
+    // refetchInterval: 3000,
+    // Optional: ensures the data updates even if the window isn't focused
+    // refetchIntervalInBackground: true,
+    // Keep staleTime low or 0 if you want it to always be considered "old"
+    // staleTime: 0,
+     staleTime: 1000 * 60,
   });
 }
 export function useCalendarWfhRequests() {
@@ -99,7 +104,12 @@ export function useCalendarWfhRequests() {
       const { data } = await api.get('/wfh-requests/calendar');
       return data;
     },
-    staleTime: 1000 * 60 * 2,
+    // staleTime: 1000 * 60 * 2,
+    // refetchInterval: 3000,
+    // Optional: ensures the data updates even if the window isn't focused
+    // refetchIntervalInBackground: true,
+    // Keep staleTime low or 0 if you want it to always be considered "old"
+    staleTime: 1000 * 60,
   });
 }
 export function useCalendarHolidays() {
@@ -109,7 +119,12 @@ export function useCalendarHolidays() {
       const { data } = await api.get('/holidays');
       return data;
     },
-    staleTime: 1000 * 60 * 10,
+    // staleTime: 1000 * 60 * 10,
+    // refetchInterval: 5000,
+    // Optional: ensures the data updates even if the window isn't focused
+    // refetchIntervalInBackground: true,
+    // Keep staleTime low or 0 if you want it to always be considered "old"
+    staleTime: 1000 * 60,
   });
 }
 
@@ -125,6 +140,11 @@ export function useCalendarUsersByDepartment(department: string | undefined) {
       );
     },
     enabled: !!department,
-    staleTime: 1000 * 60 * 5,
+    // staleTime: 1000 * 60 * 5,
+    // refetchInterval: 5000,
+    // Optional: ensures the data updates even if the window isn't focused
+    // refetchIntervalInBackground: true,
+    // Keep staleTime low or 0 if you want it to always be considered "old"
+    staleTime: 1000 * 60,
   });
 }

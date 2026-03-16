@@ -38,6 +38,7 @@ import {
   BarChart2,
   Laptop,
   CalendarDays,
+  TrendingDown,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -208,52 +209,98 @@ function EmployeeDetailPanel({
                   ? Math.round(((b.total - b.remaining) / b.total) * 100)
                   : 0;
               const isLow = b.remaining <= 2;
+              const hasExceeded = b.exceeded > 0;
               return (
                 <div
                   key={b.id}
-                  className="flex items-center gap-3 px-4 py-2.5"
+                  className="flex flex-col px-4 py-2.5 gap-1.5"
                   style={{
-                    background: isCurrentType ? '#fefce8' : 'transparent',
+                    background: hasExceeded
+                      ? '#fff8f8'
+                      : isCurrentType
+                        ? '#fefce8'
+                        : 'transparent',
+                    borderLeft: hasExceeded
+                      ? '3px solid #fca5a5'
+                      : isCurrentType
+                        ? '3px solid #fde68a'
+                        : '3px solid transparent',
                   }}
                 >
-                  <span
-                    className="shrink-0 text-[10px] font-bold uppercase w-20"
-                    style={{ color: isCurrentType ? '#d97706' : '#475569' }}
-                  >
-                    {b.leaveType.charAt(0) + b.leaveType.slice(1).toLowerCase()}
-                    {isCurrentType && (
-                      <span className="ml-1 text-[8px]">← this</span>
-                    )}
-                  </span>
-                  <div
-                    className="flex-1 h-1.5 rounded-full overflow-hidden"
-                    style={{ background: '#e2e8f0' }}
-                  >
-                    <div
-                      className="h-full rounded-full transition-all"
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="shrink-0 text-[10px] font-bold uppercase w-20"
                       style={{
-                        width: `${Math.min(usedPct, 100)}%`,
-                        background: isLow
-                          ? '#ef4444'
+                        color: hasExceeded
+                          ? '#dc2626'
                           : isCurrentType
-                            ? '#f59e0b'
-                            : '#6366f1',
+                            ? '#d97706'
+                            : '#475569',
                       }}
-                    />
-                  </div>
-                  <span
-                    className="shrink-0 text-[11px] font-semibold"
-                    style={{
-                      color: isLow ? '#dc2626' : '#1e293b',
-                      minWidth: '60px',
-                      textAlign: 'right',
-                    }}
-                  >
-                    {b.remaining}
-                    <span className="font-normal" style={{ color: '#94a3b8' }}>
-                      /{b.total}
+                    >
+                      {b.leaveType.charAt(0) +
+                        b.leaveType.slice(1).toLowerCase()}
+                      {isCurrentType && (
+                        <span className="ml-1 text-[8px]">← this</span>
+                      )}
                     </span>
-                  </span>
+                    <div
+                      className="flex-1 h-1.5 rounded-full overflow-hidden"
+                      style={{ background: '#e2e8f0' }}
+                    >
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(usedPct, 100)}%`,
+                          background: hasExceeded
+                            ? '#ef4444'
+                            : isLow
+                              ? '#f97316'
+                              : isCurrentType
+                                ? '#f59e0b'
+                                : '#6366f1',
+                        }}
+                      />
+                    </div>
+                    <span
+                      className="shrink-0 text-[11px] font-semibold"
+                      style={{
+                        color: hasExceeded
+                          ? '#dc2626'
+                          : isLow
+                            ? '#dc2626'
+                            : '#1e293b',
+                        minWidth: '60px',
+                        textAlign: 'right',
+                      }}
+                    >
+                      {b.remaining}
+                      <span
+                        className="font-normal"
+                        style={{ color: '#94a3b8' }}
+                      >
+                        /{b.total}
+                      </span>
+                    </span>
+                  </div>
+                  {hasExceeded && (
+                    <div className="flex items-center gap-1.5 pl-[88px]">
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                        style={{
+                          background: '#fef2f2',
+                          border: '1px solid #fca5a5',
+                          color: '#dc2626',
+                        }}
+                      >
+                        <TrendingDown className="h-2.5 w-2.5" />
+                        {b.exceeded} day{b.exceeded !== 1 ? 's' : ''} over quota
+                      </span>
+                      <span className="text-[9px]" style={{ color: '#94a3b8' }}>
+                        · approved beyond {b.total}d limit
+                      </span>
+                    </div>
+                  )}
                 </div>
               );
             })

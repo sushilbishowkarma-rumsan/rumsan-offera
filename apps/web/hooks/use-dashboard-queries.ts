@@ -78,7 +78,8 @@ export function useEmployeeDashboardData(employeeId: string | undefined) {
       };
     },
     enabled: !!employeeId,
-    staleTime: 1000 * 60, // 1 minute
+    staleTime: 3000, // always refetch when asked
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -185,7 +186,7 @@ export function useManagerDashboardData(managerId: string | undefined) {
     },
     enabled: !!managerId,
     // staleTime: 1000 * 30, // 30 seconds
-    staleTime: 0, // always refetch when asked
+    staleTime: 3000, // always refetch when asked
     refetchOnWindowFocus: true,
   });
 }
@@ -276,7 +277,8 @@ export function useAdminDashboardData() {
           .slice(0, 5),
       };
     },
-    staleTime: 20000, // 1 minute
+    staleTime: 3000, // always refetch when asked
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -424,7 +426,7 @@ export function useTeamAvailability(managerId: string | undefined) {
       };
     },
     enabled: !!managerId,
-    staleTime: 1000 * 30, // 30 seconds
+    staleTime: 1000 * 30 * 1, // 1 minute
   });
 }
 
@@ -510,6 +512,6 @@ export function useAllEmployeesAvailability() {
         },
       };
     },
-    staleTime: 1000 * 30, // 30 seconds
+    staleTime: 1000 * 30 * 1, // 1 minute
   });
 }

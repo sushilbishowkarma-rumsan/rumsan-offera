@@ -15,7 +15,8 @@ export function useUsers() {
   return useQuery({
     queryKey: userKeys.all,
     queryFn: usersApi.getAll,
-    staleTime: 3000,
+    // staleTime: 3000,
+    staleTime: 1_000 * 60 * 5,
   });
 }
 
@@ -50,6 +51,6 @@ export function useMe() {
       return data;
     },
     enabled: !!id,
-    staleTime: 3000,
+    staleTime: 1000 * 60 * 1, // 1 minute
   });
 }
