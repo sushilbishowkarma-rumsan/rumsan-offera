@@ -1067,7 +1067,7 @@ export default function CalendarPage() {
                           <div className="mt-auto flex flex-col gap-0.5">
                             {leaveMembers.length > 0 && (
                               <span
-                                className="inline-flex items-center gap-1 rounded-md px-0 py-0.5 text-[9px] font-bold"
+                                className="inline-flex items-center gap-1 rounded-md px-0 py-0.5 text-[9px] font-bold -ml-2"
                                 style={{ color: '#dc2626' }}
                               >
                                 <span className="h-[5px] w-[5px] rounded-full shrink-0" />
