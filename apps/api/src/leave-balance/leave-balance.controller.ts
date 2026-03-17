@@ -9,6 +9,7 @@ import {
   Query,
   Res,
   UseGuards,
+  Delete,
 } from '@nestjs/common';
 import { LeaveBalanceService } from './leave-balance.service';
 import type { Response } from 'express';
@@ -17,6 +18,13 @@ import {
   SetEmployeeLeaveQuotaDto,
   SetEmployeeLeaveQuotaBulkDto,
 } from './dto/set-employee-quota.dto';
+
+export interface YearEndResetResult {
+  archived: number;
+  deleted: number;
+  created: number;
+  year: number;
+}
 
 @Controller('leave-balances')
 export class LeaveBalanceController {
@@ -151,10 +159,128 @@ export class LeaveBalanceController {
     return this.leaveBalanceService.seedBalancesForAllPolicies();
   }
 
+  @Get('employees/exceeded')
+  @UseGuards(JwtAuthGuard)
+  async getAllExceededBalances() {
+    return this.leaveBalanceService.getExceededBalancesForAllEmployees();
+  }
+
+  @Delete('employees/exceeded') // ← add Delete to your controller imports
+  @UseGuards(JwtAuthGuard)
+  async clearAllExceeded() {
+    const result = await this.leaveBalanceService.clearAllExceededBalances();
+    return {
+      message:
+        result.cleared > 0
+          ? `Exceeded days cleared for ${result.cleared} balance record(s). History archived.`
+          : 'No exceeded balances to clear.',
+      cleared: result.cleared,
+    };
+  }
+
   // ── Month-end reset ───────────────────────────────────────────────────────────
   @Post('reset')
   @UseGuards(JwtAuthGuard)
   async resetMonthly() {
     return this.leaveBalanceService.resetMonthlyBalances();
   }
+
+  /**
+   * GET /leave-balances/history/exceeded
+   *
+   * Query params (all optional):
+   *   ?year=2024
+   *   ?month=11
+   *   ?employeeId=abc
+   *   ?search=john
+   *
+   * Returns raw history rows where exceeded > 0.
+   * The frontend groups them by year/month for display.
+   */
+  @Get('history/exceeded')
+  @UseGuards(JwtAuthGuard)
+  async getExceededHistory(
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+    @Query('employeeId') employeeId?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.leaveBalanceService.getExceededHistory({
+      year: year ? parseInt(year) : undefined,
+      month: month ? parseInt(month) : undefined,
+      employeeId: employeeId || undefined,
+      search: search || undefined,
+    });
+  }
+
+  /**
+   * GET /leave-balances/history/exceeded/years
+   *
+   * Returns the distinct years that have exceeded history records.
+   * Drives the year filter dropdown.
+   */
+  @Get('history/exceeded/years')
+  @UseGuards(JwtAuthGuard)
+  async getExceededHistoryYears() {
+    return this.leaveBalanceService.getExceededHistoryYears();
+  }
+
+  @Post('repair/exceeded-history')
+  @UseGuards(JwtAuthGuard)
+  async repairExceededHistory() {
+    const result = await this.leaveBalanceService.repairExceededHistory();
+    return {
+      message: `Repaired ${result.repaired} history records with correct exceeded values.`,
+      repaired: result.repaired,
+    };
+  }
+
+  // ── Year-end reset ──────────────────────────────────────────────────────────
+
+  /**
+   * POST /leave-balances/reset/year-end
+   *
+   * HR Admin only. Archives all balances then re-seeds from active policies.
+   * All employees start the new year with full quota, zero exceeded.
+   *
+   * Returns: { archived, deleted, created, year, message }
+   */
+  @Post('reset/year-end')
+  @UseGuards(JwtAuthGuard)
+  async resetYearEnd(): Promise<YearEndResetResult & { message: string }> {
+    const result: YearEndResetResult =
+      await this.leaveBalanceService.resetYearEndBalances();
+    return {
+      archived: result.archived,
+      deleted: result.deleted,
+      created: result.created,
+      year: result.year,
+      message:
+        `Year-end reset complete for ${result.year}. ` +
+        `Archived ${result.archived}, deleted ${result.deleted}, ` +
+        `created ${result.created} fresh balances.`,
+    };
+  }
+
+  // return {
+  //   ...result,
+  //   message:
+  //     `Year-end reset complete for ${result.year}. ` +
+  //     `Archived ${result.archived}, deleted ${result.deleted}, ` +
+  //     `created ${result.created} fresh balances.`,
+  // };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROUTE ORDER WARNING
+// ─────────────────────────────────────────────────────────────────────────────
+// NestJS matches routes top-to-bottom. Make sure these routes appear in this
+// order in the controller to avoid the static segment "exceeded" being
+// shadowed by a dynamic :employeeId param:
+//
+//   GET  history/exceeded/years   ← must come BEFORE history/exceeded
+//   GET  history/exceeded
+//   GET  history/all
+//   POST reset/year-end
+//   POST reset                    ← existing monthly reset
+// ─────────────────────────────────────────────────────────────────────────────

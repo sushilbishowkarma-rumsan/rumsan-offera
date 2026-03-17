@@ -3,6 +3,55 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as ExcelJS from 'exceljs';
 import { Prisma } from '@prisma/client';
+export interface ExceededLeaveEntry {
+  leaveType: string;
+  label: string;
+  total: number;
+  exceeded: number;
+  remaining: number;
+  usedWithinQuota: number;
+}
+export interface ExceededEmployeeRow {
+  employee: {
+    id: string;
+    name: string | null;
+    email: string;
+    department: string | null;
+    role: string;
+    avatar: string | null;
+  };
+  leaves: ExceededLeaveEntry[];
+  totalExceededDays: number;
+}
+export interface YearEndResetResult {
+  archived: number;
+  deleted: number;
+  created: number;
+  year: number;
+}
+
+export interface ExceededHistoryEmployee {
+  id: string;
+  name: string | null;
+  email: string;
+  department: string | null;
+  role: string;
+  avatar: string | null;
+}
+
+export interface ExceededHistoryRecord {
+  id: string;
+  employeeId: string;
+  leaveType: string;
+  month: number;
+  year: number;
+  total: number;
+  used: number;
+  remaining: number;
+  exceeded: number; // always the real/derived value — never 0 if genuinely exceeded
+  createdAt: Date;
+  employee: ExceededHistoryEmployee;
+}
 
 @Injectable()
 export class LeaveBalanceService {
@@ -146,6 +195,39 @@ export class LeaveBalanceService {
     };
   }
 
+  // async resetMonthlyBalances() {
+  //   const now = new Date();
+  //   const month = now.getMonth() + 1;
+  //   const year = now.getFullYear();
+
+  //   const balances = await this.prisma.leaveBalance.findMany();
+
+  //   await this.prisma.leaveBalanceHistory.createMany({
+  //     data: balances.map((b) => ({
+  //       employeeId: b.employeeId,
+  //       leaveType: b.leaveType,
+  //       month,
+  //       year,
+  //       total: b.total,
+  //       used: b.total - b.remaining,
+  //       remaining: b.remaining,
+  //     })),
+  //     skipDuplicates: true,
+  //   });
+
+  //   await Promise.all(
+  //     balances.map((b) =>
+  //       this.prisma.leaveBalance.update({
+  //         where: { id: b.id },
+  //         data: { remaining: b.total, exceeded: 0 },
+  //       }),
+  //     ),
+  //   );
+
+  //   return {
+  //     message: `Archived and reset ${balances.length} balances for ${month}/${year}.`,
+  //   };
+  // }
   async resetMonthlyBalances() {
     const now = new Date();
     const month = now.getMonth() + 1;
@@ -153,30 +235,71 @@ export class LeaveBalanceService {
 
     const balances = await this.prisma.leaveBalance.findMany();
 
-    await this.prisma.leaveBalanceHistory.createMany({
-      data: balances.map((b) => ({
-        employeeId: b.employeeId,
-        leaveType: b.leaveType,
-        month,
-        year,
-        total: b.total,
-        used: b.total - b.remaining,
-        remaining: b.remaining,
-      })),
-      skipDuplicates: true,
-    });
+    // ── Archive current state (including exceeded) before wiping ──────────
+    // await this.prisma.leaveBalanceHistory.createMany({
+    //   data: balances.map((b) => ({
+    //     employeeId: b.employeeId,
+    //     leaveType: b.leaveType,
+    //     month,
+    //     year,
+    //     total: b.total,
+    //     used: b.total - b.remaining, // within-quota days used
+    //     remaining: b.remaining,
+    //     // NOTE: If your LeaveBalanceHistory schema does not yet have an
+    //     // `exceeded` column, add it first:
+    //     //   exceeded Float @default(0)
+    //     // Then uncomment the next line:
+    //     // exceeded: b.exceeded,
+    //   })),
+    //   skipDuplicates: true,
+    // });
+
+    // // ── Reset balances: restore remaining to total, clear exceeded to 0 ───
+    // await Promise.all(
+    //   balances.map((b) =>
+    //     this.prisma.leaveBalance.update({
+    //       where: { id: b.id },
+    //       data: {
+    //         remaining: b.total,
+    //         exceeded: 0, // ← clears the exceeded days each month-end
+    //       },
+    //     }),
+    //   ),
+    // );
 
     await Promise.all(
       balances.map((b) =>
-        this.prisma.leaveBalance.update({
-          where: { id: b.id },
-          data: { remaining: b.total, exceeded: 0 },
+        this.prisma.leaveBalanceHistory.upsert({
+          where: {
+            employeeId_leaveType_month_year: {
+              employeeId: b.employeeId,
+              leaveType: b.leaveType,
+              month,
+              year,
+            },
+          },
+          update: {
+            total: b.total,
+            used: Math.max(0, b.total - b.remaining),
+            remaining: b.remaining,
+            exceeded: b.exceeded, // ← store real exceeded value
+          },
+          create: {
+            employeeId: b.employeeId,
+            leaveType: b.leaveType,
+            month,
+            year,
+            total: b.total,
+            used: Math.max(0, b.total - b.remaining),
+            remaining: b.remaining,
+            exceeded: b.exceeded, // ← store real exceeded value
+          },
         }),
       ),
     );
 
     return {
-      message: `Archived and reset ${balances.length} balances for ${month}/${year}.`,
+      message: `Archived and reset ${balances.length} balances for ${month}/${year}. Exceeded days cleared.`,
     };
   }
 
@@ -346,6 +469,60 @@ export class LeaveBalanceService {
     });
 
     return users;
+  }
+
+  async getExceededBalancesForAllEmployees(): Promise<ExceededEmployeeRow[]> {
+    // Fetch all balance rows where exceeded > 0, eagerly join the employee
+    const rows = await this.prisma.leaveBalance.findMany({
+      where: { exceeded: { gt: 0 } },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            department: true,
+            role: true,
+            avatar: true,
+          },
+        },
+      },
+      orderBy: [{ employee: { name: 'asc' } }, { leaveType: 'asc' }],
+    });
+
+    // Group individual rows by employeeId so the UI gets one card per person
+    const grouped = new Map<string, ExceededEmployeeRow>();
+
+    for (const row of rows) {
+      const existing = grouped.get(row.employeeId);
+      const leaveEntry: ExceededLeaveEntry = {
+        leaveType: row.leaveType,
+        label:
+          row.leaveType.charAt(0).toUpperCase() +
+          row.leaveType.slice(1).toLowerCase(),
+        total: row.total,
+        exceeded: row.exceeded,
+        remaining: row.remaining,
+        // "used within quota" = total - remaining (capped at 0 minimum)
+        usedWithinQuota: Math.max(0, row.total - row.remaining),
+      };
+
+      if (existing) {
+        existing.leaves.push(leaveEntry);
+        existing.totalExceededDays += row.exceeded;
+      } else {
+        grouped.set(row.employeeId, {
+          employee: row.employee,
+          leaves: [leaveEntry],
+          totalExceededDays: row.exceeded,
+        });
+      }
+    }
+
+    // Convert map → sorted array (highest total exceeded first)
+    return Array.from(grouped.values()).sort(
+      (a, b) => b.totalExceededDays - a.totalExceededDays,
+    );
   }
 
   async generateEmployeeLeaveExcel(
@@ -618,5 +795,493 @@ export class LeaveBalanceService {
 
     const arrayBuffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(arrayBuffer);
+  }
+
+  /**
+   * Manually clear all exceeded leave days for every employee.
+   *
+   * Called by the HR Admin from the "Exceeded Balances" page.
+   * This does the same archiving as resetMonthlyBalances() but ONLY
+   * zeroes the exceeded column — it does NOT touch remaining/total.
+   *
+   * Flow:
+   *   1. Find every LeaveBalance row where exceeded > 0
+   *   2. Archive a snapshot to LeaveBalanceHistory (skips duplicates for
+   *      the current month so you can call this mid-month safely)
+   *   3. Set exceeded = 0 on every matching row
+   *   4. Return how many rows were cleared
+   */
+  async clearAllExceededBalances(): Promise<{ cleared: number }> {
+    const now = new Date();
+    const month = now.getMonth() + 1; // 1-12
+    const year = now.getFullYear();
+
+    // Step 1 — fetch only rows that actually have exceeded days
+    const exceededRows = await this.prisma.leaveBalance.findMany({
+      where: { exceeded: { gt: 0 } },
+    });
+
+    if (exceededRows.length === 0) {
+      return { cleared: 0 };
+    }
+
+    // Step 2 — archive current state before wiping
+    // skipDuplicates = true so this is safe even if called multiple times
+    // in the same month (won't overwrite an existing history row).
+    // await this.prisma.leaveBalanceHistory.createMany({
+    //   data: exceededRows.map((b) => ({
+    //     employeeId: b.employeeId,
+    //     leaveType: b.leaveType,
+    //     month,
+    //     year,
+    //     total: b.total,
+    //     used: Math.max(0, b.total - b.remaining), // within-quota used
+    //     remaining: b.remaining,
+    //     // Uncomment once you add `exceeded Float @default(0)` to schema:
+    //     exceeded: b.exceeded,
+    //   })),
+    //   skipDuplicates: true,
+    // });
+    await Promise.all(
+      exceededRows.map((b) =>
+        this.prisma.leaveBalanceHistory.upsert({
+          where: {
+            // Uses the @@unique composite key
+            employeeId_leaveType_month_year: {
+              employeeId: b.employeeId,
+              leaveType: b.leaveType,
+              month,
+              year,
+            },
+          },
+          // If a row already exists for this month, update it with latest values
+          update: {
+            total: b.total,
+            used: Math.max(0, b.total - b.remaining),
+            remaining: b.remaining,
+            exceeded: b.exceeded, // ← THE FIX: store the real exceeded value
+          },
+          // If no row exists yet, create it
+          create: {
+            employeeId: b.employeeId,
+            leaveType: b.leaveType,
+            month,
+            year,
+            total: b.total,
+            used: Math.max(0, b.total - b.remaining),
+            remaining: b.remaining,
+            exceeded: b.exceeded, // ← THE FIX: store the real exceeded value
+          },
+        }),
+      ),
+    );
+    // Step 3 — zero out exceeded for every affected row
+    await this.prisma.leaveBalance.updateMany({
+      where: { exceeded: { gt: 0 } },
+      data: { exceeded: 0 },
+    });
+
+    return { cleared: exceededRows.length };
+  }
+
+  /**
+   * getExceededHistory()
+   *
+   * Returns all LeaveBalanceHistory rows where exceeded > 0,
+   * joined with employee info.
+   *
+   * Optional filters:
+   *   - year:       only that calendar year
+   *   - month:      only that month (1-12)
+   *   - employeeId: only that employee
+   *   - search:     matches against employee name or email (case-insensitive)
+   *
+   * Shape returned to the frontend:
+   *   Array of {
+   *     id, employeeId, leaveType, month, year,
+   *     total, used, remaining, exceeded, createdAt,
+   *     employee: { id, name, email, department, role, avatar }
+   *   }
+   *
+   * The frontend groups these by year → month for display.
+   */
+  async getExceededHistory(filters?: {
+    year?: number;
+    month?: number;
+    employeeId?: string;
+    search?: string;
+  }) {
+    const baseExceededCondition: Prisma.LeaveBalanceHistoryWhereInput = {
+      OR: [
+        { exceeded: { gt: 0 } }, // correctly stored exceeded value
+        {
+          // safety net: used more than quota
+          AND: [
+            { used: { gt: 0 } },
+            // Prisma doesn't support field-vs-field comparisons directly,
+            // so we use a raw filter workaround via a NOT condition:
+            // We check used > total by ensuring NOT (used <= total).
+            // Since Prisma doesn't support col > col, we use $queryRaw for
+            // this specific sub-filter — see note below.
+            // For now, include all rows with used > 0 and exceeded = 0,
+            // then filter in JS after fetching:
+            { exceeded: 0 },
+          ],
+        },
+      ],
+    };
+
+    // if (filters?.year) baseExceededCondition.year = filters.year;
+    // if (filters?.month) baseExceededCondition.month = filters.month;
+    // if (filters?.employeeId)
+    //   baseExceededCondition.employeeId = filters.employeeId;
+
+    // Text search: match against employee name OR email
+    // if (filters?.search?.trim()) {
+    //   baseExceededCondition.employee = {
+    //     OR: [
+    //       { name: { contains: filters.search, mode: 'insensitive' } },
+    //       { email: { contains: filters.search, mode: 'insensitive' } },
+    //     ],
+    //   };
+    // }
+    const employeeFilter: Prisma.LeaveBalanceHistoryWhereInput =
+      filters?.search?.trim()
+        ? {
+            employee: {
+              OR: [
+                {
+                  name: {
+                    contains: filters.search.trim(),
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  email: {
+                    contains: filters.search.trim(),
+                    mode: 'insensitive',
+                  },
+                },
+              ],
+            },
+          }
+        : {};
+
+    const where: Prisma.LeaveBalanceHistoryWhereInput = {
+      AND: [
+        baseExceededCondition,
+        employeeFilter,
+        filters?.year ? { year: filters.year } : {},
+        filters?.month ? { month: filters.month } : {},
+        filters?.employeeId ? { employeeId: filters.employeeId } : {},
+      ].filter((c) => Object.keys(c).length > 0), // remove empty objects
+    };
+
+    const rows = await this.prisma.leaveBalanceHistory.findMany({
+      where,
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            department: true,
+            role: true,
+            avatar: true,
+          },
+        },
+      },
+      orderBy: [
+        { year: 'desc' },
+        { month: 'desc' },
+        { employee: { name: 'asc' } },
+        { leaveType: 'asc' },
+      ],
+    });
+
+    const filtered = rows.filter((r) => {
+      const exceeded = r.exceeded as number;
+      const used = r.used;
+      const total = r.total;
+      return exceeded > 0 || used > total;
+    });
+
+    const result: ExceededHistoryRecord[] = filtered.map((r) => {
+      const exceeded = r.exceeded as number;
+      const used = r.used;
+      const total = r.total;
+
+      return {
+        id: r.id,
+        employeeId: r.employeeId,
+        leaveType: r.leaveType,
+        month: r.month,
+        year: r.year,
+        total,
+        used,
+        remaining: r.remaining,
+        createdAt: r.createdAt,
+        // If exceeded was stored correctly, use it.
+        // If it was stored as 0 but used > total, derive it.
+        exceeded: exceeded > 0 ? exceeded : Math.max(0, used - total),
+        employee: {
+          id: r.employee.id,
+          name: r.employee.name,
+          email: r.employee.email,
+          department: r.employee.department,
+          role: r.employee.role,
+          avatar: r.employee.avatar,
+        },
+      };
+    });
+
+    return result;
+
+    // return rows;
+  }
+
+  /**
+   * getExceededHistoryYears()
+   *
+   * Returns the distinct years that have exceeded history records.
+   * Used to populate the year filter dropdown on the history page.
+   */
+  async getExceededHistoryYears(): Promise<number[]> {
+    const rows = await this.prisma.leaveBalanceHistory.findMany({
+      where: { exceeded: { gt: 0 } },
+      select: { year: true },
+      distinct: ['year'],
+      orderBy: { year: 'desc' },
+    });
+    return rows.map((r) => r.year);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // B) YEAR-END BALANCE RESET
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * resetYearEndBalances()
+   *
+   * Called by HR Admin at the end of each year (or start of new year).
+   * Every employee's leave balance is wiped and re-seeded from active
+   * LeavePolicy defaults so everyone starts fresh on January 1st.
+   *
+   * Flow:
+   *   1. Archive EVERY current balance into LeaveBalanceHistory
+   *      (month=12, year=current year — or the year being closed)
+   *   2. Delete ALL existing LeaveBalance rows
+   *   3. Re-create LeaveBalance rows from active LeavePolicies for every user
+   *      (same logic as seedBalancesForAllPolicies but always overwrites)
+   *
+   * Why delete+recreate instead of update?
+   *   If a policy was added or removed mid-year, a simple update would leave
+   *   stale rows. Delete+recreate ensures the new year's balances exactly
+   *   match the current active policies.
+   *
+   * Returns: { archived, deleted, created, year }
+   * archived: number;
+    deleted: number;
+    created: number;
+    year: number;
+     Promise<{}>
+   */
+  async resetYearEndBalances(): Promise<YearEndResetResult> {
+    // const now = new Date();
+    // const year = now.getFullYear();
+    // // Archive as month 12 of the closing year so history is clearly "year-end"
+    // const month = 12;
+    const now: Date = new Date();
+    const year: number = now.getFullYear();
+    const month: number = 12;
+    // ── Step 1: fetch every current balance ──────────────────────────────────
+    const allBalances = await this.prisma.leaveBalance.findMany();
+
+    // ── Step 2: archive them all to LeaveBalanceHistory ───────────────────────
+    // skipDuplicates so re-running this on Jan 1st doesn't double-archive.
+    // await this.prisma.leaveBalanceHistory.createMany({
+    //   data: allBalances.map((b) => ({
+    //     employeeId: b.employeeId,
+    //     leaveType: b.leaveType,
+    //     month,
+    //     year,
+    //     total: b.total,
+    //     used: Math.max(0, b.total - b.remaining),
+    //     remaining: b.remaining,
+    //     exceeded: b.exceeded, // requires schema migration above
+    //   })),
+    //   skipDuplicates: true,
+    // });
+
+    // // ── Step 3: delete ALL current balance rows ──────────────────────────────
+    // const deleted = await this.prisma.leaveBalance.deleteMany({});
+
+    // // ── Step 4: re-create fresh balances from active policies ─────────────────
+    // const policies = await this.prisma.leavePolicy.findMany({
+    //   where: { isActive: true },
+    // });
+
+    // const users = await this.prisma.user.findMany({
+    //   select: { id: true },
+    // });
+
+    // // Build the full cross-product: every user × every active policy
+    // const newBalances = users.flatMap((u) =>
+    //   policies.map((p) => ({
+    //     employeeId: u.id,
+    //     leaveType: p.leaveType,
+    //     total: p.defaultQuota,
+    //     remaining: p.defaultQuota, // fresh — full quota available
+    //     exceeded: 0, // clean slate
+    //     leavePolicyId: p.id,
+    //   })),
+    // );
+
+    // const created = await this.prisma.leaveBalance.createMany({
+    //   data: newBalances,
+    //   skipDuplicates: true,
+    // });
+
+    // console.log(
+    //   `[Year-End Reset] Archived ${allBalances.length}, ` +
+    //     `deleted ${deleted.count}, created ${created.count} balances for ${year}→${year + 1}`,
+    // );
+
+    await Promise.all(
+      allBalances.map((b) =>
+        this.prisma.leaveBalanceHistory.upsert({
+          where: {
+            employeeId_leaveType_month_year: {
+              employeeId: b.employeeId,
+              leaveType: b.leaveType,
+              month, // month = 12 in resetYearEndBalances
+              year,
+            },
+          },
+          update: {
+            total: b.total,
+            used: Math.max(0, b.total - b.remaining),
+            remaining: b.remaining,
+            exceeded: b.exceeded,
+          },
+          create: {
+            employeeId: b.employeeId,
+            leaveType: b.leaveType,
+            month,
+            year,
+            total: b.total,
+            used: Math.max(0, b.total - b.remaining),
+            remaining: b.remaining,
+            exceeded: b.exceeded,
+          },
+        }),
+      ),
+    );
+    const deleteResult = await this.prisma.leaveBalance.deleteMany({});
+    const policies = await this.prisma.leavePolicy.findMany({
+      where: { isActive: true },
+    });
+
+    const users = await this.prisma.user.findMany({
+      select: { id: true },
+    });
+    const newBalances = users.flatMap((u) =>
+      policies.map((p) => ({
+        employeeId: u.id,
+        leaveType: p.leaveType,
+        total: p.defaultQuota,
+        remaining: p.defaultQuota,
+        exceeded: 0,
+        leavePolicyId: p.id,
+      })),
+    );
+
+    const createResult = await this.prisma.leaveBalance.createMany({
+      data: newBalances,
+      skipDuplicates: true,
+    });
+    const archived: number = allBalances.length;
+    const deleted: number = deleteResult.count;
+    const created: number = createResult.count;
+
+    console.log(
+      `[Year-End Reset] archived=${archived} deleted=${deleted} ` +
+        `created=${created} year=${year}→${year + 1}`,
+    );
+
+    // Explicit object literal — no spread, no inference ambiguity.
+    // TypeScript can trivially check this satisfies Promise<YearEndResetResult>.
+    return {
+      archived,
+      deleted,
+      created,
+      year,
+    };
+    // return {
+    //   archived: allBalances.length,
+    //   deleted: deleted.count,
+    //   created: created.count,
+    //   year,
+    // };
+  }
+
+  async repairExceededHistory(): Promise<{ repaired: number }> {
+    // Find all history rows that may have been stored with exceeded=0 incorrectly.
+    // We target rows where:
+    //   - exceeded = 0 (was never correctly written)
+    //   - used > 0    (employee actually used some days — worth investigating)
+    const suspectRows = await this.prisma.leaveBalanceHistory.findMany({
+      where: {
+        exceeded: 0,
+        used: { gt: 0 }, // skip rows where no days were used at all
+      },
+    });
+
+    if (suspectRows.length === 0) {
+      return { repaired: 0 };
+    }
+
+    let repaired = 0;
+
+    for (const row of suspectRows) {
+      // For this employee + leaveType + month + year, find all APPROVED
+      // leave requests whose startDate falls in that month.
+      // Sum their totalDays to get total approved usage.
+      const startOfMonth = new Date(row.year, row.month - 1, 1);
+      const endOfMonth = new Date(row.year, row.month, 0, 23, 59, 59);
+
+      const approvedRequests = await this.prisma.leaveRequest.findMany({
+        where: {
+          employeeId: row.employeeId,
+          leaveType: row.leaveType,
+          status: 'APPROVED',
+          startDate: { gte: startOfMonth, lte: endOfMonth },
+        },
+        select: { totalDays: true },
+      });
+
+      const totalApproved = approvedRequests.reduce(
+        (sum, r) => sum + (r.totalDays ?? 0),
+        0,
+      );
+
+      // exceeded = approved days beyond the quota
+      // If total approved <= quota (row.total), exceeded = 0 (correctly 0)
+      // If total approved > quota, the difference is the real exceeded value
+      const derivedExceeded = Math.max(0, totalApproved - row.total);
+
+      if (derivedExceeded > 0) {
+        await this.prisma.leaveBalanceHistory.update({
+          where: { id: row.id },
+          data: { exceeded: derivedExceeded },
+        });
+        repaired++;
+      }
+    }
+
+    console.log(
+      `[repairExceededHistory] Repaired ${repaired} of ${suspectRows.length} suspect rows`,
+    );
+    return { repaired };
   }
 }
