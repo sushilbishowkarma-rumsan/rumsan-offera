@@ -61,7 +61,7 @@ import { useQueryClient } from '@tanstack/react-query';
 interface CreateFormState {
   leaveType: string;
   defaultQuota: string;
-  carryForwardLimit: string;
+  comments: string;
   accrualRate: string;
   maxConsecutiveDays: string;
   requiresApproval: boolean;
@@ -71,7 +71,7 @@ interface CreateFormState {
 const emptyForm: CreateFormState = {
   leaveType: '',
   defaultQuota: '',
-  carryForwardLimit: '',
+  comments: '',
   accrualRate: '',
   maxConsecutiveDays: '',
   requiresApproval: true,
@@ -82,7 +82,7 @@ interface EditFormState {
   id: string;
   leaveType: string;
   defaultQuota: string;
-  carryForwardLimit: string;
+  comments: string;
   accrualRate: string;
   maxConsecutiveDays: string;
   requiresApproval: boolean;
@@ -95,7 +95,7 @@ function policyToEditForm(policy: LeavePolicy): EditFormState {
   return {
     ...policy,
     defaultQuota: String(policy.defaultQuota),
-    carryForwardLimit: String(policy.carryForwardLimit),
+    comments: String(policy.comments),
     accrualRate: String(policy.accrualRate),
     maxConsecutiveDays: String(policy.maxConsecutiveDays),
   };
@@ -190,10 +190,7 @@ export default function PoliciesPage() {
     const dto: UpdateLeavePolicyDto = {
       leaveType: editing.leaveType,
       defaultQuota: parseFloat(editing.defaultQuota) || 0,
-      carryForwardLimit:
-        editing.carryForwardLimit.trim() === ''
-          ? 0
-          : parseFloat(editing.carryForwardLimit) || 0,
+      comments: editing.comments.trim() === '' ? '' : editing.comments.trim(),
       accrualRate:
         editing.accrualRate.trim() === ''
           ? 0
@@ -239,10 +236,8 @@ export default function PoliciesPage() {
     const dto: CreateLeavePolicyDto = {
       leaveType: newPolicy.leaveType.trim().toUpperCase(),
       defaultQuota: parseFloat(newPolicy.defaultQuota) || 0,
-      carryForwardLimit:
-        newPolicy.carryForwardLimit.trim() === ''
-          ? 0
-          : parseFloat(newPolicy.carryForwardLimit) || 0,
+      comments:
+        newPolicy.comments.trim() === '' ? '' : newPolicy.comments.trim(),
       accrualRate:
         newPolicy.accrualRate.trim() === ''
           ? 0
@@ -389,8 +384,8 @@ export default function PoliciesPage() {
                     <TableHead className="text-center">
                       Default Quota (days/yr)
                     </TableHead>
-                    <TableHead className="text-center">Carry Forward</TableHead>
-                    <TableHead className="text-center">Accrual Rate</TableHead>
+                    <TableHead className="text-center">Comments</TableHead>
+                    {/* <TableHead className="text-center">Accrual Rate</TableHead> */}
                     <TableHead className="text-center">
                       Max Consecutive
                     </TableHead>
@@ -441,16 +436,22 @@ export default function PoliciesPage() {
                       <TableCell className="text-center">
                         {policy.defaultQuota}
                       </TableCell>
-                      <TableCell className="text-center whitespace-nowrap">
-                        {policy.carryForwardLimit > 0
-                          ? `${policy.carryForwardLimit} days`
-                          : 'None'}
+                      {/* <TableCell className="text-center">
+                        <div className="w-[80px] break-words whitespace-normal">
+                          {policy.comments ? policy.comments : 'None'}
+                        </div>
+                      </TableCell> */}
+                      <TableCell className="text-center">
+                        <div className="w-[180px] break-words whitespace-normal">
+                          {policy.comments ? policy.comments : 'None'}
+                        </div>
+                        {/* {policy.comments ? policy.comments : 'None'} */}
                       </TableCell>
-                      <TableCell className="text-center whitespace-nowrap">
+                      {/* <TableCell className="text-center whitespace-nowrap">
                         {policy.accrualRate > 0
                           ? `${policy.accrualRate}/mo`
                           : 'N/A'}
-                      </TableCell>
+                      </TableCell> */}
                       <TableCell className="text-center">
                         {policy.maxConsecutiveDays}
                       </TableCell>
@@ -744,17 +745,17 @@ export default function PoliciesPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-carry">Carry Forward Limit</Label>
+                  <Label htmlFor="edit-carry">Comments</Label>
                   <Input
                     id="edit-carry"
                     type="text"
-                    inputMode="decimal"
-                    placeholder="e.g. 5"
-                    value={editing.carryForwardLimit}
+                    inputMode="text"
+                    placeholder="e.g. exceed day will be unpaid"
+                    value={editing.comments}
                     onChange={(e) =>
                       setEditing({
                         ...editing,
-                        carryForwardLimit: e.target.value,
+                        comments: e.target.value,
                       })
                     }
                   />
@@ -857,16 +858,16 @@ export default function PoliciesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Carry Forward</Label>
+                <Label>Comments</Label>
                 <Input
                   type="text"
-                  inputMode="decimal"
-                  placeholder="e.g. 5"
-                  value={newPolicy.carryForwardLimit}
+                  inputMode="text"
+                  placeholder="e.g. exceed day will be unpaid"
+                  value={newPolicy.comments}
                   onChange={(e) =>
                     setNewPolicy({
                       ...newPolicy,
-                      carryForwardLimit: e.target.value,
+                      comments: e.target.value,
                     })
                   }
                 />

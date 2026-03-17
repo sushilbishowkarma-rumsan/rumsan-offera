@@ -19,7 +19,7 @@ export function useLeavePolicies() {
   return useQuery({
     queryKey: leavePolicyKeys.all,
     queryFn: leavePolicyApi.getAll,
-    staleTime: 1000 * 60 * 5, // 5 minutes — policies don't change often
+    staleTime: 1000 * 60 * 1, // 1 minute — policies don't change often
   });
 }
 
@@ -30,7 +30,7 @@ export function useLeavePolicy(id: string) {
     queryKey: leavePolicyKeys.detail(id),
     queryFn: () => leavePolicyApi.getOne(id),
     enabled: Boolean(id),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 1, // 1 minute
   });
 }
 
@@ -44,6 +44,7 @@ export function useCreateLeavePolicy() {
     onSuccess: () => {
       // Invalidate the list so the table re-fetches
       queryClient.invalidateQueries({ queryKey: leavePolicyKeys.all });
+
     },
   });
 }

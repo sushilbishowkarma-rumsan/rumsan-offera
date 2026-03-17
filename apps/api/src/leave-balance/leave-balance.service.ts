@@ -12,6 +12,13 @@ export class LeaveBalanceService {
     const balances = await this.prisma.leaveBalance.findMany({
       where: { employeeId },
       orderBy: { leaveType: 'asc' },
+      include: {
+        leavePolicy: {
+          select: {
+            comments: true,
+          },
+        },
+      },
     });
 
     if (balances.length === 0) {
@@ -20,10 +27,18 @@ export class LeaveBalanceService {
       return this.prisma.leaveBalance.findMany({
         where: { employeeId, total: { gt: 0 } },
         orderBy: { leaveType: 'asc' },
+        include: {
+          leavePolicy: { select: { comments: true } },
+        },
       });
     }
 
-    return balances.filter((b) => b.total > 0);
+    const result = balances.map((b) => ({
+      ...b,
+      comments: (b.leavePolicy as { comments: string }).comments, // Then, flatten the comments
+    }));
+    console.log(result, 'result with comments');
+    return result;
   }
 
   // ─── NEW: Rich summary for dashboard/profile display ────────────────────────
@@ -32,6 +47,9 @@ export class LeaveBalanceService {
     let balances = await this.prisma.leaveBalance.findMany({
       where: { employeeId },
       orderBy: { leaveType: 'asc' },
+      include: {
+        leavePolicy: { select: { comments: true } },
+      },
     });
 
     if (balances.length === 0) {
@@ -39,9 +57,11 @@ export class LeaveBalanceService {
       balances = await this.prisma.leaveBalance.findMany({
         where: { employeeId },
         orderBy: { leaveType: 'asc' },
+        include: {
+          leavePolicy: { select: { comments: true } },
+        },
       });
     }
-
     return balances
       .filter((b) => b.total > 0)
       .map((b) => ({
@@ -54,6 +74,7 @@ export class LeaveBalanceService {
         remaining: b.remaining,
         exceeded: b.exceeded, // days approved beyond quota
         hasExceeded: b.exceeded > 0,
+        comments: (b.leavePolicy as { comments: string }).comments,
       }));
   }
 

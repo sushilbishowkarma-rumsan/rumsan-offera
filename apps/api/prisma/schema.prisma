@@ -121,7 +121,7 @@ model LeavePolicy {
   id                 String         @id @default(uuid())
   leaveType          String         @unique
   defaultQuota       Int
-  carryForwardLimit  Int            @default(0)
+  comments           String         @default("")
   accrualRate        Float          @default(0)
   maxConsecutiveDays Int            @default(1)
   requiresApproval   Boolean        @default(true)

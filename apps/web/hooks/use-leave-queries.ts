@@ -41,7 +41,7 @@ export function useLeavePolicies(userId?: string) {
     },
     // enabled: userId !== undefined ? !!userId : true,
     enabled: userId === undefined || !!userId,
-    staleTime: 1000 * 60 * 5, // 5 min — policies rarely change
+    staleTime: 1000 * 60 * 1, // 1 min — policies rarely change
   });
 }
 

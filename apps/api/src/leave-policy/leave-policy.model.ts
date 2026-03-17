@@ -2,7 +2,7 @@ export interface LeavePolicyModel {
   id: string;
   leaveType: string;
   defaultQuota: number;
-  carryForwardLimit: number;
+  comments: string;
   accrualRate: number;
   maxConsecutiveDays: number;
   requiresApproval: boolean;

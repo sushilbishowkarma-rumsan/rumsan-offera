@@ -20,10 +20,9 @@ export class CreateLeavePolicyDto {
   @Min(0)
   defaultQuota: number;
 
-  @IsInt()
-  @Min(0)
+  @IsString()
   @IsOptional()
-  carryForwardLimit?: number = 0;
+  comments?: string = '';
 
   @IsNumber()
   @Min(0)

@@ -4,6 +4,7 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -17,30 +18,42 @@ export class LeavePolicyService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(userId?: string): Promise<LeavePolicyModel[]> {
-    if (!userId) {
-      // HR Admin — return all policies unchanged
+    try {
+      if (!userId) {
+        // HR Admin — return all policies unchanged
+        return this.prisma.leavePolicy.findMany({
+          orderBy: { createdAt: 'asc' },
+        });
+      }
+      // Employee leave request form — only return types admin has assigned (total > 0)
+      const assignedBalances = await this.prisma.leaveBalance.findMany({
+        where: {
+          employeeId: userId,
+          total: { gt: 0 },
+        },
+        select: { leaveType: true },
+      });
+      if (!assignedBalances || assignedBalances.length === 0) {
+        return [];
+      }
+      const assignedTypes = [
+        ...new Set(assignedBalances.map((b) => b.leaveType)),
+      ];
+      // const assignedTypes = assignedBalances.map((b) => b.leaveType);
+      // if (assignedTypes.length === 0) return [];
+
       return this.prisma.leavePolicy.findMany({
+        where: {
+          leaveType: { in: assignedTypes },
+          isActive: true,
+        },
         orderBy: { createdAt: 'asc' },
       });
+    } catch (error) {
+      console.error('Error in findAll leave policies:', error);
+      // Throwing a clearer error helps debugging
+      throw new InternalServerErrorException('Failed to fetch leave policies');
     }
-    // Employee leave request form — only return types admin has assigned (total > 0)
-    const assignedBalances = await this.prisma.leaveBalance.findMany({
-      where: {
-        employeeId: userId,
-        total: { gt: 0 },
-      },
-      select: { leaveType: true },
-    });
-    const assignedTypes = assignedBalances.map((b) => b.leaveType);
-    if (assignedTypes.length === 0) return [];
-
-    return this.prisma.leavePolicy.findMany({
-      where: {
-        leaveType: { in: assignedTypes },
-        isActive: true,
-      },
-      orderBy: { createdAt: 'asc' },
-    });
   }
 
   async findOne(id: string): Promise<LeavePolicyModel> {
@@ -70,7 +83,7 @@ export class LeavePolicyService {
       data: {
         leaveType: dto.leaveType,
         defaultQuota: dto.defaultQuota,
-        carryForwardLimit: dto.carryForwardLimit ?? 0,
+        comments: dto.comments ?? '',
         accrualRate: dto.accrualRate ?? 0,
         maxConsecutiveDays: dto.maxConsecutiveDays ?? 1,
         requiresApproval: dto.requiresApproval ?? true,

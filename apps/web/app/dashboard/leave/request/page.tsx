@@ -54,7 +54,8 @@ export default function LeaveRequestPage() {
   // console.log(policies, 'These are policies for the user');
   const { data: managers = [], isLoading: managersLoading } = useManagers();
   const activeLeaveTypes = policies.filter((p) => p.isActive);
-  // console.log(activeLeaveTypes, 'These are active leave types for the user');
+  console.log(policies, 'These are policies for the user');
+  console.log(activeLeaveTypes, 'These are active leave types for the user');
 
   const { data: allHolidays = [] } = useCalendarHolidays(); // ← NEW
   // ── Build Set of "YYYY-MM-DD" strings for fast holiday lookup ──
@@ -132,7 +133,7 @@ export default function LeaveRequestPage() {
   const handleLeaveSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLeaveFormValid || !user) return;
-
+     if(leaveTotalDays === 0) return;
     if (useMultiDay) {
       const validDays = leaveDays.filter((d) => d.date !== '');
       const dates = validDays.map((d) => d.date).sort();
@@ -209,6 +210,7 @@ export default function LeaveRequestPage() {
   const handleWfhSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isWfhFormValid || !user) return;
+    if(wfhTotalDays === 0) return;
     createWfh.mutate({
       employeeId: user.id,
       startDate: wfhStartDate,

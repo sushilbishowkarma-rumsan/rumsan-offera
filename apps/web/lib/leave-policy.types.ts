@@ -4,7 +4,7 @@ export interface LeavePolicy {
   id: string;
   leaveType: string;
   defaultQuota: number;
-  carryForwardLimit: number;
+  comments: string;
   accrualRate: number;
   maxConsecutiveDays: number;
   requiresApproval: boolean;
@@ -16,7 +16,7 @@ export interface LeavePolicy {
 export interface CreateLeavePolicyDto {
   leaveType: string;
   defaultQuota: number;
-  carryForwardLimit?: number;
+  comments?: string;
   accrualRate?: number;
   maxConsecutiveDays?: number;
   requiresApproval?: boolean;

@@ -1,7 +1,6 @@
 'use client';
 
-// frontend/src/components/leave-balance-summary-card.tsx
-//
+//rumsan-offera/apps/web/components/leave-balance-summary-card.tsx
 // Drop this on:
 //   - Employee dashboard: <LeaveBalanceSummaryCard employeeId={user.id} />
 //   - HR user profile:    <LeaveBalanceSummaryCard employeeId={userId} showExceededAlert />
@@ -44,10 +43,15 @@ export function LeaveBalanceSummaryCard({
   employeeId,
   showExceededAlert = false,
 }: Props) {
-  const { data: rawSummary, isLoading, isError } = useEmployeeLeaveBalanceSummary(employeeId);
-const summary = rawSummary?.filter((s) => s.total > 0);
+  const {
+    data: rawSummary,
+    isLoading,
+    isError,
+  } = useEmployeeLeaveBalanceSummary(employeeId);
+  const summary = rawSummary?.filter((s) => s.total > 0);
   const totalExceeded = summary?.reduce((acc, s) => acc + s.exceeded, 0) ?? 0;
 
+  console.log('Leave balance summary:', summary);
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -72,12 +76,14 @@ const summary = rawSummary?.filter((s) => s.total > 0);
               style={{ color: '#dc2626' }}
             />
             <div>
-              <p className="text-[12px] font-semibold" style={{ color: '#991b1b' }}>
+              <p
+                className="text-[12px] font-semibold"
+                style={{ color: '#991b1b' }}
+              >
                 Quota Exceeded
               </p>
               <p className="text-[11px]" style={{ color: '#b91c1c' }}>
-                This employee has used{' '}
-                <strong>{totalExceeded}</strong> day
+                This employee has used <strong>{totalExceeded}</strong> day
                 {totalExceeded !== 1 ? 's' : ''} beyond their allocated quota
                 across all leave types.
               </p>
@@ -117,6 +123,18 @@ const summary = rawSummary?.filter((s) => s.total > 0);
                 border: `1.5px solid ${item.hasExceeded ? '#fca5a5' : 'transparent'}`,
               }}
             >
+              {item.comments && (
+                <div className="mb-2 pb-2 border-b border-black/5">
+                  <p
+                    className="text-[10px] leading-relaxed italic opacity-80"
+                    style={{ color: '#be185d' }}
+                  >
+                    <span className="font-bold not-italic">Note: </span>
+                    {item.comments}
+                  </p>
+                </div>
+              )}
+
               {/* Row 1: label + pills */}
               <div className="flex items-center justify-between gap-2">
                 <span
@@ -174,13 +192,19 @@ const summary = rawSummary?.filter((s) => s.total > 0);
               </div>
 
               {/* Row 3: used / total text */}
-              <div className="flex justify-between text-[10px]" style={{ color: '#94a3b8' }}>
-                <span>Used: {item.used} day{item.used !== 1 ? 's' : ''}</span>
+              <div
+                className="flex justify-between text-[10px]"
+                style={{ color: '#94a3b8' }}
+              >
+                <span>
+                  Used: {item.used} day{item.used !== 1 ? 's' : ''}
+                </span>
                 <span>
                   {usedPct}% of {item.total}d
                   {item.hasExceeded && (
                     <span style={{ color: '#dc2626' }}>
-                      {' '}· +{item.exceeded}d over
+                      {' '}
+                      · +{item.exceeded}d over
                     </span>
                   )}
                 </span>

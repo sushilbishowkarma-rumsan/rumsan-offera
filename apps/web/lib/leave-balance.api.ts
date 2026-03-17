@@ -16,6 +16,7 @@ export interface LeaveBalanceSummary {
   remaining: number;
   exceeded: number;
   hasExceeded: boolean;
+  comments?: string;
 }
 
 export interface EmployeeWithBalances {
