@@ -14,6 +14,7 @@ import {
   useDeleteLeavePolicy,
 } from '@/hooks/use-leave-policies';
 import {
+  leaveBalanceKeys,
   useAllEmployeesWithBalances,
   useSetEmployeeLeaveQuotaBulk,
 } from '@/hooks/use-leave-balance';
@@ -53,6 +54,7 @@ import {
   ChevronRight,
   Search,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -292,6 +294,7 @@ export default function PoliciesPage() {
   };
 
   // ── Handlers: individual quotas ──────────────────────────────────────────────
+  const queryClient = useQueryClient();
 
   const handleSelectEmployee = (employeeId: string) => {
     setSelectedEmployeeId(employeeId);
@@ -320,13 +323,17 @@ export default function PoliciesPage() {
     bulkMutation.mutate(
       { employeeId: selectedEmployeeId, entries },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
+          await queryClient.invalidateQueries({
+            queryKey: leaveBalanceKeys.allWithBalances,
+          });
+
+          setQuotaDraft({});
+          setQuotaDirty(false);
           toast({
             title: 'Quotas Saved',
             description: `Leave quotas updated for ${selectedEmployee?.name ?? 'employee'}.`,
           });
-          setQuotaDraft({});
-          setQuotaDirty(false);
         },
         onError: (err: any) => {
           toast({
