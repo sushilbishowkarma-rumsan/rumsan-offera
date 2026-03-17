@@ -74,7 +74,7 @@ export function useLeaveBalances(employeeId: string | undefined) {
       // Handle both array response and wrapped { data: [] } response
       const balances = Array.isArray(data) ? data : (data?.data ?? []);
 
-      return data as {
+      return balances as {
         id: string;
         leaveType: string;
         total: number;

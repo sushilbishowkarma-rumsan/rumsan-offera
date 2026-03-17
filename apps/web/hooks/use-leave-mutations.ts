@@ -29,7 +29,7 @@ export interface CreateLeaveRequestPayload {
 }
 export interface CreateWfhRequestPayload {
   employeeId: string;
-  startDate: string;   // ← changed from date
+  startDate: string; // ← changed from date
   endDate: string;
   reason?: string;
   managerId?: string;
@@ -60,6 +60,7 @@ export const useCreateLeaveRequest = () => {
       queryClient.invalidateQueries({
         queryKey: ['leave-balances', variables.employeeId],
       });
+      queryClient.invalidateQueries({ queryKey: ['calendar-leave-requests'] });
 
       router.push('/dashboard/leave/history');
     },
@@ -99,6 +100,8 @@ export const useUpdateLeaveStatus = () => {
       queryClient.invalidateQueries({
         queryKey: ['manager-leave-requests', variables.managerId],
       });
+      queryClient.invalidateQueries({ queryKey: ['calendar-leave-requests'] });
+
     },
     onError: (error: any) => {
       const message =
@@ -123,6 +126,7 @@ export const useCreateWfhRequest = () => {
       queryClient.invalidateQueries({
         queryKey: ['wfh-requests', variables.employeeId],
       });
+      queryClient.invalidateQueries({ queryKey: ['calendar-wfh-requests'] });
       router.push('/dashboard/leave/history');
     },
     onError: (error: any) => {
@@ -144,7 +148,7 @@ export const useUpdateWfhStatus = () => {
     }: {
       requestId: string;
       managerId: string;
-      action: "APPROVED" | "REJECTED";
+      action: 'APPROVED' | 'REJECTED';
       approverComment?: string;
     }) => {
       const { data } = await api.patch(`/wfh-requests/${requestId}/status`, {
@@ -155,14 +159,18 @@ export const useUpdateWfhStatus = () => {
       return data;
     },
     onSuccess: (_, variables) => {
-      toast.success(`WFH request ${variables.action.toLowerCase()} successfully.`);
+      toast.success(
+        `WFH request ${variables.action.toLowerCase()} successfully.`,
+      );
       queryClient.invalidateQueries({
-        queryKey: ["manager-wfh-requests", variables.managerId],
+        queryKey: ['manager-wfh-requests', variables.managerId],
       });
+      queryClient.invalidateQueries({ queryKey: ['calendar-wfh-requests'] });
+
     },
     onError: (error: any) => {
-      const message = error.response?.data?.message || "Action failed.";
-      toast.error("Error", { description: message });
+      const message = error.response?.data?.message || 'Action failed.';
+      toast.error('Error', { description: message });
     },
   });
 };
