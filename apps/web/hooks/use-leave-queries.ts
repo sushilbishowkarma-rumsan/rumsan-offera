@@ -28,10 +28,10 @@ export function useRecentLeaveRequests(
 }
 
 // hooks/use-leave-queries.ts — add these two hooks
-
+//rumsan-offera/apps/web/src/hooks/use-leave-queries.ts
 export function useLeavePolicies(userId?: string) {
   return useQuery({
-    queryKey:  userId ? ['leave-policies', userId] : ['leave-policies'],
+    queryKey: userId ? ['leave-policies', userId] : ['leave-policies'],
     queryFn: async () => {
       const url = userId
         ? `/leave-policies?userId=${userId}`
@@ -40,7 +40,9 @@ export function useLeavePolicies(userId?: string) {
       return data as { id: string; leaveType: string; isActive: boolean }[];
     },
     // enabled: userId !== undefined ? !!userId : true,
-    enabled: userId === undefined || !!userId,
+    enabled:
+      userId === undefined || // HR Admin: always fetch
+      (userId !== undefined && userId.length > 0),
     staleTime: 1000 * 60 * 1, // 1 min — policies rarely change
   });
 }
@@ -182,7 +184,7 @@ export function useWfhRequests(employeeId: string | undefined) {
 
 export function useManagerWfhRequests(managerId: string | undefined) {
   return useQuery({
-    queryKey: ["manager-wfh-requests", managerId],
+    queryKey: ['manager-wfh-requests', managerId],
     queryFn: async () => {
       const { data } = await api.get(`/wfh-requests/manager/${managerId}`);
       return data as {
