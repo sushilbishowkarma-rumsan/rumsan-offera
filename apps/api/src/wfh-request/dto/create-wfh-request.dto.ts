@@ -3,6 +3,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsDateString,
+  IsNumber,
 } from 'class-validator';
 
 export class CreateWfhRequestDto {
@@ -17,6 +18,10 @@ export class CreateWfhRequestDto {
   @IsDateString()
   @IsNotEmpty()
   endDate: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  totalDays: number;
 
   @IsString()
   @IsOptional()

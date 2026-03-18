@@ -106,7 +106,6 @@ export default function LeaveRequestPage() {
     if (wfhStartDate === wfhEndDate) return 1;
     return calculateBusinessDays(wfhStartDate, wfhEndDate, holidayDateSet);
   }, [wfhStartDate, wfhEndDate, holidayDateSet]);
-
   // ── Validation ──
   const isLeaveFormValid =
     leaveType !== '' &&
@@ -215,6 +214,7 @@ export default function LeaveRequestPage() {
       employeeId: user.id,
       startDate: wfhStartDate,
       endDate: wfhEndDate,
+      totalDays: wfhTotalDays,
       reason: wfhReason.trim() || undefined,
       managerId: wfhManagerId,
     });

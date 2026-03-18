@@ -32,6 +32,7 @@ export interface CreateWfhRequestPayload {
   employeeId: string;
   startDate: string; // ← changed from date
   endDate: string;
+  totalDays: number;
   reason?: string;
   managerId?: string;
 }
@@ -102,7 +103,6 @@ export const useUpdateLeaveStatus = () => {
         queryKey: ['manager-leave-requests', variables.managerId],
       });
       queryClient.invalidateQueries({ queryKey: ['calendar-leave-requests'] });
-
     },
     onError: (error: any) => {
       const message =
@@ -167,7 +167,6 @@ export const useUpdateWfhStatus = () => {
         queryKey: ['manager-wfh-requests', variables.managerId],
       });
       queryClient.invalidateQueries({ queryKey: ['calendar-wfh-requests'] });
-
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || 'Action failed.';

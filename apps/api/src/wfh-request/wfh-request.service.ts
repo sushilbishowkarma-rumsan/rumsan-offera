@@ -8,20 +8,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateWfhRequestDto } from './dto/create-wfh-request.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 
-// Reuse same business day calculator as frontend
-function calculateBusinessDays(start: string, end: string): number {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-  let count = 0;
-  const current = new Date(startDate);
-  while (current <= endDate) {
-    const day = current.getDay();
-    if (day !== 0 && day !== 6) count++;
-    current.setDate(current.getDate() + 1);
-  }
-  return count;
-}
-
 @Injectable()
 export class WfhRequestService {
   constructor(
@@ -38,13 +24,13 @@ export class WfhRequestService {
     if (new Date(dto.endDate) < new Date(dto.startDate)) {
       throw new BadRequestException('End date cannot be before start date');
     }
-    const totalDays = calculateBusinessDays(dto.startDate, dto.endDate);
+    // const totalDays = calculateBusinessDays(dto.startDate, dto.endDate);
 
     const request = await this.prisma.wfhRequest.create({
       data: {
         startDate: dto.startDate,
         endDate: dto.endDate,
-        totalDays,
+        totalDays: dto.totalDays,
         reason: dto.reason,
         employeeId: dto.employeeId,
         managerId: dto.managerId,
