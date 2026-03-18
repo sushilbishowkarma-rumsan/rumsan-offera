@@ -28,6 +28,7 @@ import { useLeaveBalances } from '@/hooks/use-leave-queries';
 import { LeaveBalanceSummaryCard } from '../leave-balance-summary-card';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle } from 'lucide-react';
+import { ExceededLeaveAlert } from '../exceeded-leave-alert';
 
 export function AdminDashboard() {
   const { user } = useAuth();
@@ -209,6 +210,7 @@ export function AdminDashboard() {
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }}>
       <div className="flex flex-col gap-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+        <ExceededLeaveAlert employeeId={user?.id ?? ''} />
         {/* ── Stats Grid ── */}
         <button
           onClick={() => router.push('/dashboard/exceed')}
