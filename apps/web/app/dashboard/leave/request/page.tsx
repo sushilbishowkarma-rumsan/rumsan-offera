@@ -80,6 +80,7 @@ export default function LeaveRequestPage() {
   const [leaveDays, setLeaveDays] = useState<LeaveDay[]>([
     { date: '', dayType: 'FULL' },
   ]);
+  const [alertDayLimit, setAlertDayLimit] = useState('');
 
   // ── WFH state ──
   const [wfhStartDate, setWfhStartDate] = useState('');
@@ -98,7 +99,15 @@ export default function LeaveRequestPage() {
     if (isHalfDay) return 0.5;
     if (startDate === endDate) return 1;
     return calculateBusinessDays(startDate, endDate, holidayDateSet, leaveType);
-  }, [useMultiDay, leaveDays, startDate, endDate, isHalfDay, holidayDateSet, leaveType]);
+  }, [
+    useMultiDay,
+    leaveDays,
+    startDate,
+    endDate,
+    isHalfDay,
+    holidayDateSet,
+    leaveType,
+  ]);
 
   // ── Derived: WFH total ──
   const wfhTotalDays = useMemo(() => {
@@ -132,7 +141,26 @@ export default function LeaveRequestPage() {
   const handleLeaveSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLeaveFormValid || !user) return;
-     if(leaveTotalDays === 0) return;
+    if (leaveTotalDays === 0) return;
+
+    const type = leaveType?.toLowerCase() || '';
+    if (type === 'maternity' || type === 'maternity leave') {
+      if (leaveTotalDays > 98) {
+        setAlertDayLimit('Limit is 98 Days');
+        return;
+      }
+    } else if (type === 'paternity' || type === 'paternity leave') {
+      if (leaveTotalDays > 15) {
+        setAlertDayLimit('Limit is 15 Days');
+        return;
+      }
+    } else if (type === 'mourning' || type === 'mourning leave') {
+      if (leaveTotalDays > 13) {
+        setAlertDayLimit('Limit is 13 Days');
+        return;
+      }
+    }
+
     if (useMultiDay) {
       const validDays = leaveDays.filter((d) => d.date !== '');
       const dates = validDays.map((d) => d.date).sort();
@@ -209,7 +237,7 @@ export default function LeaveRequestPage() {
   const handleWfhSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isWfhFormValid || !user) return;
-    if(wfhTotalDays === 0) return;
+    if (wfhTotalDays === 0) return;
     createWfh.mutate({
       employeeId: user.id,
       startDate: wfhStartDate,
@@ -713,14 +741,29 @@ export default function LeaveRequestPage() {
                   >
                     Reason (Optional)
                   </label>
+                  {alertDayLimit && (
+                    <span className="text-[11px] font-bold text-red-500 animate-pulse">
+                      ⚠️ {alertDayLimit}
+                    </span>
+                  )}
                   <textarea
-                    placeholder="Add any notes..."
+                    placeholder={alertDayLimit ? '' : 'Add any notes...'}
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     rows={3}
-                    className="w-full resize-none rounded-xl px-3 py-2.5 text-[13px] outline-none placeholder:text-slate-400"
+                    className={`w-full resize-none rounded-xl px-3 py-2.5 text-[13px] outline-none placeholder:text-slate-400
+      ${alertDayLimit ? 'border-red-400 ring-1 ring-red-100' : 'placeholder:text-slate-400'}
+    `}
+                    // className="w-full resize-none rounded-xl px-3 py-2.5 text-[13px] outline-none placeholder:text-slate-400"
                     style={inputStyle}
                   />
+                  {alertDayLimit && !wfhReason && (
+                    <div className="absolute top-[38px] left-3 pointer-events-none">
+                      <span className="text-[13px] text-red-500 opacity-70">
+                        {alertDayLimit}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-3 pt-1">
