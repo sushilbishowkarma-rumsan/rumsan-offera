@@ -165,7 +165,7 @@ export class LeaveBalanceController {
     return this.leaveBalanceService.getExceededBalancesForAllEmployees();
   }
 
-  @Delete('employees/exceeded') // ← add Delete to your controller imports
+  @Delete('employees/exceeded')
   @UseGuards(JwtAuthGuard)
   async clearAllExceeded() {
     const result = await this.leaveBalanceService.clearAllExceededBalances();
