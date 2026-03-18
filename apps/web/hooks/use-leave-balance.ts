@@ -68,3 +68,75 @@ export function useSetEmployeeLeaveQuotaBulk() {
     },
   });
 }
+  export function useAllExceededBalances() {
+  return useQuery({
+    queryKey: ['leave-balances', 'employees', 'exceeded'] as const,
+    queryFn: () => leaveBalanceApi.getAllExceededBalances(),
+    staleTime: 1000 * 60 * 2, // re-fetch after 2 minutes
+  });
+}
+
+export function useClearAllExceeded() {
+  const queryClient = useQueryClient();
+ 
+  return useMutation({
+    mutationFn: () => leaveBalanceApi.clearAllExceeded(),
+    onSuccess: () => {
+      // Refetch the exceeded list so the page immediately shows empty state
+      queryClient.invalidateQueries({
+        queryKey: ['leave-balances', 'employees', 'exceeded'],
+      });
+      // Also invalidate per-employee summaries so balances elsewhere update
+      queryClient.invalidateQueries({
+        queryKey: ['leave-balances'],
+      });
+    },
+  });
+}
+
+export function useExceededHistory(params?: {
+  year?:       number;
+  month?:      number;
+  employeeId?: string;
+  search?:     string;
+}) {
+  return useQuery({
+    queryKey: ['leave-balances', 'history', 'exceeded', params ?? {}] as const,
+    queryFn:  () => leaveBalanceApi.getExceededHistory(params),
+    staleTime: 1000 * 60 * 5, // 5 minutes — history doesn't change often
+  });
+}
+
+/**
+ * HR Admin: fetch the list of years that have exceeded history records.
+ * Used to populate the year filter dropdown.
+ */
+export function useExceededHistoryYears() {
+  return useQuery({
+    queryKey: ['leave-balances', 'history', 'exceeded', 'years'] as const,
+    queryFn:  leaveBalanceApi.getExceededHistoryYears,
+    staleTime: 1000 * 60 * 10,
+  });
+}
+
+
+/**
+ * HR Admin: year-end reset — archive all balances then re-seed from policies.
+ * Invalidates all leave-balance caches on success.
+ *
+ * Usage:
+ *   const { mutate: yearEndReset, isPending } = useYearEndReset();
+ *   yearEndReset(undefined, { onSuccess: (data) => toast(data.message) });
+ */
+export function useYearEndReset() {
+  const queryClient = useQueryClient();
+ 
+  return useMutation({
+    mutationFn: () => leaveBalanceApi.resetYearEnd(),
+    onSuccess: () => {
+      // Wipe every leave-balance cache entry so all pages reflect fresh data
+      queryClient.invalidateQueries({ queryKey: ['leave-balances'] });
+    },
+  });
+}
+ 

@@ -27,9 +27,12 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 import { useAuth } from '@/lib/auth-context';
 import { useLeaveBalances } from '@/hooks/use-leave-queries';
 import { LeaveBalanceSummaryCard } from '../leave-balance-summary-card';
+import { useRouter } from 'next/navigation';
+import { AlertTriangle } from 'lucide-react';
 
 export function AdminDashboard() {
   const { user } = useAuth();
+  const router = useRouter();
 
   const { data, isLoading, error } = useAdminDashboardData();
   const { data: activity, isLoading: activityLoading } = useRecentActivity(5);
@@ -208,6 +211,69 @@ export function AdminDashboard() {
     <div className="min-h-screen" style={{ background: '#f8f9fc' }}>
       <div className="flex flex-col gap-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         {/* ── Stats Grid ── */}
+        <button
+          onClick={() => router.push('/dashboard/exceed')}
+          className="group relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer text-left w-full"
+          style={{
+            background: '#fff1f2',
+            border: '1.5px solid #fca5a5',
+            boxShadow: '0 1px 3px rgba(239,68,68,0.08)',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.boxShadow =
+              '0 8px 24px rgba(239,68,68,0.16)';
+            (e.currentTarget as HTMLButtonElement).style.borderColor =
+              '#ef4444';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.boxShadow =
+              '0 1px 3px rgba(239,68,68,0.08)';
+            (e.currentTarget as HTMLButtonElement).style.borderColor =
+              '#fca5a5';
+          }}
+        >
+          {/* Red accent bar at top */}
+          <div
+            className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
+            style={{ background: '#ef4444' }}
+          />
+
+          <div className="flex items-center gap-4 pt-1">
+            {/* Icon */}
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-xl flex-shrink-0"
+              style={{ background: '#fecaca', color: '#dc2626' }}
+            >
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+
+            {/* Text */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold" style={{ color: '#991b1b' }}>
+                Exceeded Leave Balances
+              </p>
+              <p className="text-[11px] mt-0.5" style={{ color: '#b91c1c' }}>
+                View employees who exceeded their quota
+              </p>
+            </div>
+
+            {/* Arrow */}
+            <svg
+              className="h-4 w-4 flex-shrink-0 transition-transform group-hover:translate-x-1"
+              style={{ color: '#dc2626' }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </div>
+        </button>
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {statCards.map((card) => (
             <div
@@ -607,8 +673,10 @@ export function AdminDashboard() {
               )}
             </div>
           </div>
-          <LeaveBalanceSummaryCard employeeId={user?.id ?? ""} showExceededAlert />
-
+          <LeaveBalanceSummaryCard
+            employeeId={user?.id ?? ''}
+            showExceededAlert
+          />
         </div>
       </div>
     </div>
