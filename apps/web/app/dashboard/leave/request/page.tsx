@@ -747,7 +747,7 @@ export default function LeaveRequestPage() {
                     </span>
                   )}
                   <textarea
-                    placeholder={alertDayLimit ? '' : 'Add any notes...'}
+                    placeholder="Add any notes..."
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     rows={3}
