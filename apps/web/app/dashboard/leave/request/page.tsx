@@ -757,13 +757,6 @@ export default function LeaveRequestPage() {
                     // className="w-full resize-none rounded-xl px-3 py-2.5 text-[13px] outline-none placeholder:text-slate-400"
                     style={inputStyle}
                   />
-                  {alertDayLimit && !wfhReason && (
-                    <div className="absolute top-[38px] left-3 pointer-events-none">
-                      <span className="text-[13px] text-red-500 opacity-70">
-                        {alertDayLimit}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex items-center gap-3 pt-1">
