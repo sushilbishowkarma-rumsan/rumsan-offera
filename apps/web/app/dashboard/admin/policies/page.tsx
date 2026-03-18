@@ -385,10 +385,6 @@ export default function PoliciesPage() {
                       Default Quota (days/yr)
                     </TableHead>
                     <TableHead className="text-center">Comments</TableHead>
-                    {/* <TableHead className="text-center">Accrual Rate</TableHead> */}
-                    <TableHead className="text-center">
-                      Max Consecutive
-                    </TableHead>
                     <TableHead className="text-center">Approval</TableHead>
                     <TableHead className="text-center">Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -430,30 +426,24 @@ export default function PoliciesPage() {
                   )}
                   {policies?.map((policy) => (
                     <TableRow key={policy.id}>
-                      <TableCell className="font-medium whitespace-nowrap">
+                      <TableCell className="font-medium  text-xs whitespace-nowrap">
                         {getLeaveTypeLabel(policy.leaveType)}
                       </TableCell>
                       <TableCell className="text-center">
                         {policy.defaultQuota}
                       </TableCell>
-                      {/* <TableCell className="text-center">
-                        <div className="w-[80px] break-words whitespace-normal">
-                          {policy.comments ? policy.comments : 'None'}
+                      <TableCell className="text-center py-4">
+                        <div className="w-[290px] mx-auto">
+                          {policy.comments ? (
+                            <p className="text-xs text-slate-600 leading-relaxed break-words whitespace-normal text-justify hyphens-auto">
+                              {policy.comments}
+                            </p>
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">
+                              No comments provided
+                            </span>
+                          )}
                         </div>
-                      </TableCell> */}
-                      <TableCell className="text-center">
-                        <div className="w-[180px] break-words whitespace-normal">
-                          {policy.comments ? policy.comments : 'None'}
-                        </div>
-                        {/* {policy.comments ? policy.comments : 'None'} */}
-                      </TableCell>
-                      {/* <TableCell className="text-center whitespace-nowrap">
-                        {policy.accrualRate > 0
-                          ? `${policy.accrualRate}/mo`
-                          : 'N/A'}
-                      </TableCell> */}
-                      <TableCell className="text-center">
-                        {policy.maxConsecutiveDays}
                       </TableCell>
                       <TableCell className="text-center">
                         {policy.requiresApproval ? (

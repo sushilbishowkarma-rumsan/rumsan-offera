@@ -1,4 +1,4 @@
-// frontend/src/hooks/use-leave-balance.ts
+// rumsan-offera/apps/web/hooks/use-leave-balance.ts
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { leaveBalanceApi } from '@/lib/leave-balance.api';

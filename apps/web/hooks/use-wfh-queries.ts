@@ -1,4 +1,4 @@
-// src/hooks/use-wfh-queries.ts
+// rumsan-offera/apps/web/hooks/use-wfh-queries.ts
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 

@@ -68,13 +68,13 @@ const leaveNavItems: NavItem[] = [
     title: 'New Request',
     href: '/dashboard/leave/request',
     icon: <CalendarPlus className="h-4 w-4" />,
-    roles: ['EMPLOYEE', 'HRADMIN'],
+    roles: ['EMPLOYEE', 'HRADMIN', 'MANAGER'],
   },
   {
     title: 'My History',
     href: '/dashboard/leave/history',
     icon: <History className="h-4 w-4" />,
-    roles: ['EMPLOYEE', 'HRADMIN'],
+    roles: ['EMPLOYEE', 'HRADMIN', 'MANAGER'],
   },
   // {
   //   title: 'Leave Balance',

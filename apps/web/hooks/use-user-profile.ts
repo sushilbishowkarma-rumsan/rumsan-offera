@@ -1,3 +1,4 @@
+// rumsan-offera/apps/web/src/hooks/use-user-profile.ts
 /**
  * User Profile Data Fetching Hooks
  * For viewing detailed user information (HR Admin & Manager only)

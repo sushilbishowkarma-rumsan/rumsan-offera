@@ -68,12 +68,26 @@ export function calculateBusinessDays(
   start: string,
   end: string,
   holidayDateSet: Set<string> = new Set(),
+  leaveType?: string,
 ): number {
   const startDate = new Date(start);
   const endDate = new Date(end);
   let count = 0;
   const current = new Date(startDate);
 
+  const continuousKeywords = [
+    'maternity',
+    'maternity leave',
+    'paternity',
+    'paternity leave',
+    'mourning leave',
+    'mourning',
+  ];
+
+  const type = leaveType?.toLowerCase() || '';
+  const isContinuous = continuousKeywords.some((keyword) =>
+    type.includes(keyword),
+  );
   while (current <= endDate) {
     const dayOfWeek = current.getDay();
     const y = current.getFullYear();
@@ -81,8 +95,17 @@ export function calculateBusinessDays(
     const d = current.getDate();
     const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
-    if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidayDateSet.has(dateStr)) {
+    // if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidayDateSet.has(dateStr)) {
+    //   count++;
+    // }
+    if (isContinuous) {
+      // For these types, count every single day regardless of weekends/holidays
       count++;
+    } else {
+      // For other types, skip Saturday (6), Sunday (0), and Holidays
+      if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidayDateSet.has(dateStr)) {
+        count++;
+      }
     }
     current.setDate(current.getDate() + 1);
   }

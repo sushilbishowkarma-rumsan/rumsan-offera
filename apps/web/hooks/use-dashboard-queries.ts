@@ -1,8 +1,9 @@
+// rumsan-offera/apps/web/hooks/use-dashboard-queries.ts
+
 /**
  * Dashboard Data Fetching Hooks
  * React Query hooks for fetching dashboard statistics and data
  */
-// hooks/use-dashboard-queries.ts
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';

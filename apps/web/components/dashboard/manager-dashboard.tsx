@@ -6,6 +6,8 @@ import { useManagerDashboardData } from '@/hooks/use-dashboard-queries';
 import { formatDate, getInitials } from '@/lib/leave-helpers';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ExceededLeaveAlert } from '@/components/exceeded-leave-alert';
+
 import {
   CheckSquare,
   Users,
@@ -230,6 +232,7 @@ export function ManagerDashboard() {
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }}>
       <div className="flex flex-col gap-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+        <ExceededLeaveAlert employeeId={user?.id ?? ''} />
         <button
           onClick={() => router.push('/dashboard/exceed')}
           className="group relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer text-left w-full"

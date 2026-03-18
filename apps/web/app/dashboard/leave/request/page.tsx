@@ -97,8 +97,8 @@ export default function LeaveRequestPage() {
     if (!startDate || !endDate) return 0;
     if (isHalfDay) return 0.5;
     if (startDate === endDate) return 1;
-    return calculateBusinessDays(startDate, endDate, holidayDateSet);
-  }, [useMultiDay, leaveDays, startDate, endDate, isHalfDay, holidayDateSet]);
+    return calculateBusinessDays(startDate, endDate, holidayDateSet, leaveType);
+  }, [useMultiDay, leaveDays, startDate, endDate, isHalfDay, holidayDateSet, leaveType]);
 
   // ── Derived: WFH total ──
   const wfhTotalDays = useMemo(() => {

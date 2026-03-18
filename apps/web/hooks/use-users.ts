@@ -1,4 +1,4 @@
-// src/hooks/use-users.ts
+// rumsan-offera/apps/web/hooks/use-users.ts
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { usersApi } from "@/lib/users.api";
