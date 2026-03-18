@@ -7,6 +7,7 @@ import {
   useRecentActivity,
 } from '@/hooks/use-dashboard-queries';
 import { formatDate, formatDateTime, getInitials } from '@/lib/leave-helpers';
+import { ExceededLeaveAlert } from '../exceeded-leave-alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Users,
@@ -210,6 +211,7 @@ export function AdminDashboard() {
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }}>
       <div className="flex flex-col gap-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+        <ExceededLeaveAlert employeeId={user?.id ?? ''} />
         {/* ── Stats Grid ── */}
         <button
           onClick={() => router.push('/dashboard/exceed')}
