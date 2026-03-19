@@ -18,6 +18,7 @@ import {
   SetEmployeeLeaveQuotaDto,
   SetEmployeeLeaveQuotaBulkDto,
 } from './dto/set-employee-quota.dto';
+import { LeaveBalanceScheduler } from './leave-balance.scheduler';
 
 export interface YearEndResetResult {
   archived: number;
@@ -28,7 +29,10 @@ export interface YearEndResetResult {
 
 @Controller('leave-balances')
 export class LeaveBalanceController {
-  constructor(private readonly leaveBalanceService: LeaveBalanceService) {}
+  constructor(
+    private readonly leaveBalanceService: LeaveBalanceService,
+    private readonly leaveBalanceScheduler: LeaveBalanceScheduler,
+  ) {}
 
   // ── GET: employee's own balances ─────────────────────────────────────────────
   @Get('employee/:employeeId')
@@ -260,6 +264,14 @@ export class LeaveBalanceController {
         `Archived ${result.archived}, deleted ${result.deleted}, ` +
         `created ${result.created} fresh balances.`,
     };
+  }
+
+  // ← Add this endpoint for manual testing
+  @Post('send-exceeded-warnings')
+  @UseGuards(JwtAuthGuard)
+  async triggerExceededWarnings() {
+    await this.leaveBalanceScheduler.sendMonthEndExceededWarnings();
+    return { message: 'Exceeded warning emails triggered' };
   }
 
   // return {

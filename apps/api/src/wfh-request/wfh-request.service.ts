@@ -7,12 +7,13 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateWfhRequestDto } from './dto/create-wfh-request.dto';
 import { NotificationsService } from '../notifications/notifications.service';
-
+import { MailService } from '../mail/mail.service';
 @Injectable()
 export class WfhRequestService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private mailService: MailService,
   ) {}
 
   async create(dto: CreateWfhRequestDto) {
@@ -24,7 +25,23 @@ export class WfhRequestService {
     if (new Date(dto.endDate) < new Date(dto.startDate)) {
       throw new BadRequestException('End date cannot be before start date');
     }
-    // const totalDays = calculateBusinessDays(dto.startDate, dto.endDate);
+
+    let internalManagerId: string | undefined = undefined;
+
+    if (dto.managerId) {
+      const manager = await this.prisma.user.findUnique({
+        where: { rsofficeId: dto.managerId }, // Frontend sent the CUID
+        select: { id: true, email: true },
+      });
+      if (manager) {
+        internalManagerId = manager.id;
+      } else {
+        console.warn(
+          `Manager with CUID ${dto.managerId} not found in local DB.`,
+        );
+        // Optionally throw error or fallback to null
+      }
+    }
 
     const request = await this.prisma.wfhRequest.create({
       data: {
@@ -33,7 +50,9 @@ export class WfhRequestService {
         totalDays: dto.totalDays,
         reason: dto.reason,
         employeeId: dto.employeeId,
-        managerId: dto.managerId,
+        managerId: internalManagerId,
+        // managerId: dto.managerId,
+
         status: 'PENDING',
       },
       include: { employee: true, manager: true },
@@ -50,6 +69,18 @@ export class WfhRequestService {
       });
     }
 
+    if (request.manager?.email) {
+      await this.mailService.sendWfhRequestNotification({
+        managerEmail: request.manager.email,
+        managerName: request.manager.name || 'Manager',
+        employeeName: request.employee.name || request.employee.email,
+        startDate: new Date(request.startDate),
+        endDate: new Date(request.endDate),
+        totalDays: request.totalDays,
+        reason: request.reason,
+        approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
+      });
+    }
     return request;
   }
 
@@ -102,6 +133,15 @@ export class WfhRequestService {
       relatedRequestId: updated.id,
     });
 
+    await this.mailService.sendRequestStatusNotification({
+      employeeEmail: request.employee.email,
+      employeeName: request.employee.name || request.employee.email,
+      requestType: 'WFH',
+      action: action, // already 'APPROVED' | 'REJECTED'
+      startDate: new Date(request.startDate),
+      endDate: new Date(request.endDate),
+      approverComment: approverComment,
+    });
     return updated;
   }
 

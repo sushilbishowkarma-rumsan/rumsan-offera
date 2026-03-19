@@ -51,28 +51,22 @@ export class LeaverequestController {
   @UseGuards(JwtAuthGuard)
   async getCalendarData(@Req() req: AuthenticatedRequest) {
     const { id: userId, role } = req.user;
-    console.log('User role in calendar endpoint:', role);
-    console.log('User ID in calendar endpoint:', userId);
     if (role === 'HRADMIN' || role === 'MANAGER') {
       // See all approved leaves
       const approvedLeaves =
         await this.leaverequestService.findApprovedLeaves();
-      console.log('Approved leaves from API:', approvedLeaves);
       return approvedLeaves;
     }
 
     // Employee: see only their department's approved leaves
-    console.log('Fetching approved leaves for user:', userId);
     const approvedLeaves =
       await this.leaverequestService.findApprovedLeavesByDepartment(userId);
-    console.log('Approved leaves for user:', approvedLeaves);
     return approvedLeaves;
   }
   // Get pending requests for manager
   @Get('manager/:managerId/pending')
   @UseGuards(JwtAuthGuard)
   async getPendingForManager(@Param('managerId') managerId: string) {
-    // const requests = await this.leaverequestService.findByManager(managerId);
     const requests = await this.leaverequestService.findAllByManager(managerId);
     return requests.filter((r) => r.status === 'PENDING');
   }
@@ -91,11 +85,8 @@ export class LeaverequestController {
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async createLeaveRequest(@Body() dto: CreateLeaveRequestDto) {
-    console.log('--- STEP 1: Controller Received Request ---');
-    console.log('Payload:', JSON.stringify(dto, null, 2));
     try {
       const result = await this.leaverequestService.create(dto);
-      console.log('--- STEP 4: Controller Sending Success Response ---');
       return { message: 'Leave request created successfully', data: result };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

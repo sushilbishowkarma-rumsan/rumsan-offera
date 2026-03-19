@@ -11,10 +11,18 @@ export interface User {
   role: UserRole;
   department?: string; // ← optional: DB can return null for new users
   designation?: string; // ← optional: not always set
-  managerId?: string;
+  org_unit: string;
+  managerCuid: string;
   joinDate?: string; // ← optional: backend uses createdAt, not joinDate
   createdAt?: string; // ← ADD: backend returns this
   updatedAt?: string; // ← ADD: backend returns this
+  employment_type: string | null;
+  phone_work: string | null;
+  phone_home: string | null;
+  phone_recovery: string | null;
+  job_title: string | null;
+  gender: string | null;
+  rsofficeId: string | null;
 }
 
 /* ── Leave Types ── */

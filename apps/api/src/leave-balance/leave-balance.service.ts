@@ -195,77 +195,12 @@ export class LeaveBalanceService {
     };
   }
 
-  // async resetMonthlyBalances() {
-  //   const now = new Date();
-  //   const month = now.getMonth() + 1;
-  //   const year = now.getFullYear();
-
-  //   const balances = await this.prisma.leaveBalance.findMany();
-
-  //   await this.prisma.leaveBalanceHistory.createMany({
-  //     data: balances.map((b) => ({
-  //       employeeId: b.employeeId,
-  //       leaveType: b.leaveType,
-  //       month,
-  //       year,
-  //       total: b.total,
-  //       used: b.total - b.remaining,
-  //       remaining: b.remaining,
-  //     })),
-  //     skipDuplicates: true,
-  //   });
-
-  //   await Promise.all(
-  //     balances.map((b) =>
-  //       this.prisma.leaveBalance.update({
-  //         where: { id: b.id },
-  //         data: { remaining: b.total, exceeded: 0 },
-  //       }),
-  //     ),
-  //   );
-
-  //   return {
-  //     message: `Archived and reset ${balances.length} balances for ${month}/${year}.`,
-  //   };
-  // }
   async resetMonthlyBalances() {
     const now = new Date();
     const month = now.getMonth() + 1;
     const year = now.getFullYear();
 
     const balances = await this.prisma.leaveBalance.findMany();
-
-    // ── Archive current state (including exceeded) before wiping ──────────
-    // await this.prisma.leaveBalanceHistory.createMany({
-    //   data: balances.map((b) => ({
-    //     employeeId: b.employeeId,
-    //     leaveType: b.leaveType,
-    //     month,
-    //     year,
-    //     total: b.total,
-    //     used: b.total - b.remaining, // within-quota days used
-    //     remaining: b.remaining,
-    //     // NOTE: If your LeaveBalanceHistory schema does not yet have an
-    //     // `exceeded` column, add it first:
-    //     //   exceeded Float @default(0)
-    //     // Then uncomment the next line:
-    //     // exceeded: b.exceeded,
-    //   })),
-    //   skipDuplicates: true,
-    // });
-
-    // // ── Reset balances: restore remaining to total, clear exceeded to 0 ───
-    // await Promise.all(
-    //   balances.map((b) =>
-    //     this.prisma.leaveBalance.update({
-    //       where: { id: b.id },
-    //       data: {
-    //         remaining: b.total,
-    //         exceeded: 0, // ← clears the exceeded days each month-end
-    //       },
-    //     }),
-    //   ),
-    // );
 
     await Promise.all(
       balances.map((b) =>
@@ -1000,14 +935,14 @@ export class LeaveBalanceService {
     });
 
     const filtered = rows.filter((r) => {
-      const exceeded = r.exceeded as number;
+      const exceeded = r.exceeded;
       const used = r.used;
       const total = r.total;
       return exceeded > 0 || used > total;
     });
 
     const result: ExceededHistoryRecord[] = filtered.map((r) => {
-      const exceeded = r.exceeded as number;
+      const exceeded = r.exceeded;
       const used = r.used;
       const total = r.total;
 

@@ -48,14 +48,16 @@ export default function LeaveRequestPage() {
   const createLeave = useCreateLeaveRequest();
   const createWfh = useCreateWfhRequest();
 
+  const managerId = user?.managerCuid;
+  // console.log(user, " theis is test user for manager>>>>>>>>>");
   const { data: policies = [], isLoading: policiesLoading } = useLeavePolicies(
     user?.id ?? undefined,
   );
   // console.log(policies, 'These are policies for the user');
-  const { data: managers = [], isLoading: managersLoading } = useManagers();
+  // const { data: managers = [], isLoading: managersLoading } = useManagers();
   const activeLeaveTypes = policies.filter((p) => p.isActive);
-  console.log(policies, 'These are policies for the user');
-  console.log(activeLeaveTypes, 'These are active leave types for the user');
+  // console.log(policies, 'These are policies for the user');
+  // console.log(activeLeaveTypes, 'These are active leave types for the user');
 
   const { data: allHolidays = [] } = useCalendarHolidays(); // ← NEW
   // ── Build Set of "YYYY-MM-DD" strings for fast holiday lookup ──
@@ -69,7 +71,7 @@ export default function LeaveRequestPage() {
   // ── Leave state ──
   const [leaveType, setLeaveType] = useState('');
   const [reason, setReason] = useState('');
-  const [managerId, setManagerId] = useState('');
+  // const [managerId, setManagerId] = useState('');
   const [useMultiDay, setUseMultiDay] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -86,7 +88,7 @@ export default function LeaveRequestPage() {
   const [wfhStartDate, setWfhStartDate] = useState('');
   const [wfhEndDate, setWfhEndDate] = useState('');
   const [wfhReason, setWfhReason] = useState('');
-  const [wfhManagerId, setWfhManagerId] = useState('');
+  // const [wfhManagerId, setWfhManagerId] = useState('');
 
   // ── Derived: leave total ──
   const leaveTotalDays = useMemo(() => {
@@ -125,7 +127,7 @@ export default function LeaveRequestPage() {
       : startDate !== '' && endDate !== '');
 
   const isWfhFormValid =
-    wfhStartDate !== '' && wfhEndDate !== '' && wfhManagerId !== '';
+    wfhStartDate !== '' && wfhEndDate !== '' && managerId !== '';
 
   // ── Multi-day helpers ──
   const addLeaveDay = () =>
@@ -161,6 +163,7 @@ export default function LeaveRequestPage() {
       }
     }
 
+    // console.log("this is manahert id ++++>>>", managerId);
     if (useMultiDay) {
       const validDays = leaveDays.filter((d) => d.date !== '');
       const dates = validDays.map((d) => d.date).sort();
@@ -199,7 +202,7 @@ export default function LeaveRequestPage() {
       setWfhStartDate('');
       setWfhEndDate('');
       setWfhReason('');
-      setWfhManagerId('');
+      // setWfhManagerId('');
     }
   }, [mode]);
 
@@ -209,7 +212,7 @@ export default function LeaveRequestPage() {
       // Reset leave fields when switching to WFH
       setLeaveType('');
       setReason('');
-      setManagerId('');
+      // setManagerId('');
       setStartDate('');
       setEndDate('');
       setIsHalfDay(false);
@@ -244,7 +247,7 @@ export default function LeaveRequestPage() {
       endDate: wfhEndDate,
       totalDays: wfhTotalDays,
       reason: wfhReason.trim() || undefined,
-      managerId: wfhManagerId,
+      managerId,
     });
   };
 
@@ -371,7 +374,7 @@ export default function LeaveRequestPage() {
                       </Select>
                     )}
                   </div>
-                  <div className="flex flex-col gap-2">
+                  {/* <div className="flex flex-col gap-2">
                     <label
                       className="text-[12px] font-semibold uppercase tracking-[0.08em]"
                       style={{ color: '#475569' }}
@@ -401,7 +404,7 @@ export default function LeaveRequestPage() {
                         </SelectContent>
                       </Select>
                     )}
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* Mixed Day Toggle */}
@@ -890,7 +893,7 @@ export default function LeaveRequestPage() {
                 )}
 
                 {/* Manager */}
-                <div className="flex flex-col gap-2">
+                {/* <div className="flex flex-col gap-2">
                   <label
                     className="text-[12px] font-semibold uppercase tracking-[0.08em]"
                     style={{ color: '#475569' }}
@@ -923,7 +926,7 @@ export default function LeaveRequestPage() {
                       </SelectContent>
                     </Select>
                   )}
-                </div>
+                </div> */}
 
                 {/* Reason */}
                 <div className="flex flex-col gap-2">

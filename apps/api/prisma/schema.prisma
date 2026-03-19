@@ -37,7 +37,7 @@ enum LeaveType {
 }
 
 model User {
-  id                  String                @id @default(uuid())
+  id                  String                @id @default(cuid())
   googleId            String                @unique
   rsofficeId          String?               @unique
   email               String                @unique
@@ -45,6 +45,15 @@ model User {
   avatar              String?
   department          String?
   role                Role                  @default(EMPLOYEE)
+  gender              String?
+  active              Boolean               @default(true)
+  orgUnit             String? // e.g. "/rahat"
+  jobTitle            String?
+  employmentType      String?
+  phoneWork           String?
+  phoneHome           String?
+  phoneRecovery       String?
+  managerCuid         String?
   leaveRequests       LeaveRequest[]        @relation("EmployeeLeaves") // ← update relation name
   managedLeaves       LeaveRequest[]        @relation("ManagerLeaves") // ← add this
   leaveBalances       LeaveBalance[]
@@ -57,7 +66,7 @@ model User {
 }
 
 model LeaveRequest {
-  id              String      @id @default(uuid())
+  id              String      @id @default(cuid())
   startDate       DateTime
   endDate         DateTime
   leaveType       String
@@ -78,7 +87,7 @@ model LeaveRequest {
 }
 
 model LeaveDay {
-  id             String       @id @default(uuid())
+  id             String       @id @default(cuid())
   date           String
   dayType        String
   leaveRequestId String
@@ -86,7 +95,7 @@ model LeaveDay {
 }
 
 model WfhRequest {
-  id              String      @id @default(uuid())
+  id              String      @id @default(cuid())
   startDate       String // ← changed from date to startDate
   endDate         String // ← added
   totalDays       Float       @default(1)
@@ -102,7 +111,7 @@ model WfhRequest {
 }
 
 model LeaveBalance {
-  id            String      @id @default(uuid())
+  id            String      @id @default(cuid())
   leaveType     String // ← plain string, matches LeavePolicy
   total         Float
   remaining     Float
@@ -118,7 +127,7 @@ model LeaveBalance {
 // ─── Leave Policy ─────────────────────────────────────────────────────────────
 
 model LeavePolicy {
-  id                 String         @id @default(uuid())
+  id                 String         @id @default(cuid())
   leaveType          String         @unique
   defaultQuota       Int
   comments           String         @default("")
@@ -134,7 +143,7 @@ model LeavePolicy {
 }
 
 model LeaveBalanceHistory {
-  id         String   @id @default(uuid())
+  id         String   @id @default(cuid())
   employeeId String
   leaveType  String
   month      Int // 1-12
@@ -150,7 +159,7 @@ model LeaveBalanceHistory {
 }
 
 model Notification {
-  id               String   @id @default(uuid())
+  id               String   @id @default(cuid())
   userId           String
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   type             String // leave_submitted, leave_approved, leave_rejected, etc.

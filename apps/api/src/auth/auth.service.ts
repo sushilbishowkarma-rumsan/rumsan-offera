@@ -12,6 +12,69 @@ const DEFAULT_LEAVE_TYPES = [
   'EMERGENCY',
 ] as const;
 
+interface DecodedTokenPayload {
+  sub: string; // rsoffice cuid
+  app: string; // rsoffice app id
+  roles: string[];
+  email: string;
+  org_unit: string;
+  department: string;
+  manager_cuid: string;
+  iat: number;
+  exp: number;
+}
+
+interface RsOfficeUser {
+  cuid: string;
+  name: string;
+  email: string;
+  gender: string | null;
+  active: boolean;
+  pending_approval: boolean;
+  is_admin: boolean;
+  org_unit: string | null;
+  job_title: string | null;
+  department: string | null;
+  employment_type: string | null;
+  phone_work: string | null;
+  phone_home: string | null;
+  phone_recovery: string | null;
+  thumbnail_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface GoogleData {
+  sub: string;
+  given_name: string;
+  family_name: string;
+  picture: string;
+}
+
+interface AuthResult {
+  user: RsOfficeUser;
+  google: GoogleData;
+  roles: string[];
+  token: string;
+}
+
+/**
+ * Decodes a JWT token without verifying the signature.
+ * Verification is handled by RsOffice — we just need the payload data.
+ */
+function decodeJwtPayload(token: string): DecodedTokenPayload | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    // Base64url → Base64 → JSON
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = Buffer.from(base64, 'base64').toString('utf8');
+    return JSON.parse(json) as DecodedTokenPayload;
+  } catch {
+    return null;
+  }
+}
+
 @Injectable()
 export class AuthService {
   private readonly appId: string;
@@ -27,20 +90,6 @@ export class AuthService {
   }
 
   async validateGoogleUser(token: string) {
-    interface GoogleData {
-      sub: string;
-      given_name: string;
-      family_name: string;
-      picture: string;
-    }
-
-    interface AuthResult {
-      user: { email: string; name: string; cuid: string };
-      google: GoogleData;
-      roles: string[];
-      token: string;
-    }
-
     // ── Step B: RsOffice 3-step challenge flow to get RsOffice JWT ──
     const { challenge } = await this.rsClient.auth.getChallenge({
       appId: this.appId,
@@ -53,17 +102,20 @@ export class AuthService {
       { appId: this.appId },
     )) as AuthResult;
 
-    console.log('RsOffice API returned from googleLogin:', rsAuthResult);
-    const { email, name } = rsAuthResult.user;
-    const { picture: avatar } = rsAuthResult.google;
+    // console.log('RsOffice API returned from googleLogin:', rsAuthResult);
+
+    const decodedToken = decodeJwtPayload(rsAuthResult.token);
+    // console.log('Decoded RsOffice token payload:', decodedToken);
+
+    const { user: rsUser, google: rsGoogle } = rsAuthResult;
+
+    // const { email, name } = rsAuthResult.user;
+    // const { picture: avatar } = rsAuthResult.google;
+    // cuid is the canonical RsOffice user identifier — use as primary lookup
+    const rsofficeId = rsUser.cuid;
+
     const role = rsAuthResult.roles[0] || 'EMPLOYEE';
 
-    // ── Step C: Save/update user in your own Prisma DB ──
-    // const HR_ADMIN_EMAILS = [
-    //   'sushil.bishowkarma@rumsan.net',
-    //   'anusha.thapa@rumsan.net',
-    // ];
-    // const isHardcodedAdmin = HR_ADMIN_EMAILS.includes(email.toLowerCase());
     let assignedRole: Role;
     if (role === 'env_admin' || role === 'app_admin') {
       assignedRole = 'HRADMIN';
@@ -76,34 +128,64 @@ export class AuthService {
     }
 
     const existingUser = await this.prisma.user.findUnique({
-      where: { email },
+      where: { rsofficeId },
       select: { id: true },
     });
+
     const isNewUser = !existingUser;
     // Upsert: Create user if new, Update if exists
-    const user = await this.prisma.user.upsert({
-      where: { email },
+    const savedUser = await this.prisma.user.upsert({
+      where: { rsofficeId },
       update: {
-        name,
-        avatar,
+        email: rsUser.email,
+        name: rsUser.name,
+        avatar: rsUser.thumbnail_url,
+        googleId: rsGoogle.sub,
         role: assignedRole,
-        rsofficeId: rsAuthResult.user.cuid,
+        // RsOffice profile fields
+        gender: rsUser.gender,
+        active: rsUser.active,
+        orgUnit: rsUser.org_unit,
+        jobTitle: rsUser.job_title,
+        department: rsUser.department,
+        employmentType: rsUser.employment_type,
+        phoneWork: rsUser.phone_work,
+        phoneHome: rsUser.phone_home,
+        phoneRecovery: rsUser.phone_recovery,
+        // Token-decoded fields
+        managerCuid: decodedToken?.manager_cuid ?? null,
       },
       create: {
-        googleId: rsAuthResult.google.sub,
-        rsofficeId: rsAuthResult.user.cuid,
-        email,
-        name,
-        avatar,
+        // Core identity
+        rsofficeId,
+        googleId: rsGoogle.sub,
+        email: rsUser.email,
+        name: rsUser.name,
+        avatar: rsUser.thumbnail_url,
         role: assignedRole,
+        // RsOffice profile fields
+        gender: rsUser.gender,
+        active: rsUser.active,
+        orgUnit: rsUser.org_unit,
+        jobTitle: rsUser.job_title,
+        department: rsUser.department,
+        employmentType: rsUser.employment_type,
+        phoneWork: rsUser.phone_work,
+        phoneHome: rsUser.phone_home,
+        phoneRecovery: rsUser.phone_recovery,
+        // Token-decoded fields
+        managerCuid: decodedToken?.manager_cuid ?? null,
       },
     });
 
     if (isNewUser) {
-      await this.seedDefaultLeaveBalances(user.id);
+      await this.seedDefaultLeaveBalances(savedUser.id);
     }
+
+    console.log(savedUser, 'this is check all user');
+
     return {
-      user,
+      user: savedUser,
       access_token: rsAuthResult.token, // ← RsOffice JWT (ES256K signed)
     };
   }

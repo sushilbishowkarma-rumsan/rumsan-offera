@@ -490,6 +490,7 @@ export function useAllEmployeesAvailability() {
       const employees = users.map((user: any) => {
         const leaveInfo = employeeLeaveInfo.get(user.id);
         return {
+          ...user,
           id: user.id,
           name: user.name || user.email,
           email: user.email,

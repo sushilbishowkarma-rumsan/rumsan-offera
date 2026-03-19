@@ -4,8 +4,8 @@
  * For viewing detailed user information (HR Admin & Manager only)
  */
 
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 
 export interface UserProfile {
   id: string;
@@ -13,8 +13,17 @@ export interface UserProfile {
   email: string;
   name: string | null;
   avatar: string | null;
+  rsofficeId: string | null;
   department: string | null;
+  jobTitle: string | null;
   role: string;
+  employmentType: string | null;
+  orgUnit: string | null;
+  gender: string | null;
+  phoneWork: string | null;
+  phoneHome: string | null;
+  phoneRecovery: string | null;
+  managerCuid: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -53,7 +62,7 @@ export interface UserLeaveRequest {
  */
 export function useUserProfile(userId: string | undefined) {
   return useQuery<UserProfile>({
-    queryKey: ["user-profile", userId],
+    queryKey: ['user-profile', userId],
     queryFn: async () => {
       const { data } = await api.get(`/users/${userId}`);
       return data;
@@ -68,13 +77,15 @@ export function useUserProfile(userId: string | undefined) {
  */
 export function useUserLeaveBalances(userId: string | undefined) {
   return useQuery<UserLeaveBalance[]>({
-    queryKey: ["user-leave-balances", userId],
+    queryKey: ['user-leave-balances', userId],
     queryFn: async () => {
       const { data } = await api.get(`/leave-balances/employee/${userId}`);
-      return Array.isArray(data) ? data.map((bal: any) => ({
-        ...bal,
-        used: bal.total - bal.remaining,
-      })) : [];
+      return Array.isArray(data)
+        ? data.map((bal: any) => ({
+            ...bal,
+            used: bal.total - bal.remaining,
+          }))
+        : [];
     },
     enabled: !!userId,
     staleTime: 1000 * 60 * 2, // 2 minutes
@@ -86,7 +97,7 @@ export function useUserLeaveBalances(userId: string | undefined) {
  */
 export function useUserLeaveHistory(userId: string | undefined) {
   return useQuery<UserLeaveRequest[]>({
-    queryKey: ["user-leave-history", userId],
+    queryKey: ['user-leave-history', userId],
     queryFn: async () => {
       const { data } = await api.get(`/leaverequests/employee/${userId}`);
       return Array.isArray(data) ? data : [];

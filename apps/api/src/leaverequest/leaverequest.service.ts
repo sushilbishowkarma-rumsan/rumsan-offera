@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service'; // Adjust path to your PrismaService
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
-// import { LeaveType } from '@prisma/client/wasm';
+import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
   LeaveAction,
@@ -19,6 +19,7 @@ export class LeaverequestService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService, // ← Add this
+    private mailService: MailService,
   ) {}
   async create(dto: CreateLeaveRequestDto) {
     const start = new Date(dto.startDate);
@@ -38,6 +39,23 @@ export class LeaverequestService {
       throw new BadRequestException('Employee not found');
     }
 
+    let internalManagerId: string | undefined = undefined;
+
+    if (dto.managerId) {
+      const manager = await this.prisma.user.findUnique({
+        where: { rsofficeId: dto.managerId }, // Frontend sent the CUID
+        select: { id: true, email: true },
+      });
+
+      if (manager) {
+        internalManagerId = manager.id;
+      } else {
+        console.warn(
+          `Manager with CUID ${dto.managerId} not found in local DB.`,
+        );
+        // Optionally throw error or fallback to null
+      }
+    }
     // 3. Create the request
     const request = await this.prisma.leaveRequest.create({
       data: {
@@ -49,7 +67,7 @@ export class LeaverequestService {
         halfDayPeriod: dto.isHalfDay ? (dto.halfDayPeriod ?? 'FIRST') : null,
         department: user.department || dto.department,
         employeeId: dto.employeeId,
-        managerId: dto.managerId, // ← save manager
+        managerId: internalManagerId, // ← save manager
         totalDays: dto.totalDays,
         // totalDays: dto.isHalfDay ? 0.5 : dto.totalDays,
         status: 'PENDING', // Defaulting via schema, but good to be explicit
@@ -77,6 +95,19 @@ export class LeaverequestService {
         message: `${request.employee.name || request.employee.email} has submitted a leave request`,
         linkTo: `/dashboard/approvals`,
         relatedRequestId: request.id,
+      });
+    }
+    if (request.manager?.email) {
+      await this.mailService.sendLeaveRequestNotification({
+        managerEmail: request.manager.email,
+        managerName: request.manager.name || 'Manager',
+        employeeName: request.employee.name || request.employee.email,
+        leaveType: request.leaveType,
+        startDate: request.startDate,
+        endDate: request.endDate,
+        totalDays: request.totalDays,
+        reason: request.reason,
+        approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
       });
     }
     return request;
@@ -185,6 +216,16 @@ export class LeaverequestService {
       message: `Your request was ${dto.action.toLowerCase()}${dto.approverComment ? `: ${dto.approverComment}` : ''}`,
       linkTo: `/dashboard/leave/history`,
       relatedRequestId: updatedRequest.id,
+    });
+
+    await this.mailService.sendRequestStatusNotification({
+      employeeEmail: request.employee.email,
+      employeeName: request.employee.name || request.employee.email,
+      requestType: 'Leave',
+      action: dto.action === LeaveAction.APPROVE ? 'APPROVED' : 'REJECTED',
+      startDate: request.startDate,
+      endDate: request.endDate,
+      approverComment: dto.approverComment,
     });
 
     return updatedRequest;

@@ -10,11 +10,24 @@ export class UsersService {
     return this.prisma.user.findMany({
       select: {
         id: true,
-        name: true,
+        googleId: true,
         email: true,
-        department: true,
+        name: true,
+        avatar: true,
         role: true,
+        department: true,
         createdAt: true,
+        updatedAt: true,
+        rsofficeId: true,
+        gender: true,
+        active: true,
+        orgUnit: true,
+        jobTitle: true,
+        employmentType: true,
+        phoneWork: true,
+        phoneHome: true,
+        phoneRecovery: true,
+        managerCuid: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -42,6 +55,16 @@ export class UsersService {
         department: true,
         createdAt: true,
         updatedAt: true,
+        rsofficeId: true,
+        gender: true,
+        active: true,
+        orgUnit: true,
+        jobTitle: true,
+        employmentType: true,
+        phoneWork: true,
+        phoneHome: true,
+        phoneRecovery: true,
+        managerCuid: true, // This comes from the decoded token logic
       },
     });
   }

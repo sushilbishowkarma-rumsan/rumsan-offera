@@ -11,9 +11,12 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { HolidaysModule } from './holidays/holidays.module';
 import { RsOfficeModule } from './rsoffice/rsoffice.module';
 import { WfhRequestModule } from './wfh-request/wfh-request.module';
+import { MailModule } from './mail/mail.module'; // ← Add
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     RsOfficeModule,
     PrismaModule,
     UsersModule,
@@ -24,6 +27,7 @@ import { WfhRequestModule } from './wfh-request/wfh-request.module';
     NotificationsModule,
     HolidaysModule,
     WfhRequestModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
