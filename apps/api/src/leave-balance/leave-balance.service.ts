@@ -101,6 +101,8 @@ export class LeaveBalanceService {
       },
     });
 
+    console.log(balances, 'this is test balance  1111 ????');
+
     if (balances.length === 0) {
       await this.seedBalancesForEmployee(employeeId);
       balances = await this.prisma.leaveBalance.findMany({
@@ -111,7 +113,7 @@ export class LeaveBalanceService {
         },
       });
     }
-    return balances
+    const formattedBalances = balances
       .filter((b) => b.total > 0)
       .map((b) => ({
         leaveType: b.leaveType,
@@ -123,8 +125,11 @@ export class LeaveBalanceService {
         remaining: b.remaining,
         exceeded: b.exceeded, // days approved beyond quota
         hasExceeded: b.exceeded > 0,
-        comments: (b.leavePolicy as { comments: string }).comments,
+        comments: b.leavePolicy?.comments ?? 'No policy comments available',
+        //(b.leavePolicy as { comments: string }).comments,
       }));
+    console.log('leave balance ok ???', formattedBalances);
+    return formattedBalances;
   }
 
   async seedBalancesForEmployee(employeeId: string) {

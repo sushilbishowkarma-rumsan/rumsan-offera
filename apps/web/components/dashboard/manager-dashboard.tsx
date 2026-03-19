@@ -7,6 +7,7 @@ import { formatDate, getInitials } from '@/lib/leave-helpers';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ExceededLeaveAlert } from '@/components/exceeded-leave-alert';
+import { LeaveBalanceSummaryCard } from '../leave-balance-summary-card';
 
 import {
   CheckSquare,
@@ -764,6 +765,7 @@ export function ManagerDashboard() {
             </div>
           </div>
         </div>
+        <LeaveBalanceSummaryCard employeeId={user?.id ?? ''} />
       </div>
     </div>
   );

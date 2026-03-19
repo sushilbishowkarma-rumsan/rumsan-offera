@@ -782,9 +782,9 @@ export default function UserProfilePage({ params }: PageProps) {
                 </h2>
 
                 {/* job title — show if present */}
-                {profile.jobTitle && (
+                {profile.email && (
                   <p style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
-                    {profile.jobTitle}
+                    {profile.email}
                   </p>
                 )}
 
@@ -817,7 +817,7 @@ export default function UserProfilePage({ params }: PageProps) {
 
                 {/* info rows — all conditional */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <InfoRow icon={<Mail size={14} />}      label="Email"      value={profile.email} />
+                  {/* <InfoRow icon={<Mail size={14} />}      label="Email"      value={profile.email} /> */}
                   <InfoRow icon={<Building2 size={14} />} label="Department" value={profile.department} />
                   <InfoRow icon={<MapPin size={14} />}    label="Org Unit"   value={profile.orgUnit} />
                   <InfoRow icon={<Briefcase size={14} />} label="Job Title"  value={profile.jobTitle} />
