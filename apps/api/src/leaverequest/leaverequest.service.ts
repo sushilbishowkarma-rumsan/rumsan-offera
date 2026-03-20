@@ -98,17 +98,22 @@ export class LeaverequestService {
       });
     }
     if (request.manager?.email) {
-      await this.mailService.sendLeaveRequestNotification({
-        managerEmail: request.manager.email,
-        managerName: request.manager.name || 'Manager',
-        employeeName: request.employee.name || request.employee.email,
-        leaveType: request.leaveType,
-        startDate: request.startDate,
-        endDate: request.endDate,
-        totalDays: request.totalDays,
-        reason: request.reason,
-        approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
-      });
+      this.mailService
+        .sendLeaveRequestNotification({
+          managerEmail: request.manager.email,
+          managerName: request.manager.name || 'Manager',
+          employeeName: request.employee.name || request.employee.email,
+          leaveType: request.leaveType,
+          startDate: request.startDate,
+          endDate: request.endDate,
+          totalDays: request.totalDays,
+          reason: request.reason,
+          approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
+        })
+        .catch((err) => {
+          // Log but don't crash — email failure won't affect the response
+          console.error('Failed to send leave request email:', err);
+        });
     }
     return request;
   }
@@ -218,15 +223,20 @@ export class LeaverequestService {
       relatedRequestId: updatedRequest.id,
     });
 
-    await this.mailService.sendRequestStatusNotification({
-      employeeEmail: request.employee.email,
-      employeeName: request.employee.name || request.employee.email,
-      requestType: 'Leave',
-      action: dto.action === LeaveAction.APPROVE ? 'APPROVED' : 'REJECTED',
-      startDate: request.startDate,
-      endDate: request.endDate,
-      approverComment: dto.approverComment,
-    });
+    this.mailService
+      .sendRequestStatusNotification({
+        employeeEmail: request.employee.email,
+        employeeName: request.employee.name || request.employee.email,
+        requestType: 'Leave',
+        action: dto.action === LeaveAction.APPROVE ? 'APPROVED' : 'REJECTED',
+        startDate: request.startDate,
+        endDate: request.endDate,
+        approverComment: dto.approverComment,
+      })
+      .catch((err) => {
+        // Log but don't crash — email failure won't affect the response
+        console.error('Failed to send leave request email:', err);
+      });
 
     return updatedRequest;
   }

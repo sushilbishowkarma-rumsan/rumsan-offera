@@ -70,16 +70,21 @@ export class WfhRequestService {
     }
 
     if (request.manager?.email) {
-      await this.mailService.sendWfhRequestNotification({
-        managerEmail: request.manager.email,
-        managerName: request.manager.name || 'Manager',
-        employeeName: request.employee.name || request.employee.email,
-        startDate: new Date(request.startDate),
-        endDate: new Date(request.endDate),
-        totalDays: request.totalDays,
-        reason: request.reason,
-        approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
-      });
+      this.mailService
+        .sendWfhRequestNotification({
+          managerEmail: request.manager.email,
+          managerName: request.manager.name || 'Manager',
+          employeeName: request.employee.name || request.employee.email,
+          startDate: new Date(request.startDate),
+          endDate: new Date(request.endDate),
+          totalDays: request.totalDays,
+          reason: request.reason,
+          approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
+        })
+        .catch((err) => {
+          // Log but don't crash — email failure won't affect the response
+          console.error('Failed to send leave request email:', err);
+        });
     }
     return request;
   }
@@ -133,15 +138,20 @@ export class WfhRequestService {
       relatedRequestId: updated.id,
     });
 
-    await this.mailService.sendRequestStatusNotification({
-      employeeEmail: request.employee.email,
-      employeeName: request.employee.name || request.employee.email,
-      requestType: 'WFH',
-      action: action, // already 'APPROVED' | 'REJECTED'
-      startDate: new Date(request.startDate),
-      endDate: new Date(request.endDate),
-      approverComment: approverComment,
-    });
+    this.mailService
+      .sendRequestStatusNotification({
+        employeeEmail: request.employee.email,
+        employeeName: request.employee.name || request.employee.email,
+        requestType: 'WFH',
+        action: action, // already 'APPROVED' | 'REJECTED'
+        startDate: new Date(request.startDate),
+        endDate: new Date(request.endDate),
+        approverComment: approverComment,
+      })
+      .catch((err) => {
+        // Log but don't crash — email failure won't affect the response
+        console.error('Failed to send leave request email:', err);
+      });
     return updated;
   }
 

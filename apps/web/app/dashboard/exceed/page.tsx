@@ -1048,12 +1048,12 @@ export default function ExceededBalancesPage() {
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
 
           {/* ── Back ── */}
-          <div>
+          {/* <div>
             <Button variant="ghost" size="sm" onClick={() => router.back()}
               className="gap-1.5 text-slate-500 hover:text-slate-800">
               <ArrowLeft className="h-4 w-4" />Back
             </Button>
-          </div>
+          </div> */}
 
           {/* ── Title + action buttons ── */}
           <div className="flex items-start justify-between gap-4 flex-wrap">

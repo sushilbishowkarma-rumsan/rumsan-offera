@@ -36,6 +36,7 @@ export interface CreateWfhRequestPayload {
   reason?: string;
   managerId?: string;
 }
+
 export const useCreateLeaveRequest = () => {
   const router = useRouter();
   const queryClient = useQueryClient();

@@ -44,7 +44,7 @@ export function useLeavePolicies(userId?: string) {
     enabled:
       userId === undefined || // HR Admin: always fetch
       (userId !== undefined && userId.length > 0),
-    staleTime: 1000 * 60 * 1, // 1 min — policies rarely change
+    staleTime: 1000 * 60 * 10, // 1 min — policies rarely change
   });
 }
 
