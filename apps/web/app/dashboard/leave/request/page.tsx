@@ -374,37 +374,6 @@ export default function LeaveRequestPage() {
                       </Select>
                     )}
                   </div>
-                  {/* <div className="flex flex-col gap-2">
-                    <label
-                      className="text-[12px] font-semibold uppercase tracking-[0.08em]"
-                      style={{ color: '#475569' }}
-                    >
-                      Manager *
-                    </label>
-                    {managersLoading ? (
-                      <Skeleton className="h-10 rounded-xl" />
-                    ) : (
-                      <Select value={managerId} onValueChange={setManagerId}>
-                        <SelectTrigger
-                          className="rounded-xl text-[13px]"
-                          style={inputStyle}
-                        >
-                          <SelectValue placeholder="Select manager" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {managers.map((m) => (
-                            <SelectItem
-                              key={m.id}
-                              value={m.id}
-                              className="text-[13px]"
-                            >
-                              {m.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div> */}
                 </div>
 
                 {/* Mixed Day Toggle */}

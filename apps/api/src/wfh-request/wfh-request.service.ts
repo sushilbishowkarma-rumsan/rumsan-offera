@@ -59,14 +59,19 @@ export class WfhRequestService {
     });
 
     if (request.managerId) {
-      await this.notificationsService.create({
-        userId: request.managerId,
-        type: 'new_request',
-        title: 'New WFH Request',
-        message: `${request.employee.name || request.employee.email} has requested to work from home`,
-        linkTo: `/dashboard/approvals`,
-        relatedRequestId: request.id,
-      });
+      this.notificationsService
+        .create({
+          userId: request.managerId,
+          type: 'new_request',
+          title: 'New WFH Request',
+          message: `${request.employee.name || request.employee.email} has requested to work from home`,
+          linkTo: `/dashboard/approvals`,
+          relatedRequestId: request.id,
+        })
+        .catch((err) => {
+          // Log but don't crash — email failure won't affect the response
+          console.error('Failed to send leave request email:', err);
+        });
     }
 
     if (request.manager?.email) {
@@ -129,14 +134,19 @@ export class WfhRequestService {
       data: { status: action, approverComment },
     });
 
-    await this.notificationsService.create({
-      userId: request.employeeId,
-      type: action === 'APPROVED' ? 'leave_approved' : 'leave_rejected',
-      title: `WFH Request ${action === 'APPROVED' ? 'Approved' : 'Rejected'}`,
-      message: `Your WFH request was ${action.toLowerCase()}${approverComment ? `: ${approverComment}` : ''}`,
-      linkTo: `/dashboard/leave/history`,
-      relatedRequestId: updated.id,
-    });
+    this.notificationsService
+      .create({
+        userId: request.employeeId,
+        type: action === 'APPROVED' ? 'leave_approved' : 'leave_rejected',
+        title: `WFH Request ${action === 'APPROVED' ? 'Approved' : 'Rejected'}`,
+        message: `Your WFH request was ${action.toLowerCase()}${approverComment ? `: ${approverComment}` : ''}`,
+        linkTo: `/dashboard/leave/history`,
+        relatedRequestId: updated.id,
+      })
+      .catch((err) => {
+        // Log but don't crash — email failure won't affect the response
+        console.error('Failed to send leave request email:', err);
+      });
 
     this.mailService
       .sendRequestStatusNotification({

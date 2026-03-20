@@ -88,14 +88,19 @@ export class LeaverequestService {
     });
     // Send notification to manager
     if (request.managerId) {
-      await this.notificationsService.create({
-        userId: request.managerId,
-        type: 'new_request',
-        title: 'New Leave Request',
-        message: `${request.employee.name || request.employee.email} has submitted a leave request`,
-        linkTo: `/dashboard/approvals`,
-        relatedRequestId: request.id,
-      });
+      this.notificationsService
+        .create({
+          userId: request.managerId,
+          type: 'new_request',
+          title: 'New Leave Request',
+          message: `${request.employee.name || request.employee.email} has submitted a leave request`,
+          linkTo: `/dashboard/approvals`,
+          relatedRequestId: request.id,
+        })
+        .catch((err) => {
+          // Log but don't crash — email failure won't affect the response
+          console.error('Failed to send leave request email:', err);
+        });
     }
     if (request.manager?.email) {
       this.mailService
@@ -211,17 +216,22 @@ export class LeaverequestService {
       });
     });
     // Send notification to employee AFTER the transaction is successful
-    await this.notificationsService.create({
-      userId: request.employeeId,
-      type:
-        dto.action === LeaveAction.APPROVE
-          ? 'leave_approved'
-          : 'leave_rejected',
-      title: `Leave Request ${dto.action === LeaveAction.APPROVE ? 'Approved' : 'Rejected'}`,
-      message: `Your request was ${dto.action.toLowerCase()}${dto.approverComment ? `: ${dto.approverComment}` : ''}`,
-      linkTo: `/dashboard/leave/history`,
-      relatedRequestId: updatedRequest.id,
-    });
+    this.notificationsService
+      .create({
+        userId: request.employeeId,
+        type:
+          dto.action === LeaveAction.APPROVE
+            ? 'leave_approved'
+            : 'leave_rejected',
+        title: `Leave Request ${dto.action === LeaveAction.APPROVE ? 'Approved' : 'Rejected'}`,
+        message: `Your request was ${dto.action.toLowerCase()}${dto.approverComment ? `: ${dto.approverComment}` : ''}`,
+        linkTo: `/dashboard/leave/history`,
+        relatedRequestId: updatedRequest.id,
+      })
+      .catch((err) => {
+        // Log but don't crash — email failure won't affect the response
+        console.error('Failed to send leave request email:', err);
+      });
 
     this.mailService
       .sendRequestStatusNotification({
