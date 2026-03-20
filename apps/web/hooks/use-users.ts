@@ -20,23 +20,23 @@ export function useUsers() {
   });
 }
 
-export function useUpdateUserRole() {
-  const queryClient = useQueryClient();
-  const { user: currentUser, refreshUser } = useAuth();
+// export function useUpdateUserRole() {
+//   const queryClient = useQueryClient();
+//   const { user: currentUser, refreshUser } = useAuth();
 
-  return useMutation({
-    mutationFn: ({ id, dto }: { id: string; dto: UpdateRoleDto }) =>
-      usersApi.updateRole(id, dto),
+//   return useMutation({
+//     mutationFn: ({ id, dto }: { id: string; dto: UpdateRoleDto }) =>
+//       usersApi.updateRole(id, dto),
 
-    onSuccess: async (updatedUser, variables) => {
-      queryClient.invalidateQueries({ queryKey: userKeys.all });
+//     onSuccess: async (updatedUser, variables) => {
+//       queryClient.invalidateQueries({ queryKey: userKeys.all });
 
-      if (currentUser?.id === variables.id) {
-        await refreshUser();
-      }
-    },
-  });
-}
+//       if (currentUser?.id === variables.id) {
+//         await refreshUser();
+//       }
+//     },
+//   });
+// }
 
 export function useMe() {
   const { user } = useAuth(); // Get the ID from context instead of manual localStorage parse

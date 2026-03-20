@@ -5,8 +5,7 @@ export type UserRole = 'MANAGER' | 'HRADMIN' | 'EMPLOYEE';
 export interface User {
   id: string;
   name: string;
-    googleId: string;
-
+  googleId: string;
   email: string;
   avatar?: string;
   role: UserRole;
@@ -15,7 +14,7 @@ export interface User {
   org_unit: string;
   managerCuid: string;
   joinDate?: string; // ← optional: backend uses createdAt, not joinDate
-  createdAt?: string; // ← ADD: backend returns this
+  createdAt?: string | undefined; // ← ADD: backend returns this
   updatedAt?: string; // ← ADD: backend returns this
   employment_type: string | null;
   phone_work: string | null;

@@ -99,7 +99,7 @@ const managerNavItems: NavItem[] = [
     roles: ['EMPLOYEE', 'MANAGER', 'HRADMIN'],
   },
   {
-    title: 'Team Availability',
+    title: 'Team Directory',
     href: '/dashboard/team',
     icon: <Users className="h-4 w-4" />,
     roles: ['MANAGER', 'HRADMIN', 'EMPLOYEE'],
@@ -131,12 +131,12 @@ const adminNavItems: NavItem[] = [
     icon: <CalendarDays className="h-4 w-4" />,
     roles: ['HRADMIN'],
   },
-  {
-    title: 'Employees',
-    href: '/dashboard/admin/employees',
-    icon: <Users className="h-4 w-4" />,
-    roles: ['MANAGER', 'HRADMIN'],
-  },
+  // {
+  //   title: 'Employees',
+  //   href: '/dashboard/admin/employees',
+  //   icon: <Users className="h-4 w-4" />,
+  //   roles: ['MANAGER', 'HRADMIN'],
+  // },
 ];
 
 // const analyticsNavItems: NavItem[] = [
