@@ -39,7 +39,6 @@ export class LeaveBalanceController {
   @UseGuards(JwtAuthGuard)
   async getByEmployee(@Param('employeeId') employeeId: string) {
     const balances = await this.leaveBalanceService.getByEmployee(employeeId);
-    console.log(`Returning ${balances.length} balances for ${employeeId}`);
     return balances;
   }
 

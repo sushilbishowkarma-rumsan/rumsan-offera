@@ -9,6 +9,7 @@ import {
   UsePipes,
   Req,
   ValidationPipe,
+  Delete,
 } from '@nestjs/common';
 import { WfhRequestService } from './wfh-request.service';
 import { CreateWfhRequestDto } from './dto/create-wfh-request.dto';
@@ -80,5 +81,27 @@ export class WfhRequestController {
       body.action,
       body.approverComment,
     );
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  updateRequest(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      startDate: string;
+      endDate: string;
+      totalDays: number;
+      reason?: string;
+    },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.wfhRequestService.updateRequest(id, req.user.id, body);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  deleteRequest(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.wfhRequestService.deleteRequest(id, req.user.id);
   }
 }

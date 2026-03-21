@@ -140,7 +140,13 @@ export class LeaverequestService {
       orderBy: { createdAt: 'desc' },
       include: {
         employee: {
-          select: { id: true, name: true, email: true, avatar: true },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+            rsofficeId: true,
+          },
         },
         leaveDays: true,
       },
@@ -260,6 +266,7 @@ export class LeaverequestService {
             name: true,
             email: true,
             role: true,
+            rsofficeId: true,
           },
         },
         manager: {
@@ -267,6 +274,7 @@ export class LeaverequestService {
             id: true,
             name: true,
             email: true,
+            rsofficeId: true,
           },
         },
       },
@@ -289,13 +297,12 @@ export class LeaverequestService {
             email: true,
             role: true,
             department: true,
+            rsofficeId: true,
           },
         },
       },
       orderBy: { startDate: 'asc' },
     });
-    console.log('=== findApprovedLeaves result count:', results.length);
-    console.log('=== sample:', JSON.stringify(results[0], null, 2));
     return results;
   }
 
@@ -305,12 +312,6 @@ export class LeaverequestService {
       where: { id: userId },
       select: { department: true },
     });
-    console.log(
-      '=== Employee department:',
-      user?.department,
-      'userId:',
-      userId,
-    );
 
     if (!user || !user?.department) {
       return this.prisma.leaveRequest.findMany({
@@ -353,5 +354,102 @@ export class LeaverequestService {
       },
       orderBy: { startDate: 'asc' },
     });
+  }
+
+  async deleteRequest(requestId: string, employeeId: string) {
+    const request = await this.prisma.leaveRequest.findUnique({
+      where: { id: requestId },
+    });
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.employeeId !== employeeId)
+      throw new ForbiddenException('Not authorized');
+    if (request.status !== 'PENDING')
+      throw new BadRequestException('Only pending requests can be deleted');
+
+    // Delete leaveDays first (cascade may handle this but be explicit)
+    await this.prisma.leaveDay.deleteMany({
+      where: { leaveRequestId: requestId },
+    });
+    await this.prisma.leaveRequest.delete({ where: { id: requestId } });
+    return { message: 'Deleted successfully' };
+  }
+
+  async updateRequest(
+    requestId: string,
+    employeeId: string,
+    dto: CreateLeaveRequestDto,
+  ) {
+    const request = await this.prisma.leaveRequest.findUnique({
+      where: { id: requestId },
+    });
+    if (!request) throw new NotFoundException('Request not found');
+    if (request.employeeId !== employeeId)
+      throw new ForbiddenException('Not authorized');
+    if (request.status !== 'PENDING')
+      throw new BadRequestException('Only pending requests can be edited');
+
+    const start = new Date(dto.startDate);
+    const end = new Date(dto.endDate);
+    if (end < start)
+      throw new BadRequestException('End date cannot be before start date');
+
+    // Delete old leaveDays and recreate
+    await this.prisma.leaveDay.deleteMany({
+      where: { leaveRequestId: requestId },
+    });
+
+    const updated = await this.prisma.leaveRequest.update({
+      where: { id: requestId },
+      data: {
+        startDate: start,
+        endDate: end,
+        leaveType: dto.leaveType.toUpperCase(),
+        reason: dto.reason,
+        isHalfDay: dto.isHalfDay || false,
+        halfDayPeriod: dto.isHalfDay ? (dto.halfDayPeriod ?? 'FIRST') : null,
+        totalDays: dto.totalDays,
+        leaveDays: dto.leaveDays?.length
+          ? {
+              create: dto.leaveDays.map((d) => ({
+                date: d.date,
+                dayType: d.dayType,
+              })),
+            }
+          : undefined,
+      },
+      include: { leaveDays: true, employee: true, manager: true },
+    });
+    if (updated.managerId) {
+      this.notificationsService
+        .create({
+          userId: updated.managerId,
+          type: 'new_request',
+          title: 'Leave Request Updated',
+          message: `${updated.employee.name || updated.employee.email} has updated their leave request`,
+          linkTo: `/dashboard/approvals`,
+          relatedRequestId: updated.id,
+        })
+        .catch((err) =>
+          console.error('Failed to send update notification:', err),
+        );
+    }
+
+    // ── ADD: email manager about the update ──
+    if (updated.manager?.email) {
+      this.mailService
+        .sendLeaveRequestNotification({
+          managerEmail: updated.manager.email,
+          managerName: updated.manager.name || 'Manager',
+          employeeName: updated.employee.name || updated.employee.email,
+          leaveType: updated.leaveType,
+          startDate: updated.startDate,
+          endDate: updated.endDate,
+          totalDays: updated.totalDays,
+          reason: updated.reason,
+          approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
+        })
+        .catch((err) => console.error('Failed to send update email:', err));
+    }
+    return updated;
   }
 }

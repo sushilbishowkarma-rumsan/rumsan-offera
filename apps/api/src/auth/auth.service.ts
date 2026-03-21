@@ -94,18 +94,15 @@ export class AuthService {
     const { challenge } = await this.rsClient.auth.getChallenge({
       appId: this.appId,
     });
-    // console.log('Received challenge from RsOffice API:', challenge);
+
     const appSignature = this.crypto.signChallenge(challenge);
-    // console.log('Generated app signature for challenge:', appSignature);
+
     const rsAuthResult = (await this.rsClient.auth.googleLogin(
       { id_token: token, challenge, app_signature: appSignature },
       { appId: this.appId },
     )) as AuthResult;
 
-    // console.log('RsOffice API returned from googleLogin:', rsAuthResult);
-
     const decodedToken = decodeJwtPayload(rsAuthResult.token);
-    // console.log('Decoded RsOffice token payload:', decodedToken);
 
     const { user: rsUser, google: rsGoogle } = rsAuthResult;
 
@@ -181,9 +178,6 @@ export class AuthService {
     if (isNewUser) {
       await this.seedDefaultLeaveBalances(savedUser.id);
     }
-
-    console.log(savedUser, 'this is check all user');
-
     return {
       user: savedUser,
       access_token: rsAuthResult.token, // ← RsOffice JWT (ES256K signed)
@@ -218,9 +212,5 @@ export class AuthService {
       })),
       skipDuplicates: true,
     });
-
-    console.log(
-      `[AuthService] Seeded ${policies.length} default leave balances (quota=0) for new employee ${employeeId}`,
-    );
   }
 }

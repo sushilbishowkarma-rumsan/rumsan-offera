@@ -217,4 +217,105 @@ export class WfhRequestService {
       },
     });
   }
+
+  async deleteRequest(requestId: string, employeeId: string) {
+    const request = await this.prisma.wfhRequest.findUnique({
+      where: { id: requestId },
+    });
+
+    if (!request) {
+      throw new NotFoundException('WFH request not found');
+    }
+    if (request.employeeId !== employeeId) {
+      throw new ForbiddenException(
+        'You are not authorized to delete this request',
+      );
+    }
+    if (request.status !== 'PENDING') {
+      throw new BadRequestException('Only PENDING requests can be deleted');
+    }
+
+    await this.prisma.wfhRequest.delete({ where: { id: requestId } });
+
+    return { message: 'WFH request deleted successfully' };
+  }
+
+  async updateRequest(
+    requestId: string,
+    employeeId: string,
+    dto: {
+      startDate: string;
+      endDate: string;
+      totalDays: number;
+      reason?: string;
+    },
+  ) {
+    const request = await this.prisma.wfhRequest.findUnique({
+      where: { id: requestId },
+    });
+
+    if (!request) {
+      throw new NotFoundException('WFH request not found');
+    }
+    if (request.employeeId !== employeeId) {
+      throw new ForbiddenException(
+        'You are not authorized to edit this request',
+      );
+    }
+    if (request.status !== 'PENDING') {
+      throw new BadRequestException('Only PENDING requests can be edited');
+    }
+
+    const start = new Date(dto.startDate);
+    const end = new Date(dto.endDate);
+    if (end < start) {
+      throw new BadRequestException(
+        'End date cannot be earlier than start date',
+      );
+    }
+
+    const updated = await this.prisma.wfhRequest.update({
+      where: { id: requestId },
+      data: {
+        startDate: dto.startDate,
+        endDate: dto.endDate,
+        totalDays: dto.totalDays,
+        reason: dto.reason ?? '',
+      },
+      include: {
+        employee: true,
+        manager: true,
+      },
+    });
+    if (updated.managerId) {
+      this.notificationsService
+        .create({
+          userId: updated.managerId,
+          type: 'new_request',
+          title: 'WFH Request Updated',
+          message: `${updated.employee.name || updated.employee.email} has updated their WFH request`,
+          linkTo: `/dashboard/approvals`,
+          relatedRequestId: updated.id,
+        })
+        .catch((err) =>
+          console.error('Failed to send WFH update notification:', err),
+        );
+    }
+
+    if (updated.manager?.email) {
+      this.mailService
+        .sendWfhRequestNotification({
+          managerEmail: updated.manager.email,
+          managerName: updated.manager.name || 'Manager',
+          employeeName: updated.employee.name || updated.employee.email,
+          startDate: new Date(updated.startDate),
+          endDate: new Date(updated.endDate),
+          totalDays: updated.totalDays,
+          reason: updated.reason,
+          approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
+        })
+        .catch((err) => console.error('Failed to send WFH update email:', err));
+    }
+    return updated;
+  }
 }

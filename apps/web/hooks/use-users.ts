@@ -47,7 +47,6 @@ export function useMe() {
     queryKey: userKeys.me(id ?? ""),
     queryFn: async () => {
       const { data } = await api.get(`/users/${id}`);
-      // console.log(`[useMe] Fetched user data for ID ${id}:`, data);
       return data;
     },
     enabled: !!id,

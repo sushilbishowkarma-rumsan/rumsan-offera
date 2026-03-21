@@ -51,7 +51,6 @@ export function LeaveBalanceSummaryCard({
   const summary = rawSummary?.filter((s) => s.total > 0);
   const totalExceeded = summary?.reduce((acc, s) => acc + s.exceeded, 0) ?? 0;
 
-  console.log('Leave balance summary:', summary);
   return (
     <Card>
       <CardHeader className="pb-3">

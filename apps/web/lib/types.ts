@@ -35,7 +35,7 @@ export type LeaveType =
   | string;
 
 /* ── Leave Request Status ── */
-export type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 /* ── Leave Request ── */
 export interface LeaveRequest {
@@ -49,12 +49,15 @@ export interface LeaveRequest {
   totalDays: number;
   reason: string;
   status: LeaveStatus;
+  department: string;
+  leaveDays: [] | null;
   isHalfDay: boolean;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
   approvedBy?: string; // Manager ID
   approverComment?: string;
   attachmentUrl?: string;
+  halfDayPeriod?: string;
   // backend relation fields
   employee?: User;
 }

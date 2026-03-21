@@ -652,12 +652,10 @@ export default function CalendarPage() {
   }, [weekDays]);
 
   const selectedDayMembers = selectedDay ? getMembersOnLeave(selectedDay) : [];
-  // console.log( selectedDayMembers, "This is selectedDayMembers for test data check");
   const selectedHoliday = selectedDay ? getHolidayForDate(selectedDay) : null;
   const selectedDayStr = selectedDay ? toLocalDateStr(selectedDay) : null;
 
-
-  const absentMembers = selectedDayMembers.filter(m => m.leaveType !== "wfh");
+  const absentMembers = selectedDayMembers.filter((m) => m.leaveType !== 'wfh');
 
   return (
     <div
@@ -1119,122 +1117,546 @@ export default function CalendarPage() {
               </div>
             ) : (
               <div
-                className="grid grid-cols-7 gap-[3px] p-2"
-                style={{ background: '#c7d7f8' }}
+                style={{
+                  background: '#c7d7f8',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(7, 1fr)',
+                  gap: '3px',
+                  padding: '3px',
+                }}
               >
                 {weekDays.map((day) => {
                   const dateStr = toLocalDateStr(day);
                   const dow = day.getDay();
-                  const isSat = dow === 6,
-                    isSun = dow === 0;
+                  const isSat = dow === 6;
+                  const isSun = dow === 0;
+                  const isWeekend = isSat || isSun;
+                  const isToday = day.getTime() === today.getTime();
                   const holiday = getHolidayForDate(day);
-                  const membersOnLeave = getMembersOnLeave(day);
+                  const bsDay = adToBs(day);
+
+                  // ── Never show members on weekends or holidays ──
+                  const membersOnLeave =
+                    isWeekend || holiday ? [] : getMembersOnLeave(day);
                   const leaveMembers = membersOnLeave.filter(
                     (m) => m.leaveType === 'leave',
                   );
                   const wfhMembers = membersOnLeave.filter(
                     (m) => m.leaveType === 'wfh',
                   );
-                  const isToday = day.getTime() === today.getTime();
-                  const isSelected = selectedDayStr === dateStr;
-                  const bsDay = adToBs(day);
 
-                  let bg = '#fff';
-                  if (isSelected) bg = '#eff6ff';
-                  else if (isSat) bg = '#fff0f0';
-                  else if (isSun) bg = '#f0f9ff';
-                  else if (holiday) bg = '#eff8ff';
+                  let colBg = '#ffffff';
+                  if (isSat) colBg = '#fff5f5';
+                  else if (isSun) colBg = '#f0f9ff';
+                  else if (holiday) colBg = '#f0f7ff';
 
-                  let borderStyle = '1.5px solid transparent';
-                  if (isSelected) borderStyle = '1.5px solid #3b82f6';
-                  else if (holiday) borderStyle = '1.5px solid #bfdbfe';
-                  else if (isSat) borderStyle = '1.5px solid #fecaca';
+                  let colBorderColor = 'transparent';
+                  if (isToday) colBorderColor = '#3b82f6';
+                  else if (isSat) colBorderColor = '#fca5a5';
+                  else if (isSun) colBorderColor = '#bfdbfe';
+                  else if (holiday) colBorderColor = '#93c5fd';
 
                   return (
                     <div
                       key={dateStr}
-                      onClick={() => setSelectedDay(isSelected ? null : day)}
-                      className="day-cell relative flex flex-col rounded-xl p-2 cursor-pointer"
                       style={{
-                        background: bg,
-                        border: borderStyle,
-                        minHeight: '120px',
-                        boxShadow: isSelected
-                          ? '0 4px 16px rgba(59,130,246,0.2)'
-                          : 'none',
+                        background: colBg,
+                        border: `1.5px solid ${colBorderColor}`,
+                        borderRadius: '10px',
+                        overflow: 'hidden',
+                        minHeight: '340px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxShadow: isToday
+                          ? '0 0 0 3px rgba(59,130,246,0.13), 0 2px 8px rgba(15,45,94,0.08)'
+                          : '0 1px 4px rgba(15,45,94,0.05)',
                       }}
                     >
-                      <span
-                        className="flex h-[26px] w-[26px] items-center justify-center rounded-full text-[14px] font-bold leading-none self-start"
+                      {/* ── Day header ── */}
+                      <div
                         style={{
-                          background: isToday ? '#0f2d5e' : 'transparent',
-                          color: isToday
-                            ? '#fff'
+                          background: isToday
+                            ? 'linear-gradient(135deg,#0f2d5e 0%,#1e4a8a 100%)'
                             : isSat
-                              ? '#dc2626'
+                              ? '#fff0f0'
                               : isSun
-                                ? '#2563eb'
-                                : '#1e293b',
+                                ? '#eff6ff'
+                                : '#f0f5ff',
+                          borderBottom: `1.5px solid ${isToday ? '#1e4a8a' : isSat ? '#fecaca' : isSun ? '#bfdbfe' : '#e2e8f0'}`,
+                          padding: '10px 8px 8px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '1px',
+                          flexShrink: 0,
                         }}
                       >
-                        {day.getDate()}
-                      </span>
+                        <span
+                          style={{
+                            fontSize: '21px',
+                            fontWeight: 800,
+                            lineHeight: 1,
+                            color: isToday
+                              ? '#ffffff'
+                              : isSat
+                                ? '#dc2626'
+                                : isSun
+                                  ? '#2563eb'
+                                  : '#0f172a',
+                          }}
+                        >
+                          {day.getDate()}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '9.5px',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.1em',
+                            color: isToday
+                              ? '#93c5fd'
+                              : isSat
+                                ? '#ef4444'
+                                : isSun
+                                  ? '#3b82f6'
+                                  : '#64748b',
+                          }}
+                        >
+                          {day.toLocaleDateString('en-US', {
+                            weekday: 'short',
+                          })}
+                        </span>
+                        <span
+                          className="cal-np"
+                          style={{
+                            fontSize: '10.5px',
+                            fontWeight: 600,
+                            color: isToday
+                              ? '#bfdbfe'
+                              : isSat
+                                ? '#dc2626'
+                                : isSun
+                                  ? '#1d4ed8'
+                                  : '#3b82f6',
+                            marginTop: '1px',
+                          }}
+                        >
+                          {toNepali(bsDay.day)}
+                        </span>
+                      </div>
 
+                      {/* ── Holiday banner ── */}
                       {holiday && (
-                        <div className="flex items-center gap-1 mt-1">
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            padding: '6px 8px',
+                            background: holiday.isOptional
+                              ? 'linear-gradient(90deg,#dbeafe,#eff6ff)'
+                              : 'linear-gradient(90deg,#fee2e2,#fff5f5)',
+                            borderBottom: `1px solid ${holiday.isOptional ? '#93c5fd' : '#fca5a5'}`,
+                            flexShrink: 0,
+                          }}
+                        >
                           <span
-                            className="h-[6px] w-[6px] rounded-full shrink-0"
                             style={{
+                              height: '5px',
+                              width: '5px',
+                              borderRadius: '50%',
+                              flexShrink: 0,
                               background: holiday.isOptional
                                 ? '#3b82f6'
                                 : '#ef4444',
                             }}
                           />
                           <span
-                            className="text-[9px] font-bold truncate leading-tight"
-                            style={{ color: '#1e40af', maxWidth: '80px' }}
+                            style={{
+                              fontSize: '9px',
+                              fontWeight: 700,
+                              color: holiday.isOptional ? '#1e40af' : '#991b1b',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              lineHeight: 1.3,
+                            }}
                           >
                             {holiday.name}
                           </span>
                         </div>
                       )}
 
-                      {!holiday && membersOnLeave.length > 0 && (
-                        <div className="mt-auto flex flex-col gap-0.5">
+                      {/* ── Body ── */}
+                      <div
+                        style={{
+                          flex: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          padding:
+                            isWeekend ||
+                            (holiday && membersOnLeave.length === 0)
+                              ? '0'
+                              : '5px',
+                          gap: '4px',
+                          overflowY: 'auto',
+                          overflowX: 'hidden',
+                        }}
+                      >
+                        {/* ── Weekend ── */}
+                        {isWeekend && (
+                          <div
+                            style={{
+                              flex: 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexDirection: 'column',
+                              gap: '5px',
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: '20px',
+                                height: '2px',
+                                borderRadius: '2px',
+                                background: isSat ? '#fca5a5' : '#bfdbfe',
+                              }}
+                            />
+                            <span
+                              style={{
+                                fontSize: '9.5px',
+                                fontWeight: 700,
+                                letterSpacing: '0.09em',
+                                textTransform: 'uppercase',
+                                color: isSat ? '#f87171' : '#60a5fa',
+                              }}
+                            >
+                              {isSat ? 'Saturday' : 'Sunday'}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* ── Holiday (no members) ── */}
+                        {!isWeekend && holiday && (
+                          <div
+                            style={{
+                              flex: 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexDirection: 'column',
+                              gap: '5px',
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: '20px',
+                                height: '2px',
+                                borderRadius: '2px',
+                                background: '#93c5fd',
+                              }}
+                            />
+                            <span
+                              style={{
+                                fontSize: '9.5px',
+                                fontWeight: 700,
+                                letterSpacing: '0.09em',
+                                textTransform: 'uppercase',
+                                color: '#3b82f6',
+                              }}
+                            >
+                              Public Holiday
+                            </span>
+                          </div>
+                        )}
+
+                        {/* ── All present ── */}
+                        {!isWeekend &&
+                          !holiday &&
+                          membersOnLeave.length === 0 && (
+                            <div
+                              style={{
+                                flex: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexDirection: 'column',
+                                gap: '5px',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: '20px',
+                                  height: '2px',
+                                  borderRadius: '2px',
+                                  background: '#86efac',
+                                }}
+                              />
+                              <span
+                                style={{
+                                  fontSize: '9.5px',
+                                  fontWeight: 700,
+                                  letterSpacing: '0.09em',
+                                  textTransform: 'uppercase',
+                                  color: '#22c55e',
+                                }}
+                              >
+                                All Present
+                              </span>
+                            </div>
+                          )}
+
+                        {/* ── WFH cards ── */}
+                        {wfhMembers.map(({ user: u, wfh }) => {
+                          const rawStart = wfh?.startDate ?? '';
+                          const rawEnd = wfh?.endDate ?? '';
+                          const s = rawStart
+                            ? new Date(rawStart).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                              })
+                            : '';
+                          const e = rawEnd
+                            ? new Date(rawEnd).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                              })
+                            : '';
+                          const range = s === e || !e ? s : `${s} – ${e}`;
+
+                          return (
+                            <div
+                              key={`wfh-${u.id}`}
+                              style={{
+                                borderRadius: '7px',
+                                overflow: 'hidden',
+                                border: '1px solid #bae6fd',
+                                background: '#f0f9ff',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  height: '3px',
+                                  background: '#0ea5e9',
+                                  flexShrink: 0,
+                                }}
+                              />
+                              <div style={{ padding: '5px 7px 6px' }}>
+                                <p
+                                  style={{
+                                    margin: 0,
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    color: '#0c4a6e',
+                                    lineHeight: 1.35,
+                                    wordBreak: 'break-word',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden',
+                                  }}
+                                >
+                                  {u.name || u.email}
+                                </p>
+                                <p
+                                  style={{
+                                    margin: '3px 0 0',
+                                    fontSize: '9px',
+                                    fontWeight: 700,
+                                    color: '#0284c7',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.08em',
+                                    lineHeight: 1,
+                                  }}
+                                >
+                                  Work From Home
+                                </p>
+                                {range && (
+                                  <p
+                                    style={{
+                                      margin: '3px 0 0',
+                                      fontSize: '10px',
+                                      fontWeight: 500,
+                                      color: '#0369a1',
+                                      lineHeight: 1.3,
+                                      wordBreak: 'break-word',
+                                    }}
+                                  >
+                                    {range}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* ── Leave cards ── */}
+                        {leaveMembers.map(({ user: u, leave, dayType }) => {
+                          const cfg = getLeaveConfig(leave?.leaveType ?? '');
+                          const dtCfg =
+                            DAY_TYPE_CONFIG[dayType] ?? DAY_TYPE_CONFIG.FULL;
+                          const rawStart = leave?.startDate ?? '';
+                          const rawEnd = leave?.endDate ?? '';
+                          const s = rawStart
+                            ? new Date(rawStart).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                              })
+                            : '';
+                          const e = rawEnd
+                            ? new Date(rawEnd).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                              })
+                            : '';
+                          const range = s === e || !e ? s : `${s} – ${e}`;
+
+                          return (
+                            <div
+                              key={`leave-${u.id}`}
+                              style={{
+                                borderRadius: '7px',
+                                overflow: 'hidden',
+                                border: `1px solid ${cfg.border}`,
+                                background: cfg.bg,
+                                flexShrink: 0,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  height: '3px',
+                                  background: cfg.color,
+                                  flexShrink: 0,
+                                }}
+                              />
+                              <div style={{ padding: '5px 7px 6px' }}>
+                                {/* Name */}
+                                <p
+                                  style={{
+                                    margin: 0,
+                                    fontSize: '9px',
+                                    fontWeight: 700,
+                                    color: '#1e293b',
+                                    lineHeight: 1.35,
+                                    wordBreak: 'break-word',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden',
+                                  }}
+                                >
+                                  {u.name || u.email}
+                                </p>
+                                {/* Leave type row + optional half-day pill */}
+                                <div
+                                  style={{
+                                    marginTop: '3px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    flexWrap: 'wrap',
+                                  }}
+                                >
+                                  <p
+                                    style={{
+                                      margin: 0,
+                                      fontSize: '7px',
+                                      fontWeight: 700,
+                                      color: cfg.color,
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '0.08em',
+                                      lineHeight: 1,
+                                    }}
+                                  >
+                                    {cfg.label}
+                                  </p>
+                                  {dayType !== 'FULL' && (
+                                    <span
+                                      style={{
+                                        fontSize: '8px',
+                                        fontWeight: 700,
+                                        color: dtCfg.color,
+                                        background: dtCfg.bg,
+                                        border: `1px solid ${dtCfg.border}`,
+                                        borderRadius: '4px',
+                                        padding: '1px 4px',
+                                        lineHeight: 1.2,
+                                        letterSpacing: '0.04em',
+                                        flexShrink: 0,
+                                      }}
+                                    >
+                                      {dtCfg.short}
+                                    </span>
+                                  )}
+                                </div>
+                                {/* Date range */}
+                                {range && (
+                                  <p
+                                    style={{
+                                      margin: '3px 0 0',
+                                      fontSize: '8px',
+                                      fontWeight: 500,
+                                      color: '#475569',
+                                      lineHeight: 1.3,
+                                      wordBreak: 'break-word',
+                                    }}
+                                  >
+                                    {range}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* ── Footer summary ── */}
+                      {!isWeekend && !holiday && membersOnLeave.length > 0 && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent:
+                              leaveMembers.length > 0 && wfhMembers.length > 0
+                                ? 'space-between'
+                                : 'center',
+                            padding: '4px 8px',
+                            borderTop: '1px solid #dbe9ff',
+                            background: '#eef4ff',
+                            flexShrink: 0,
+                            gap: '4px',
+                          }}
+                        >
                           {leaveMembers.length > 0 && (
                             <span
-                              className="inline-flex items-center gap-1 rounded-md px-0 py-0.5 text-[9px] font-bold"
-                              style={{ color: '#dc2626' }}
+                              style={{
+                                fontSize: '9px',
+                                fontWeight: 700,
+                                color: '#dc2626',
+                                letterSpacing: '0.04em',
+                                whiteSpace: 'nowrap',
+                              }}
                             >
-                              <span className="h-[5px] w-[5px] rounded-full shrink-0" />
-                              On leave
+                              {leaveMembers.length} on leave
                             </span>
                           )}
                           {wfhMembers.length > 0 && (
                             <span
-                              className="inline-flex items-center gap-1 rounded-md px-0 py-0.5 text-[9px] font-bold"
-                              style={{ color: '#1d4ed8' }}
+                              style={{
+                                fontSize: '9px',
+                                fontWeight: 700,
+                                color: '#0284c7',
+                                letterSpacing: '0.04em',
+                                whiteSpace: 'nowrap',
+                              }}
                             >
-                              <span className="h-[5px] w-[5px] rounded-full shrink-0" />
-                              WFH
+                              {wfhMembers.length} WFH
                             </span>
                           )}
                         </div>
                       )}
-
-                      <span
-                        className="cal-np absolute bottom-1.5 right-2 text-[12px] font-semibold leading-none"
-                        style={{
-                          color: isSat
-                            ? '#dc2626'
-                            : isSun
-                              ? '#1d4ed8'
-                              : '#2563eb',
-                          opacity: 0.9,
-                        }}
-                      >
-                        {toNepali(bsDay.day)}
-                      </span>
                     </div>
                   );
                 })}
@@ -1314,7 +1736,7 @@ export default function CalendarPage() {
           </div>
 
           {/* ── Detail Panel ── */}
-          {selectedDay ? (
+          {viewMode === 'monthly' && selectedDay ? (
             <div
               className="w-full xl:w-80 shrink-0 flex flex-col rounded-2xl overflow-hidden"
               style={{
@@ -1441,7 +1863,7 @@ export default function CalendarPage() {
                     >
                       <Users className="h-6 w-6" style={{ color: '#16a34a' }} />
                     </div>
-                    
+
                     <p className="text-[11px]" style={{ color: '#94a3b8' }}>
                       {selectedDay &&
                       (selectedDay.getDay() === 0 || selectedDay.getDay() === 6)
@@ -1564,7 +1986,10 @@ export default function CalendarPage() {
                 >
                   <Users className="h-3.5 w-3.5" />
                 </div>
-                {selectedHoliday || (selectedDay && (selectedDay.getDay() === 0 || selectedDay.getDay() === 6)) ? (
+                {selectedHoliday ||
+                (selectedDay &&
+                  (selectedDay.getDay() === 0 ||
+                    selectedDay.getDay() === 6)) ? (
                   'Holiday — no attendance'
                 ) : (
                   <p className="text-[12px]" style={{ color: '#1e3a8a' }}>
@@ -1581,7 +2006,7 @@ export default function CalendarPage() {
                 )}
               </div>
             </div>
-          ) : (
+          ) : viewMode === 'monthly' ? (
             <div
               className="w-full xl:w-80 shrink-0 flex flex-col items-center justify-center gap-3 rounded-2xl py-14 xl:py-0"
               style={{
@@ -1609,7 +2034,7 @@ export default function CalendarPage() {
                 Click a day to see details
               </p>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

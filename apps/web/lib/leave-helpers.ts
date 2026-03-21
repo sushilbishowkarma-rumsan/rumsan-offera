@@ -15,10 +15,10 @@ export function getLeaveTypeLabel(type: LeaveType): string {
 /** Return a Tailwind badge color class based on leave status */
 export function getStatusColor(status: LeaveStatus): string {
   const colors: Record<LeaveStatus, string> = {
-    pending: 'bg-amber-100 text-amber-800',
-    approved: 'bg-emerald-100 text-emerald-800',
-    rejected: 'bg-red-100 text-red-800',
-    cancelled: 'bg-muted text-muted-foreground',
+    PENDING: 'bg-amber-100 text-amber-800',
+    APPROVED: 'bg-emerald-100 text-emerald-800',
+    REJECTED: 'bg-red-100 text-red-800',
+    CANCELLED: 'bg-muted text-muted-foreground',
   };
   return colors[status] ?? 'bg-muted text-muted-foreground';
 }
@@ -70,8 +70,11 @@ export function calculateBusinessDays(
   holidayDateSet: Set<string> = new Set(),
   leaveType?: string,
 ): number {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
+  const [sy, sm, sd] = start.split('-').map(Number);
+  const [ey, em, ed] = end.split('-').map(Number);
+  const startDate = new Date(sy, sm - 1, sd);
+  const endDate = new Date(ey, em - 1, ed);
+
   let count = 0;
   const current = new Date(startDate);
 
