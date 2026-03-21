@@ -9,6 +9,7 @@ import {
   UsePipes,
   ValidationPipe,
   Patch,
+  Delete,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -109,5 +110,25 @@ export class LeaverequestController {
       managerId,
       updateDto,
     );
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  async deleteRequest(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.leaverequestService.deleteRequest(id, req.user.id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async updateRequest(
+    @Param('id') id: string,
+    @Body() dto: CreateLeaveRequestDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.leaverequestService.updateRequest(id, req.user.id, dto);
   }
 }

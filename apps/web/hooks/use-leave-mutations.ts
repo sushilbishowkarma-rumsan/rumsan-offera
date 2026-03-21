@@ -112,6 +112,84 @@ export const useUpdateLeaveStatus = () => {
     },
   });
 };
+
+export const useUpdateLeaveRequest = () => {
+  const queryClient = useQueryClient();
+ 
+  return useMutation({
+    mutationFn: async ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: CreateLeaveRequestPayload;
+    }) => {
+      const { data } = await api.patch(`/leaverequests/${id}`, {
+        ...payload,
+        leaveType: payload.leaveType.toUpperCase(),
+        isHalfDay: payload.isHalfDay ?? false,
+      });
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      toast.success('Leave request updated!', {
+        description: 'Your changes have been saved.',
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['leave-history', variables.payload.employeeId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['leave-balances', variables.payload.employeeId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['calendar-leave-requests'],
+      });
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || 'Failed to update leave request.';
+      toast.error('Update failed', { description: message });
+    },
+  });
+};
+ 
+// ── DELETE leave request (employee deletes PENDING request) ──
+export const useDeleteLeaveRequest = () => {
+  const queryClient = useQueryClient();
+ 
+  return useMutation({
+    mutationFn: async ({
+      id,
+      employeeId,
+    }: {
+      id: string;
+      employeeId: string;
+    }) => {
+      await api.delete(`/leaverequests/${id}`);
+      return { id, employeeId };
+    },
+    onSuccess: (variables) => {
+      toast.success('Request deleted successfully.');
+      queryClient.invalidateQueries({
+        queryKey: ['leave-history', variables.employeeId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['leave-balances', variables.employeeId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['calendar-leave-requests'],
+      });
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || 'Failed to delete leave request.';
+      toast.error('Delete failed', { description: message });
+    },
+  });
+};
+
+
+
 export const useCreateWfhRequest = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -175,3 +253,74 @@ export const useUpdateWfhStatus = () => {
     },
   });
 };
+ 
+// ── DELETE WFH request ──
+export const useDeleteWfhRequest = () => {
+  const queryClient = useQueryClient();
+ 
+  return useMutation({
+    mutationFn: async ({
+      id,
+      employeeId,
+    }: {
+      id: string;
+      employeeId: string;
+    }) => {
+      await api.delete(`/wfh-requests/${id}`);
+      return { id, employeeId };
+    },
+    onSuccess: (variables) => {
+      toast.success('WFH request deleted successfully.');
+      queryClient.invalidateQueries({
+        queryKey: ['wfh-history', variables.employeeId],
+      });
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || 'Failed to delete WFH request.';
+      toast.error('Delete failed', { description: message });
+    },
+  });
+};
+ 
+// ── UPDATE WFH request ──
+// Payload type for WFH update — adjust to match your CreateWfhRequestPayload
+interface UpdateWfhPayload {
+  employeeId: string;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  reason?: string;
+  managerId: string;
+}
+ 
+export const useUpdateWfhRequest = () => {
+  const queryClient = useQueryClient();
+ 
+  return useMutation({
+    mutationFn: async ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateWfhPayload;
+    }) => {
+      const { data } = await api.patch(`/wfh-requests/${id}`, payload);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      toast.success('WFH request updated!', {
+        description: 'Your changes have been saved.',
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['wfh-history', variables.payload.employeeId],
+      });
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || 'Failed to update WFH request.';
+      toast.error('Update failed', { description: message });
+    },
+  });
+};
+ 

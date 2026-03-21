@@ -14,8 +14,6 @@ employeeApi.interceptors.request.use((config) => {
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else {
-      console.log('[api] No auth_token found in localStorage for:', config.url);
     }
   }
   return config;
@@ -48,8 +46,6 @@ departmentApi.interceptors.request.use((config) => {
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else {
-      console.log('[api] No auth_token found in localStorage for:', config.url);
     }
   }
   return config;

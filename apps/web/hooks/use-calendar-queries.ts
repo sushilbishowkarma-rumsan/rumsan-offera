@@ -81,11 +81,7 @@ export function useCalendarLeaveRequests() {
     queryKey: ['calendar-leave-requests'],
     queryFn: async () => {
       const { data } = await api.get('/leaverequests/calendar');
-      // console.log('Calendar leave requests from API:', data);
-      // console.log(
-      //   'Calendar leaves from API:',
-      //   JSON.stringify(data.slice(0, 2), null, 2),
-      // );
+      
 
       return data;
     },

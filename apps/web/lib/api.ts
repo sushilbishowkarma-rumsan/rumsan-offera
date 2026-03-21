@@ -12,8 +12,6 @@ api.interceptors.request.use((config) => {
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else {
-      console.log('[api] No auth_token found in localStorage for:', config.url);
     }
   }
   return config;
@@ -23,14 +21,21 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const url = error.config?.url || '';
+   if (status === 401 || (status === 404 && url.includes('/auth/me'))) {
       if (typeof window !== 'undefined') {
         // Clear all auth data
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
 
-        // Redirect to login page
-        window.location.href = '/login';
+        // Only redirect if we aren't already on the login/register page
+        const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register';
+        
+        if (!isAuthPage) {
+          console.warn('[api] Session invalid. Logging out...');
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);

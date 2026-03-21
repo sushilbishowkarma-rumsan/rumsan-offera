@@ -27,13 +27,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   // --- PERSISTENCE: Check for logged in user on mount ---
   useEffect(() => {
-    const savedUser = localStorage.getItem('auth_user');
-    const savedToken = localStorage.getItem('auth_token');
+    const validateSession = async () => {
+      const savedUser = localStorage.getItem('auth_user');
+      const savedToken = localStorage.getItem('auth_token');
 
-    if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+      if (!savedUser || !savedToken) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+        const { data } = await api.get(`/users/${parsedUser.id}`);
+        setUser(data);
+        localStorage.setItem('auth_user', JSON.stringify(data));
+      } catch (error: any) {
+        if (error.response?.status === 404 || error.response?.status === 401) {
+          console.warn('Session invalid or user deleted. Logging out.');
+          logout(); // Call your existing logout function
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    validateSession();
   }, []);
 
   useEffect(() => {
@@ -71,6 +89,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('auth_user');
     localStorage.removeItem('auth_token');
     localStorage.removeItem('google token');
+
+    if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
   }, []);
 
   const switchRole = useCallback(

@@ -428,28 +428,7 @@ export default function ProfilePage() {
           gap: 24,
         }}
       >
-        {/* ── back button ── */}
-        <button
-          onClick={() => router.back()}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: 13,
-            fontWeight: 600,
-            color: '#64748b',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 0,
-            width: 'fit-content',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#0f172a')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#64748b')}
-        >
-          <ArrowLeft size={15} />
-          Back
-        </button>
+  
 
         {/* ── two-column layout ── */}
         <div

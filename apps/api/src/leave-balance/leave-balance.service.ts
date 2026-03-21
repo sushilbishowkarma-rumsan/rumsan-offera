@@ -71,7 +71,6 @@ export class LeaveBalanceService {
     });
 
     if (balances.length === 0) {
-      console.log(`No balances found for ${employeeId} — auto seeding...`);
       await this.seedBalancesForEmployee(employeeId);
       return this.prisma.leaveBalance.findMany({
         where: { employeeId, total: { gt: 0 } },
@@ -86,7 +85,6 @@ export class LeaveBalanceService {
       ...b,
       comments: (b.leavePolicy as { comments: string }).comments, // Then, flatten the comments
     }));
-    console.log(result, 'result with comments');
     return result;
   }
 
@@ -100,8 +98,6 @@ export class LeaveBalanceService {
         leavePolicy: { select: { comments: true } },
       },
     });
-
-    console.log(balances, 'this is test balance  1111 ????');
 
     if (balances.length === 0) {
       await this.seedBalancesForEmployee(employeeId);
@@ -128,7 +124,6 @@ export class LeaveBalanceService {
         comments: b.leavePolicy?.comments ?? 'No policy comments available',
         //(b.leavePolicy as { comments: string }).comments,
       }));
-    console.log('leave balance ok ???', formattedBalances);
     return formattedBalances;
   }
 
@@ -147,7 +142,6 @@ export class LeaveBalanceService {
     });
 
     if (policies.length === 0) {
-      console.log('No active policies found — nothing to seed');
       return;
     }
 
@@ -163,9 +157,6 @@ export class LeaveBalanceService {
       skipDuplicates: true,
     });
 
-    console.log(
-      `Auto-seeded ${result.count} balances for employee ${employeeId}`,
-    );
     return result;
   }
 
@@ -177,7 +168,6 @@ export class LeaveBalanceService {
     const users = await this.prisma.user.findMany({
       select: { id: true, role: true },
     });
-    console.log(`Seeding ${users.length} users x ${policies.length} policies`);
 
     let created = 0;
     for (const policy of policies) {
@@ -996,36 +986,6 @@ export class LeaveBalanceService {
     return rows.map((r) => r.year);
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // B) YEAR-END BALANCE RESET
-  // ══════════════════════════════════════════════════════════════════════════
-
-  /**
-   * resetYearEndBalances()
-   *
-   * Called by HR Admin at the end of each year (or start of new year).
-   * Every employee's leave balance is wiped and re-seeded from active
-   * LeavePolicy defaults so everyone starts fresh on January 1st.
-   *
-   * Flow:
-   *   1. Archive EVERY current balance into LeaveBalanceHistory
-   *      (month=12, year=current year — or the year being closed)
-   *   2. Delete ALL existing LeaveBalance rows
-   *   3. Re-create LeaveBalance rows from active LeavePolicies for every user
-   *      (same logic as seedBalancesForAllPolicies but always overwrites)
-   *
-   * Why delete+recreate instead of update?
-   *   If a policy was added or removed mid-year, a simple update would leave
-   *   stale rows. Delete+recreate ensures the new year's balances exactly
-   *   match the current active policies.
-   *
-   * Returns: { archived, deleted, created, year }
-   * archived: number;
-    deleted: number;
-    created: number;
-    year: number;
-     Promise<{}>
-   */
   async resetYearEndBalances(): Promise<YearEndResetResult> {
     // const now = new Date();
     // const year = now.getFullYear();
@@ -1036,56 +996,6 @@ export class LeaveBalanceService {
     const month: number = 12;
     // ── Step 1: fetch every current balance ──────────────────────────────────
     const allBalances = await this.prisma.leaveBalance.findMany();
-
-    // ── Step 2: archive them all to LeaveBalanceHistory ───────────────────────
-    // skipDuplicates so re-running this on Jan 1st doesn't double-archive.
-    // await this.prisma.leaveBalanceHistory.createMany({
-    //   data: allBalances.map((b) => ({
-    //     employeeId: b.employeeId,
-    //     leaveType: b.leaveType,
-    //     month,
-    //     year,
-    //     total: b.total,
-    //     used: Math.max(0, b.total - b.remaining),
-    //     remaining: b.remaining,
-    //     exceeded: b.exceeded, // requires schema migration above
-    //   })),
-    //   skipDuplicates: true,
-    // });
-
-    // // ── Step 3: delete ALL current balance rows ──────────────────────────────
-    // const deleted = await this.prisma.leaveBalance.deleteMany({});
-
-    // // ── Step 4: re-create fresh balances from active policies ─────────────────
-    // const policies = await this.prisma.leavePolicy.findMany({
-    //   where: { isActive: true },
-    // });
-
-    // const users = await this.prisma.user.findMany({
-    //   select: { id: true },
-    // });
-
-    // // Build the full cross-product: every user × every active policy
-    // const newBalances = users.flatMap((u) =>
-    //   policies.map((p) => ({
-    //     employeeId: u.id,
-    //     leaveType: p.leaveType,
-    //     total: p.defaultQuota,
-    //     remaining: p.defaultQuota, // fresh — full quota available
-    //     exceeded: 0, // clean slate
-    //     leavePolicyId: p.id,
-    //   })),
-    // );
-
-    // const created = await this.prisma.leaveBalance.createMany({
-    //   data: newBalances,
-    //   skipDuplicates: true,
-    // });
-
-    // console.log(
-    //   `[Year-End Reset] Archived ${allBalances.length}, ` +
-    //     `deleted ${deleted.count}, created ${created.count} balances for ${year}→${year + 1}`,
-    // );
 
     await Promise.all(
       allBalances.map((b) =>
@@ -1143,11 +1053,6 @@ export class LeaveBalanceService {
     const archived: number = allBalances.length;
     const deleted: number = deleteResult.count;
     const created: number = createResult.count;
-
-    console.log(
-      `[Year-End Reset] archived=${archived} deleted=${deleted} ` +
-        `created=${created} year=${year}→${year + 1}`,
-    );
 
     // Explicit object literal — no spread, no inference ambiguity.
     // TypeScript can trivially check this satisfies Promise<YearEndResetResult>.
@@ -1219,9 +1124,6 @@ export class LeaveBalanceService {
       }
     }
 
-    console.log(
-      `[repairExceededHistory] Repaired ${repaired} of ${suspectRows.length} suspect rows`,
-    );
     return { repaired };
   }
 }

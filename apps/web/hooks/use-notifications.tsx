@@ -34,10 +34,10 @@ export function useUnreadCount(userId: string | undefined) {
       return typeof data === 'number' ? data : data?.count || 0;
     },
     enabled: !!userId,
-    refetchInterval: 3000, // 3 seconds is safer for background polling than 1s
-    refetchIntervalInBackground: true,
-    refetchOnWindowFocus: false, // Prevents a sudden jump when switching back
-    staleTime: 0,
+    // refetchInterval: 3000, // 3 seconds is safer for background polling than 1s
+     refetchIntervalInBackground: true,
+    // refetchOnWindowFocus: false, // Prevents a sudden jump when switching back
+    staleTime: 30000,
   });
 }
 
@@ -52,11 +52,11 @@ export function useNotifications(userId: string | undefined) {
       return Array.isArray(data) ? data : [];
     },
     enabled: !!userId,
-    refetchInterval: 3000,
+    // refetchInterval: 3000,
     // Optional: ensures the data updates even if the window isn't focused
-    refetchIntervalInBackground: true,
+    // refetchIntervalInBackground: true,
     // Keep staleTime low or 0 if you want it to always be considered "old"
-    staleTime: 0,
+    staleTime: 60000,
   });
 }
 

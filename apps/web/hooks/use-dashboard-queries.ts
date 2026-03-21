@@ -24,9 +24,7 @@ async function syncRoleIfMismatched(
       dbUser ?? (await api.get(`/users/${contextUser.id}`)).data;
 
     if (serverUser?.role && serverUser.role !== contextUser.role) {
-      // console.log(
-      //   `[RoleSync] Mismatch: local=${contextUser.role}, db=${serverUser.role}. Syncing...`,
-      // );
+      
       const updatedUser = { ...contextUser, role: serverUser.role };
       localStorage.setItem('auth_user', JSON.stringify(updatedUser));
       await refreshUser();
@@ -293,14 +291,12 @@ export function useRecentActivity(limit: number = 5) {
         api.get('/leaverequests/all'),
         api.get('/wfh-requests/all'),
       ]);
-      // console.log('[RecentActivity] Leave raw response:', leaveRes.data);
-      // console.log('[RecentActivity] WFH raw response:', wfhRes.data);
+     
 
       const requests = Array.isArray(leaveRes.data) ? leaveRes.data : [];
       const wfhList = Array.isArray(wfhRes.data) ? wfhRes.data : [];
 
-      // console.log('[RecentActivity] Leave count:', requests.length);
-      // console.log('[RecentActivity] WFH count:', wfhList.length);
+      
       // ── Map leave requests to activity entries ──
       const leaveActivity = requests.map((req: any) => ({
         id: req.id,
@@ -328,7 +324,6 @@ export function useRecentActivity(limit: number = 5) {
         )
         .slice(0, limit);
       
-      // console.log('[RecentActivity] Final combined:', combined);
       return combined;
     },
     staleTime: 1000 * 30,
