@@ -418,48 +418,46 @@ export function EmployeeDashboard() {
         </div>
 
         {/* Stat cards */}
-        <div className="grid -mt-3 grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
-          {statCards.map((card) => (
-            <div
-              key={card.label}
-              className="relative overflow-hidden rounded-xl p-4 transition-all duration-150 hover:-translate-y-px"
-              style={{ background: '#ffffff', border: '0.5px solid #e2e8f0' }}
-            >
-              <div
-                className="absolute left-0 top-0 bottom-0 w-[3px]"
-                style={{ background: card.accentBar }}
-              />
-              <div
-                className="mb-2.5 flex h-7 w-7 items-center justify-center rounded-lg"
-                style={{ background: card.iconBg, color: card.iconColor }}
-              >
-                {card.icon}
-              </div>
-              <p
-                className="text-[22px] font-medium leading-none tabular-nums tracking-tight"
-                style={{ color: '#0f172a' }}
-              >
-                {card.value}
-                {card.unit && (
-                  <span className="ml-1 text-[12px] font-normal" style={{ color: '#94a3b8' }}>
-                    {card.unit}
-                  </span>
-                )}
-              </p>
-              <p
-                className="mt-1 text-[10px] font-semibold uppercase tracking-[0.07em]"
-                style={{ color: '#64748b' }}
-              >
-                {card.label}
-              </p>
-              {card.sub && (
-                <p className="mt-0.5 text-[11px]" style={{ color: '#94a3b8' }}>
-                  {card.sub}
-                </p>
-              )}
-            </div>
-          ))}
+     <div className="grid -mt-3 grid-cols-2 gap-2.5 sm:gap-2.5 lg:grid-cols-4">
+  {statCards.map((card) => (
+    <div
+      key={card.label}
+      className="relative overflow-hidden rounded-xl transition-all duration-150 hover:-translate-y-px"
+      style={{ background: '#ffffff', border: '0.5px solid #e2e8f0', padding: '10px 12px 10px 15px' }}
+    >
+      <div
+        className="absolute left-0 top-0 bottom-0 w-[3px]"
+        style={{ background: card.accentBar }}
+      />
+
+      <div className="flex items-center gap-2 mt-0.5">
+        <div
+          className="flex h-[26px] w-[26px] items-center justify-center rounded-lg flex-shrink-0"
+          style={{ background: card.iconBg, color: card.iconColor }}
+        >
+          {card.icon}
         </div>
+        <p className="text-[21px] font-medium leading-none tabular-nums" style={{ color: '#0f172a' }}>
+          {card.value}
+          {card.unit && (
+            <span className="ml-0.5 text-[11px] font-normal" style={{ color: '#94a3b8' }}>
+              {card.unit}
+            </span>
+          )}
+        </p>
+      </div>
+
+      <p className="mt-[5px] text-[10px] font-semibold uppercase tracking-[0.07em]" style={{ color: '#64748b' }}>
+        {card.label}
+      </p>
+      {card.sub && (
+        <p className="mt-0.5 text-[11px]" style={{ color: '#94a3b8' }}>
+          {card.sub}
+        </p>
+      )}
+    </div>
+  ))}
+</div>
 
         {/* Two column cards */}
         <div className="grid grid-cols-1 -mt-5 gap-5 lg:grid-cols-2">

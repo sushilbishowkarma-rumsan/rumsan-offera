@@ -677,7 +677,7 @@ export default function CalendarPage() {
         .leave-row { transition:background 0.12s ease; }
       `}</style>
 
-      <div className="cal-sans max-w-7xl mx-auto flex flex-col gap-5 p-4 sm:p-6 lg:p-8">
+      <div className="cal-sans max-w-7xl mx-auto flex flex-col gap-5 p-4 -mt-5 sm:p-6 lg:p-8">
         {/* ── Header ── */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -1447,7 +1447,7 @@ export default function CalendarPage() {
                                 <p
                                   style={{
                                     margin: 0,
-                                    fontSize: '11px',
+                                    fontSize: '8px',
                                     fontWeight: 700,
                                     color: '#0c4a6e',
                                     lineHeight: 1.35,
@@ -1463,7 +1463,7 @@ export default function CalendarPage() {
                                 <p
                                   style={{
                                     margin: '3px 0 0',
-                                    fontSize: '9px',
+                                    fontSize: '8px',
                                     fontWeight: 700,
                                     color: '#0284c7',
                                     textTransform: 'uppercase',
@@ -1477,7 +1477,7 @@ export default function CalendarPage() {
                                   <p
                                     style={{
                                       margin: '3px 0 0',
-                                      fontSize: '10px',
+                                      fontSize: '8px',
                                       fontWeight: 500,
                                       color: '#0369a1',
                                       lineHeight: 1.3,

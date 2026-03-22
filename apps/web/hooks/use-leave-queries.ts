@@ -30,21 +30,55 @@ export function useRecentLeaveRequests(
 
 // hooks/use-leave-queries.ts — add these two hooks
 //rumsan-offera/apps/web/src/hooks/use-leave-queries.ts
+const LEAVE_TYPES_CACHE_KEY = 'leave_types_cache';
+
+type LeavePolicy = { id: string; leaveType: string; isActive: boolean };
+
+// helpers
+function getCachedLeavePolicies(userId?: string): LeavePolicy[] | null {
+  try {
+    const raw = localStorage.getItem(LEAVE_TYPES_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const key = userId ?? '__all__';
+    return parsed[key] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedLeavePolicies(data: LeavePolicy[], userId?: string) {
+  try {
+    const raw = localStorage.getItem(LEAVE_TYPES_CACHE_KEY);
+    const existing = raw ? JSON.parse(raw) : {};
+    const key = userId ?? '__all__';
+    existing[key] = data;
+    localStorage.setItem(LEAVE_TYPES_CACHE_KEY, JSON.stringify(existing));
+  } catch {
+    // silently fail — localStorage can be unavailable
+  }
+}
+
 export function useLeavePolicies(userId?: string) {
   return useQuery({
     queryKey: userId ? ['leave-policies', userId] : ['leave-policies'],
     queryFn: async () => {
-      const url = userId
-        ? `/leave-policies?userId=${userId}`
-        : '/leave-policies';
+      const url = userId ? `/leave-policies?userId=${userId}` : '/leave-policies';
       const { data } = await api.get(url);
-      return data as { id: string; leaveType: string; isActive: boolean }[];
+      const policies = data as LeavePolicy[];
+
+      // ✅ Always sync latest server data to localStorage
+      setCachedLeavePolicies(policies, userId);
+
+      return policies;
     },
-    // enabled: userId !== undefined ? !!userId : true,
+    // ✅ Seed React Query cache from localStorage before first fetch resolves
+    initialData: () => getCachedLeavePolicies(userId) ?? undefined,
+    initialDataUpdatedAt: 0, // treat as stale so background refetch still runs
     enabled:
-      userId === undefined || // HR Admin: always fetch
+      userId === undefined ||
       (userId !== undefined && userId.length > 0),
-    staleTime: 1000 * 60 * 10, // 1 min — policies rarely change
+    staleTime: 1000 * 60 * 10,
   });
 }
 

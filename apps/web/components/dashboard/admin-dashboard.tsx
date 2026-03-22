@@ -127,15 +127,15 @@ export function AdminDashboard() {
 
   const { stats, combinedPending = [] } = data || {};
   const statCards = [
-    {
-      label: 'Total Employees',
-      sub: `${stats?.totalEmployees || 0} in system`,
-      value: stats?.totalEmployees || 0,
-      icon: <Users className="h-5 w-5" />,
-      iconBg: '#eef2ff',
-      iconColor: '#4f46e5',
-      accentBar: '#4f46e5',
-    },
+    // {
+    //   label: 'Total Employees',
+    //   sub: `${stats?.totalEmployees || 0} in system`,
+    //   value: stats?.totalEmployees || 0,
+    //   icon: <Users className="h-5 w-5" />,
+    //   iconBg: '#eef2ff',
+    //   iconColor: '#4f46e5',
+    //   accentBar: '#4f46e5',
+    // },
     {
       label: 'Pending Requests',
       sub: 'Across organization',
@@ -190,14 +190,14 @@ export function AdminDashboard() {
       iconColor: '#16a34a',
       hoverBorder: '#bbf7d0',
     },
-    {
-      label: 'Employees',
-      href: '/dashboard/admin/employees',
-      icon: <Users className="h-5 w-5" />,
-      iconBg: '#f0f9ff',
-      iconColor: '#0284c7',
-      hoverBorder: '#bae6fd',
-    },
+    // {
+    //   label: 'Employees',
+    //   href: '/dashboard/admin/employees',
+    //   icon: <Users className="h-5 w-5" />,
+    //   iconBg: '#f0f9ff',
+    //   iconColor: '#0284c7',
+    //   hoverBorder: '#bae6fd',
+    // },
     {
       label: 'Team Calendar',
       href: '/dashboard/calendar',
@@ -210,7 +210,7 @@ export function AdminDashboard() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }}>
-      <div className="flex flex-col gap-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="flex flex-col gap-8 p-4 -mt-5 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         <ExceededLeaveAlert employeeId={user?.id ?? ''} />
         {/* ── Stats Grid ── */}
         <button
@@ -276,72 +276,65 @@ export function AdminDashboard() {
             </svg>
           </div>
         </button>
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 -mt-5 sm:gap-2.5 lg:grid-cols-4">
           {statCards.map((card) => (
             <div
               key={card.label}
-              className="group relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 cursor-default"
+              className="group relative overflow-hidden rounded-xl cursor-default transition-all duration-150"
               style={{
                 background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
+                border: '0.5px solid #e2e8f0',
+                padding: '10px 12px',
+                boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.boxShadow =
-                  '0 8px 24px rgba(15,23,42,0.10)';
-                (e.currentTarget as HTMLDivElement).style.borderColor =
-                  '#cbd5e1';
+                const el = e.currentTarget as HTMLDivElement;
+                el.style.borderColor = '#cbd5e1';
+                el.style.boxShadow = '0 4px 16px rgba(15,23,42,0.08)';
+                el.style.transform = 'translateY(-1px)';
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.boxShadow =
-                  '0 1px 3px rgba(15,23,42,0.05)';
-                (e.currentTarget as HTMLDivElement).style.borderColor =
-                  '#e2e8f0';
+                const el = e.currentTarget as HTMLDivElement;
+                el.style.borderColor = '#e2e8f0';
+                el.style.boxShadow = '0 1px 3px rgba(15,23,42,0.04)';
+                el.style.transform = 'none';
               }}
             >
-              {/* Colored top bar */}
               <div
-                className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
+                className="absolute top-0 left-0 right-0 h-[2.5px]"
                 style={{ background: card.accentBar }}
               />
 
-              <div className="flex flex-col gap-4 pt-1">
-                {/* Icon */}
+              <div className="flex items-center gap-2 mt-0.5">
                 <div
-                  className="flex h-9 w-9 items-center justify-center rounded-xl"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg flex-shrink-0"
                   style={{ background: card.iconBg, color: card.iconColor }}
                 >
                   {card.icon}
                 </div>
-
-                {/* Value + Label */}
-                <div>
-                  <p
-                    className="text-[34px] font-bold leading-none tabular-nums"
-                    style={{ color: '#0f172a' }}
-                  >
-                    {card.value}
-                  </p>
-                  <p
-                    className="mt-2 text-[11px] font-semibold uppercase tracking-[0.1em]"
-                    style={{ color: '#475569' }}
-                  >
-                    {card.label}
-                  </p>
-                  <p
-                    className="mt-0.5 text-[11px]"
-                    style={{ color: '#94a3b8' }}
-                  >
-                    {card.sub}
-                  </p>
-                </div>
+                <p
+                  className="text-[22px] font-medium leading-none tabular-nums"
+                  style={{ color: '#0f172a' }}
+                >
+                  {card.value}
+                </p>
               </div>
+
+              <p
+                className="mt-[5px] text-[11px] font-medium uppercase tracking-[0.08em]"
+                style={{ color: '#64748b' }}
+              >
+                {card.label}
+              </p>
+              <p className="mt-0.5 text-[11px]" style={{ color: '#94a3b8' }}>
+                {card.sub}
+              </p>
             </div>
           ))}
         </div>
 
         {/* ── Two-column cards ── */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 -mt-5 lg:grid-cols-2">
           {/* ── Quick Actions ── */}
           <div
             className="flex flex-col rounded-2xl overflow-hidden"

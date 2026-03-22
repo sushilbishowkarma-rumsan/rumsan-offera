@@ -827,7 +827,7 @@ export default function PoliciesPage() {
               <Label htmlFor="leaveName">Leave Type Name</Label>
               <Input
                 id="leaveName"
-                placeholder="e.g. Maternity, Study, Bereavement"
+                placeholder="e.g. Maternity, Sick, Personal"
                 value={newPolicy.leaveType}
                 onChange={(e) =>
                   setNewPolicy({ ...newPolicy, leaveType: e.target.value })
@@ -840,7 +840,7 @@ export default function PoliciesPage() {
                 <Input
                   type="text"
                   inputMode="decimal"
-                  placeholder="e.g. 20"
+                  placeholder="e.g. 10"
                   value={newPolicy.defaultQuota}
                   onChange={(e) =>
                     setNewPolicy({ ...newPolicy, defaultQuota: e.target.value })
@@ -867,7 +867,7 @@ export default function PoliciesPage() {
                 <Input
                   type="text"
                   inputMode="decimal"
-                  placeholder="e.g. 1.5"
+                  placeholder="No need to Input Here"
                   value={newPolicy.accrualRate}
                   onChange={(e) =>
                     setNewPolicy({ ...newPolicy, accrualRate: e.target.value })
@@ -879,7 +879,7 @@ export default function PoliciesPage() {
                 <Input
                   type="text"
                   inputMode="numeric"
-                  placeholder="e.g. 10"
+                  placeholder="No need to Input Here"
                   value={newPolicy.maxConsecutiveDays}
                   onChange={(e) =>
                     setNewPolicy({

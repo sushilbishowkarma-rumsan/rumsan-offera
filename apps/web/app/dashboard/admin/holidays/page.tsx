@@ -93,7 +93,7 @@ export default function HolidaysPage() {
 
   return (
     <div className="min-h-screen" style={{ background: "#f8f9fc" }}>
-      <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="flex flex-col gap-6 p-4 sm:p-6 -mt-3 lg:p-8 max-w-7xl mx-auto">
         {/* ── Header ── */}
         <div className="flex items-center justify-between">
           <div>

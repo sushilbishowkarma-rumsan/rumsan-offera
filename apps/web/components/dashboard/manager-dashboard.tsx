@@ -326,7 +326,7 @@ export function ManagerDashboard() {
         </div>
 
         {/* ── Stats Grid ── */}
-        <div className="grid grid-cols-2 -mt-5 gap-3 sm:gap-4 lg:grid-cols-4">
+        {/* <div className="grid grid-cols-2 -mt-5 gap-3 sm:gap-4 lg:grid-cols-4">
           {statCards.map((card) => (
             <div
               key={card.label}
@@ -349,7 +349,6 @@ export function ManagerDashboard() {
                   '#e2e8f0';
               }}
             >
-              {/* Colored top accent bar */}
               <div
                 className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
                 style={{ background: card.accentBar }}
@@ -385,10 +384,66 @@ export function ManagerDashboard() {
               </div>
             </div>
           ))}
+        </div> */}
+        <div className="grid grid-cols-2 -mt-5 gap-2.5 sm:gap-2.5 lg:grid-cols-4">
+  {statCards.map((card) => (
+    <div
+      key={card.label}
+      className="group relative overflow-hidden rounded-xl cursor-default transition-all duration-150"
+      style={{
+        background: '#ffffff',
+        border: '0.5px solid #e2e8f0',
+        padding: '10px 12px',
+      }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget as HTMLDivElement;
+        el.style.borderColor = '#cbd5e1';
+        el.style.boxShadow = '0 4px 16px rgba(15,23,42,0.07)';
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget as HTMLDivElement;
+        el.style.borderColor = '#e2e8f0';
+        el.style.boxShadow = 'none';
+      }}
+    >
+      {/* Accent bar */}
+      <div
+        className="absolute top-0 left-0 right-0 h-[2.5px]"
+        style={{ background: card.accentBar }}
+      />
+
+      {/* Icon + Value row */}
+      <div className="flex items-center gap-2 mt-0.5">
+        <div
+          className="flex h-7 w-7 items-center justify-center rounded-lg flex-shrink-0"
+          style={{ background: card.iconBg, color: card.iconColor }}
+        >
+          {card.icon}
         </div>
+        <p
+          className="text-[22px] font-medium leading-none tabular-nums"
+          style={{ color: '#0f172a' }}
+        >
+          {card.value}
+        </p>
+      </div>
+
+      {/* Label + Sub */}
+      <p
+        className="mt-[5px] text-[11px] font-medium uppercase tracking-[0.08em]"
+        style={{ color: '#64748b' }}
+      >
+        {card.label}
+      </p>
+      <p className="mt-0.5 text-[11px]" style={{ color: '#94a3b8' }}>
+        {card.sub}
+      </p>
+    </div>
+  ))}
+</div>
 
         {/* ── Cards Row ── */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 -mt-5 lg:grid-cols-2">
           {/* ── Pending Approvals Card ── */}
           <div
             className="flex flex-col rounded-2xl overflow-hidden"
