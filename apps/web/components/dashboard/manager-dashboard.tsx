@@ -236,7 +236,7 @@ export function ManagerDashboard() {
         <ExceededLeaveAlert employeeId={user?.id ?? ''} />
         <button
           onClick={() => router.push('/dashboard/exceed')}
-          className="group relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer text-left w-full"
+          className="group relative overflow-hidden rounded-2xl p-2 -mt-6 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer text-left w-full"
           style={{
             background: '#fff1f2',
             border: '1.5px solid #fca5a5',
@@ -298,8 +298,8 @@ export function ManagerDashboard() {
           </div>
         </button>
         {/* ── Page Header ── */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-2">
-          <div>
+        <div className="flex -mt-7 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-2">
+          <div className="-mt-1">
             <h1
               className="text-[26px] font-bold tracking-tight"
               style={{ color: '#0f172a' }}
@@ -326,7 +326,7 @@ export function ManagerDashboard() {
         </div>
 
         {/* ── Stats Grid ── */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 -mt-5 gap-3 sm:gap-4 lg:grid-cols-4">
           {statCards.map((card) => (
             <div
               key={card.label}

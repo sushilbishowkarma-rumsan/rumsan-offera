@@ -270,23 +270,7 @@ export default function UserProfilePage({ params }: PageProps) {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8f9fc' }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px 56px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-        {/* ── back button ── */}
-        <button
-          onClick={() => router.back()}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            fontSize: 13, fontWeight: 600, color: '#64748b',
-            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-            width: 'fit-content',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#0f172a')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#64748b')}
-        >
-          <ArrowLeft size={15} />
-          Back
-        </button>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px 56px', marginTop:'-10px', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
         {/* ── two-column layout ── */}
         <div
