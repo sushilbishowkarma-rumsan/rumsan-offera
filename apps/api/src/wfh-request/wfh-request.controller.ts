@@ -45,7 +45,8 @@ export class WfhRequestController {
     if (role === 'HRADMIN' || role === 'MANAGER') {
       return this.wfhRequestService.findAll(); // ← see service below
     }
-    return [];
+    return this.wfhRequestService.findByEmployeeWfh();
+    // return [];
   }
   @Get('calendar')
   @UseGuards(JwtAuthGuard)

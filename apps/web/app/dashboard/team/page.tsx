@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { useAllRequests, useAllWfhRequests } from '@/hooks/use-leave-queries' 
+import { useAllRequests, useAllWfhRequests } from '@/hooks/use-leave-queries';
 
 import {
   Users,
@@ -282,14 +282,13 @@ function EmployeeCard({
   allEmployees,
   canNavigate,
   selectedUserIds,
-  todayStatusMap
+  todayStatusMap,
 }: {
   emp: Employee;
   allEmployees: Employee[];
   canNavigate: boolean;
   selectedUserIds: UserMapping[] | undefined;
-  todayStatusMap: Map<string, 'leave' | 'wfh'>
-
+  todayStatusMap: Map<string, 'leave' | 'wfh'>;
 }) {
   const [hovered, setHovered] = useState(false);
   const manager = allEmployees.find((e) => e.cuid === emp.manager_cuid);
@@ -297,7 +296,7 @@ function EmployeeCard({
   const depts = emp.department
     ? emp.department.split(',').map((d) => d.trim())
     : [];
-const todayStatus = todayStatusMap.get(emp.email); // 'leave' | 'wfh' | undefined
+  const todayStatus = todayStatusMap.get(emp.email);
 
   const cardStyle: React.CSSProperties = {
     borderRadius: 16,
@@ -374,29 +373,47 @@ const todayStatus = todayStatusMap.get(emp.email); // 'leave' | 'wfh' | undefine
             )}
             <EmpBadge type={emp.employment_type} />
             {todayStatus === 'leave' && (
-  <span style={{
-    display: 'inline-flex', alignItems: 'center', gap: 3,
-    marginTop: 4, fontSize: 9, fontWeight: 700,
-    padding: '2px 7px', borderRadius: 6,
-    background: '#fff7ed', color: '#c2410c',
-    border: '1px solid #fed7aa',
-    letterSpacing: '0.06em', textTransform: 'uppercase',
-  }}>
-    🌴 On Leave
-  </span>
-)}
-{todayStatus === 'wfh' && (
-  <span style={{
-    display: 'inline-flex', alignItems: 'center', gap: 3,
-    marginTop: 4, fontSize: 9, fontWeight: 700,
-    padding: '2px 7px', borderRadius: 6,
-    background: '#eff6ff', color: '#1d4ed8',
-    border: '1px solid #bfdbfe',
-    letterSpacing: '0.06em', textTransform: 'uppercase',
-  }}>
-    💻 WFH Today
-  </span>
-)}
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 3,
+                  marginTop: 4,
+                  fontSize: 9,
+                  fontWeight: 700,
+                  padding: '2px 7px',
+                  borderRadius: 6,
+                  background: '#fff7ed',
+                  color: '#c2410c',
+                  border: '1px solid #fed7aa',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                🌴 On Leave
+              </span>
+            )}
+            {todayStatus === 'wfh' && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 3,
+                  marginTop: 4,
+                  fontSize: 9,
+                  fontWeight: 700,
+                  padding: '2px 7px',
+                  borderRadius: 6,
+                  background: '#eff6ff',
+                  color: '#1d4ed8',
+                  border: '1px solid #bfdbfe',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                💻 WFH Today
+              </span>
+            )}
           </div>
         </div>
 
@@ -509,19 +526,21 @@ function EmployeeRow({
   allEmployees,
   canNavigate,
   selectedUserIds,
+  todayStatusMap,
 }: {
   emp: Employee;
   allEmployees: Employee[];
   canNavigate: boolean;
   selectedUserIds: UserMapping[] | undefined;
-  todayStatusMap: Map<string, 'leave' | 'wfh'>
-
+  todayStatusMap: Map<string, 'leave' | 'wfh'>;
 }) {
   const [hovered, setHovered] = useState(false);
   const badge = employmentBadge(emp.employment_type);
   const depts = emp.department
     ? emp.department.split(',').map((d) => d.trim())
     : [];
+
+  const todayStatus = todayStatusMap.get(emp.email);
 
   const rowStyle: React.CSSProperties = {
     display: 'flex',
@@ -619,6 +638,41 @@ function EmployeeRow({
             {badge.label}
           </span>
         )}
+
+        {todayStatus === 'leave' && (
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              color: '#c2410c',
+              background: '#fff7ed',
+              padding: '2px 8px',
+              borderRadius: 6,
+              border: '1px solid #fed7aa',
+              marginLeft: 8,
+              textTransform: 'uppercase',
+            }}
+          >
+            🌴 On Leave
+          </span>
+        )}
+        {todayStatus === 'wfh' && (
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              color: '#1d4ed8',
+              background: '#eff6ff',
+              padding: '2px 8px',
+              borderRadius: 6,
+              border: '1px solid #bfdbfe',
+              marginLeft: 8,
+              textTransform: 'uppercase',
+            }}
+          >
+            💻 WFH Today
+          </span>
+        )}
         {canNavigate && hovered && (
           <span
             style={{
@@ -673,7 +727,7 @@ function GroupSection({
   canNavigate,
   defaultOpen = true,
   selectedUserIds,
-  todayStatusMap
+  todayStatusMap,
 }: {
   title: string;
   subtitle?: string;
@@ -685,8 +739,7 @@ function GroupSection({
   canNavigate: boolean;
   defaultOpen?: boolean;
   selectedUserIds: UserMapping[] | undefined;
-  todayStatusMap: Map<string, 'leave' | 'wfh'>
-
+  todayStatusMap: Map<string, 'leave' | 'wfh'>;
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -909,37 +962,41 @@ export default function TeamDirectoryPage() {
   //for map leave or wfh at team page
   const { data: departments = [], isLoading: deptLoading } = useDepartments();
   const { data: findSelectedUserID } = useUsers();
-  // const selectedUserIds = findSelectedUserID?.map((e) => ({
-  //   id: e.id,
-  //   rsofficeId: e.rsofficeId,
-  // }));
+ 
   const { data: leaveRequests = [] } = useAllRequests();
-const { data: wfhRequests = [] }   = useAllWfhRequests();
-const todayStatusMap = useMemo(() => {
-  const today = new Date();
-  const map = new Map<string, 'leave' | 'wfh'>(); // keyed by email
+  const { data: wfhRequests = [] } = useAllWfhRequests();
+  const todayStatusMap = useMemo(() => {
+    const today = new Date();
+    const map = new Map<string, 'leave' | 'wfh'>(); // keyed by email
 
-  const isActiveToday = (req: any) => {
-    if (req.status !== 'APPROVED') return false;
-    const start = new Date(req.startDate);
-    const end   = new Date(req.endDate);
-    // strip time for date-only comparison
-    start.setHours(0,0,0,0);
-    end.setHours(23,59,59,999);
-    today.setHours(12,0,0,0);
-    return today >= start && today <= end;
-  };
-  leaveRequests.forEach((r: any) => {
-    if (isActiveToday(r) && r.employee?.email)
-      map.set(r.employee.email, 'leave');
-  });
-  wfhRequests.forEach((r: any) => {
-    if (isActiveToday(r) && r.employee?.email)
-      map.set(r.employee.email, 'wfh');
-  });
+    const isActiveToday = (req: any) => {
+      const status = (req.status ?? '').toUpperCase();
+      if (status !== 'APPROVED') return false;
 
-  return map;
-}, [leaveRequests, wfhRequests]);
+      // if (status !== 'APPROVED' && status !== 'PENDING') return false;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const start = new Date(req.startDate);
+      start.setHours(0, 0, 0, 0);
+
+      const end = new Date(req.endDate);
+      end.setHours(0, 0, 0, 0);
+
+      return today >= start && today <= end;
+    };
+
+    leaveRequests.forEach((r: any) => {
+      if (isActiveToday(r) && r.employee?.email)
+        map.set(r.employee.email, 'leave');
+    });
+    wfhRequests.forEach((r: any) => {
+      if (isActiveToday(r) && r.employee?.email)
+        map.set(r.employee.email, 'wfh');
+    });
+
+    return map;
+  }, [leaveRequests, wfhRequests]);
 
   const selectedUserIds: UserMapping[] =
     findSelectedUserID?.map((e) => ({

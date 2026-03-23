@@ -225,6 +225,17 @@ export class WfhRequestService {
     });
   }
 
+  async findByEmployeeWfh() {
+    return this.prisma.wfhRequest.findMany({
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        employee: {
+          select: { id: true, name: true, email: true, department: true },
+        },
+      },
+    });
+  }
+
   async deleteRequest(requestId: string, employeeId: string) {
     const request = await this.prisma.wfhRequest.findUnique({
       where: { id: requestId },
