@@ -27,18 +27,14 @@ import { api } from '@/lib/api';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-
 export function ManagerDashboard() {
   const { user } = useAuth();
-    const router = useRouter();
+  const router = useRouter();
   const { data, isLoading, error, refetch } = useManagerDashboardData(user?.id);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
   // ── Approve handler
-  const handleApprove = async (
-    req: any,
-    requestId: string,
-  ) => {
+  const handleApprove = async (req: any, requestId: string) => {
     const isWfh = req.requestType === 'wfh';
     setProcessingIds((prev) => new Set(prev).add(requestId));
     try {
@@ -71,10 +67,7 @@ export function ManagerDashboard() {
   };
 
   // ── Reject handler
-  const handleReject = async (
-    req: any,
-    requestId: string,
-  ) => {
+  const handleReject = async (req: any, requestId: string) => {
     const isWfh = req.requestType === 'wfh';
     setProcessingIds((prev) => new Set(prev).add(requestId));
     try {
@@ -326,121 +319,62 @@ export function ManagerDashboard() {
         </div>
 
         {/* ── Stats Grid ── */}
-        {/* <div className="grid grid-cols-2 -mt-5 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 -mt-5 gap-2.5 sm:gap-2.5 lg:grid-cols-4">
           {statCards.map((card) => (
             <div
               key={card.label}
-              className="group relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 cursor-default"
+              className="group relative overflow-hidden rounded-xl cursor-default transition-all duration-150"
               style={{
                 background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
+                border: '0.5px solid #e2e8f0',
+                padding: '10px 12px',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.boxShadow =
-                  '0 8px 24px rgba(15,23,42,0.10)';
-                (e.currentTarget as HTMLDivElement).style.borderColor =
-                  '#cbd5e1';
+                const el = e.currentTarget as HTMLDivElement;
+                el.style.borderColor = '#cbd5e1';
+                el.style.boxShadow = '0 4px 16px rgba(15,23,42,0.07)';
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.boxShadow =
-                  '0 1px 3px rgba(15,23,42,0.05)';
-                (e.currentTarget as HTMLDivElement).style.borderColor =
-                  '#e2e8f0';
+                const el = e.currentTarget as HTMLDivElement;
+                el.style.borderColor = '#e2e8f0';
+                el.style.boxShadow = 'none';
               }}
             >
+              {/* Accent bar */}
               <div
-                className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
+                className="absolute top-0 left-0 right-0 h-[2.5px]"
                 style={{ background: card.accentBar }}
               />
 
-              <div className="flex flex-col gap-4 pt-1">
+              {/* Icon + Value row */}
+              <div className="flex items-center gap-2 mt-0.5">
                 <div
-                  className="flex h-9 w-9 items-center justify-center rounded-xl"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg flex-shrink-0"
                   style={{ background: card.iconBg, color: card.iconColor }}
                 >
                   {card.icon}
                 </div>
-                <div>
-                  <p
-                    className="text-[34px] font-bold leading-none tabular-nums"
-                    style={{ color: '#0f172a' }}
-                  >
-                    {card.value}
-                  </p>
-                  <p
-                    className="mt-2 text-[11px] font-semibold uppercase tracking-[0.1em]"
-                    style={{ color: '#475569' }}
-                  >
-                    {card.label}
-                  </p>
-                  <p
-                    className="mt-0.5 text-[11px]"
-                    style={{ color: '#94a3b8' }}
-                  >
-                    {card.sub}
-                  </p>
-                </div>
+                <p
+                  className="text-[22px] font-medium leading-none tabular-nums"
+                  style={{ color: '#0f172a' }}
+                >
+                  {card.value}
+                </p>
               </div>
+
+              {/* Label + Sub */}
+              <p
+                className="mt-[5px] text-[11px] font-medium uppercase tracking-[0.08em]"
+                style={{ color: '#64748b' }}
+              >
+                {card.label}
+              </p>
+              <p className="mt-0.5 text-[11px]" style={{ color: '#94a3b8' }}>
+                {card.sub}
+              </p>
             </div>
           ))}
-        </div> */}
-        <div className="grid grid-cols-2 -mt-5 gap-2.5 sm:gap-2.5 lg:grid-cols-4">
-  {statCards.map((card) => (
-    <div
-      key={card.label}
-      className="group relative overflow-hidden rounded-xl cursor-default transition-all duration-150"
-      style={{
-        background: '#ffffff',
-        border: '0.5px solid #e2e8f0',
-        padding: '10px 12px',
-      }}
-      onMouseEnter={(e) => {
-        const el = e.currentTarget as HTMLDivElement;
-        el.style.borderColor = '#cbd5e1';
-        el.style.boxShadow = '0 4px 16px rgba(15,23,42,0.07)';
-      }}
-      onMouseLeave={(e) => {
-        const el = e.currentTarget as HTMLDivElement;
-        el.style.borderColor = '#e2e8f0';
-        el.style.boxShadow = 'none';
-      }}
-    >
-      {/* Accent bar */}
-      <div
-        className="absolute top-0 left-0 right-0 h-[2.5px]"
-        style={{ background: card.accentBar }}
-      />
-
-      {/* Icon + Value row */}
-      <div className="flex items-center gap-2 mt-0.5">
-        <div
-          className="flex h-7 w-7 items-center justify-center rounded-lg flex-shrink-0"
-          style={{ background: card.iconBg, color: card.iconColor }}
-        >
-          {card.icon}
         </div>
-        <p
-          className="text-[22px] font-medium leading-none tabular-nums"
-          style={{ color: '#0f172a' }}
-        >
-          {card.value}
-        </p>
-      </div>
-
-      {/* Label + Sub */}
-      <p
-        className="mt-[5px] text-[11px] font-medium uppercase tracking-[0.08em]"
-        style={{ color: '#64748b' }}
-      >
-        {card.label}
-      </p>
-      <p className="mt-0.5 text-[11px]" style={{ color: '#94a3b8' }}>
-        {card.sub}
-      </p>
-    </div>
-  ))}
-</div>
 
         {/* ── Cards Row ── */}
         <div className="grid grid-cols-1 gap-5 -mt-5 lg:grid-cols-2">
@@ -454,7 +388,7 @@ export function ManagerDashboard() {
             }}
           >
             {/* Header */}
-             <div
+            <div
               className="flex items-center justify-between px-5 py-4"
               style={{ borderBottom: '1px solid #f1f5f9' }}
             >
@@ -506,7 +440,7 @@ export function ManagerDashboard() {
               ) : (
                 <div>
                   {pendingRequests.slice(0, 6).map((req: any) => {
-                     const isWfh = req.requestType === 'wfh';
+                    const isWfh = req.requestType === 'wfh';
                     const isProcessing = processingIds.has(req.id);
                     return (
                       <div
@@ -542,24 +476,37 @@ export function ManagerDashboard() {
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                          <p className="text-[13px] font-semibold truncate" style={{ color: "#1e293b" }}>
-                            {req.employee?.name || req.employee?.email || "Unknown"}
+                            <p
+                              className="text-[13px] font-semibold truncate"
+                              style={{ color: '#1e293b' }}
+                            >
+                              {req.employee?.name ||
+                                req.employee?.email ||
+                                'Unknown'}
+                            </p>
+                            {/* ← WFH badge so manager knows the type at a glance */}
+                            {isWfh && (
+                              <span
+                                className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold shrink-0"
+                                style={{
+                                  background: '#dbeafe',
+                                  color: '#1d4ed8',
+                                  border: '1px solid #93c5fd',
+                                }}
+                              >
+                                <Laptop className="h-2.5 w-2.5" /> WFH
+                              </span>
+                            )}
+                          </div>
+                          <p
+                            className="text-[11px] mt-0.5"
+                            style={{ color: '#64748b' }}
+                          >
+                            {isWfh
+                              ? `${formatDate(req.startDate)}${req.startDate !== req.endDate ? ` – ${formatDate(req.endDate)}` : ''} · ${req.totalDays}d`
+                              : `${req.leaveType.charAt(0) + req.leaveType.slice(1).toLowerCase()} · ${formatDate(req.startDate)}${req.startDate !== req.endDate ? ` – ${formatDate(req.endDate)}` : ''} · ${req.totalDays}d`}
                           </p>
-                          {/* ← WFH badge so manager knows the type at a glance */}
-                          {isWfh && (
-                            <span className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold shrink-0"
-                              style={{ background: "#dbeafe", color: "#1d4ed8", border: "1px solid #93c5fd" }}>
-                              <Laptop className="h-2.5 w-2.5" /> WFH
-                            </span>
-                          )}
                         </div>
-                        <p className="text-[11px] mt-0.5" style={{ color: "#64748b" }}>
-                          {isWfh
-                            ? `${formatDate(req.startDate)}${req.startDate !== req.endDate ? ` – ${formatDate(req.endDate)}` : ''} · ${req.totalDays}d`
-                            : `${req.leaveType.charAt(0) + req.leaveType.slice(1).toLowerCase()} · ${formatDate(req.startDate)}${req.startDate !== req.endDate ? ` – ${formatDate(req.endDate)}` : ''} · ${req.totalDays}d`
-                          }
-                        </p>
-                      </div>
 
                         {/* Action buttons */}
                         <div className="flex items-center gap-1.5 shrink-0">

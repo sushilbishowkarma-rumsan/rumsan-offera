@@ -36,11 +36,6 @@ const unreadCount = unreadCountQuery.data ?? 0;
         bg-[#0d0f14]/95 backdrop-blur-sm
         border-b border-white/[0.06]
       "
-      // className="
-      //   flex h-14 shrink-0 items-center gap-3 px-4
-      //   bg-[#0d0f14]
-      //   border-b border-white/[0.06]
-      // "
     >
       {/* Sidebar toggle */}
       <SidebarTrigger

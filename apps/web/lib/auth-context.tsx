@@ -26,6 +26,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const queryClient = useQueryClient();
   // --- PERSISTENCE: Check for logged in user on mount ---
+ 
+ 
+   const logout = useCallback(() => {
+    setUser(null);
+    localStorage.removeItem('auth_user');
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('google token');
+
+    if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
+  }, []);
+  
   useEffect(() => {
     const validateSession = async () => {
       const savedUser = localStorage.getItem('auth_user');
@@ -52,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
     validateSession();
-  }, []);
+  }, [logout]);
 
   useEffect(() => {
     // This function runs whenever the Interceptor detects a role change
@@ -84,16 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem('auth_user');
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('google token');
-
-    if (typeof window !== 'undefined') {
-    window.location.href = '/login';
-  }
-  }, []);
+ 
 
   const switchRole = useCallback(
     (role: UserRole) => {
