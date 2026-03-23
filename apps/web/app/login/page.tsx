@@ -9,7 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
+import Link from "next/link"; 
 
 export default function LoginPage() {
   const loginMutation = useLoginMutation();
@@ -23,6 +24,16 @@ export default function LoginPage() {
         backgroundAttachment: "fixed",
       }}
     >
+      <Link 
+        href="/" 
+        className="absolute left-6 top-6 z-20 flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors hover:text-white"
+      >
+        <div className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-800 bg-slate-900/50 backdrop-blur-md transition-all hover:border-slate-600">
+          <ArrowLeft className="h-4 w-4" />
+        </div>
+        <span>Back to home</span>
+      </Link>
+      
       {/* Background Decorative Element: A soft orange blur */}
       <div className="absolute -top-[10%] -left-[10%] h-[40%] w-[40%] rounded-full bg-orange-100/50 blur-[120px] dark:bg-orange-900/20" />
       <div className="absolute -bottom-[10%] -right-[10%] h-[40%] w-[40%] rounded-full bg-orange-50/50 blur-[120px] dark:bg-slate-900/50" />
