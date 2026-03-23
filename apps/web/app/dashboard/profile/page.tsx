@@ -876,7 +876,6 @@ export default function ProfilePage() {
                               >
                                 {request.leaveType.charAt(0) +
                                   request.leaveType.slice(1).toLowerCase()}{' '}
-                                Leave
                               </p>
                               {request.isHalfDay && (
                                 <span
