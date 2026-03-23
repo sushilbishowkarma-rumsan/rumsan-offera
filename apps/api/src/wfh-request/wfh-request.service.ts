@@ -97,6 +97,13 @@ export class WfhRequestService {
   async findAllByEmployee(employeeId: string) {
     return this.prisma.wfhRequest.findMany({
       where: { employeeId },
+      include: {
+        employee: {
+          select: {
+            department: true, // This grabs the department from the Employee table
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
