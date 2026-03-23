@@ -962,7 +962,6 @@ export default function TeamDirectoryPage() {
   //for map leave or wfh at team page
   const { data: departments = [], isLoading: deptLoading } = useDepartments();
   const { data: findSelectedUserID } = useUsers();
- 
   const { data: leaveRequests = [] } = useAllRequests();
   const { data: wfhRequests = [] } = useAllWfhRequests();
   const todayStatusMap = useMemo(() => {
