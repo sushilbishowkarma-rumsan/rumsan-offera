@@ -116,33 +116,44 @@ export function findDuplicateLeave(
   existingRequests: LeaveRequest[],
   newStartDate: string,
   newEndDate: string,
-  newLeaveType: string,
+  // newLeaveType: string,
 ): LeaveRequest | undefined {
-  if (!newStartDate || !newEndDate || !newLeaveType) return undefined;
+  // if (!newStartDate || !newEndDate || !newLeaveType) return undefined;
+  if (!newStartDate || !newEndDate) return undefined;
   if (!existingRequests?.length) return undefined;
 
   const inStart = new Date(newStartDate.split('T')[0] + 'T00:00:00');
   const inEnd = new Date(newEndDate.split('T')[0] + 'T00:00:00');
 
   // ✅ uppercase BOTH sides — this was the bug
-  const targetType = newLeaveType.toUpperCase().trim();
+  //const targetType = newLeaveType.toUpperCase().trim();
 
   return existingRequests.find((req) => {
-    if (!req?.startDate || !req?.endDate || !req?.leaveType) return false;
+    if (!req?.startDate || !req?.endDate) return false;
 
     const reqStatus = (req.status ?? '').toUpperCase().trim();
+    // Only REJECTED and CANCELLED are ignored
     if (reqStatus === 'REJECTED' || reqStatus === 'CANCELLED') return false;
 
-    const reqType = req.leaveType.toUpperCase().trim();
-    if (reqType !== targetType) {
-      return false;
-    }
     const reqStart = new Date(req.startDate.split('T')[0] + 'T00:00:00');
     const reqEnd = new Date(req.endDate.split('T')[0] + 'T00:00:00');
-    const inStart = new Date(newStartDate.split('T')[0] + 'T00:00:00');
-    const inEnd = new Date(newEndDate.split('T')[0] + 'T00:00:00');
-    const overlaps = inStart <= reqEnd && inEnd >= reqStart;
-    return overlaps;
+
+    return inStart <= reqEnd && inEnd >= reqStart;
+    // if (!req?.startDate || !req?.endDate || !req?.leaveType) return false;
+
+    // const reqStatus = (req.status ?? '').toUpperCase().trim();
+    // if (reqStatus === 'REJECTED' || reqStatus === 'CANCELLED') return false;
+
+    // const reqType = req.leaveType.toUpperCase().trim();
+    // if (reqType !== targetType) {
+    //   return false;
+    // }
+    // const reqStart = new Date(req.startDate.split('T')[0] + 'T00:00:00');
+    // const reqEnd = new Date(req.endDate.split('T')[0] + 'T00:00:00');
+    // const inStart = new Date(newStartDate.split('T')[0] + 'T00:00:00');
+    // const inEnd = new Date(newEndDate.split('T')[0] + 'T00:00:00');
+    // const overlaps = inStart <= reqEnd && inEnd >= reqStart;
+    // return overlaps;
   });
 }
 
@@ -239,26 +250,70 @@ export function checkLeaveTypeLimit(
   return null;
 }
 
+export interface WfhConflictResult<T> {
+  conflict: T;
+  source: 'wfh' | 'leave';
+}
 export function findDuplicateWfh<T extends WfhRequestMinimal>(
-  existingRequests: T[],
+  existingWfhRequests: T[],
+  existingLeaveRequests: T[],
   newStartDate: string,
   newEndDate: string,
-): T | undefined {
+): WfhConflictResult<T> | undefined {
   if (!newStartDate || !newEndDate) return undefined;
-  if (!existingRequests?.length) return undefined;
 
   const inStart = new Date(newStartDate.split('T')[0] + 'T00:00:00');
   const inEnd = new Date(newEndDate.split('T')[0] + 'T00:00:00');
-
-  return existingRequests.find((req) => {
+  const isOverlap = (req: T): boolean => {
     if (!req?.startDate || !req?.endDate) return false;
-
     const reqStatus = (req.status ?? '').toUpperCase().trim();
     if (reqStatus === 'REJECTED' || reqStatus === 'CANCELLED') return false;
-
     const reqStart = new Date(req.startDate.split('T')[0] + 'T00:00:00');
     const reqEnd = new Date(req.endDate.split('T')[0] + 'T00:00:00');
-
     return inStart <= reqEnd && inEnd >= reqStart;
-  });
+  };
+  const wfhConflict = (existingWfhRequests ?? []).find(isOverlap);
+  if (wfhConflict) return { conflict: wfhConflict, source: 'wfh' };
+
+  const leaveConflict = (existingLeaveRequests ?? []).find(isOverlap);
+  if (leaveConflict) return { conflict: leaveConflict, source: 'leave' };
+
+  return undefined;
+  // const allRequests = [
+  //   ...(existingWfhRequests ?? []),
+  //   ...(existingLeaveRequests ?? []),
+  // ];
+  // if (!allRequests.length) return undefined;
+
+  // const inStart = new Date(newStartDate.split('T')[0] + 'T00:00:00');
+  // const inEnd = new Date(newEndDate.split('T')[0] + 'T00:00:00');
+
+  // return allRequests.find((req) => {
+  //   if (!req?.startDate || !req?.endDate) return false;
+
+  //   const reqStatus = (req.status ?? '').toUpperCase().trim();
+  //   if (reqStatus === 'REJECTED' || reqStatus === 'CANCELLED') return false;
+
+  //   const reqStart = new Date(req.startDate.split('T')[0] + 'T00:00:00');
+  //   const reqEnd = new Date(req.endDate.split('T')[0] + 'T00:00:00');
+
+  //   return inStart <= reqEnd && inEnd >= reqStart;
+  // });
+  // if (!newStartDate || !newEndDate) return undefined;
+  // if (!existingRequests?.length) return undefined;
+
+  // const inStart = new Date(newStartDate.split('T')[0] + 'T00:00:00');
+  // const inEnd = new Date(newEndDate.split('T')[0] + 'T00:00:00');
+
+  // return existingRequests.find((req) => {
+  //   if (!req?.startDate || !req?.endDate) return false;
+
+  //   const reqStatus = (req.status ?? '').toUpperCase().trim();
+  //   if (reqStatus === 'REJECTED' || reqStatus === 'CANCELLED') return false;
+
+  //   const reqStart = new Date(req.startDate.split('T')[0] + 'T00:00:00');
+  //   const reqEnd = new Date(req.endDate.split('T')[0] + 'T00:00:00');
+
+  //   return inStart <= reqEnd && inEnd >= reqStart;
+  // });
 }
