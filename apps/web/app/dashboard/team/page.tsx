@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useAllRequests, useAllWfhRequests } from '@/hooks/use-leave-queries' 
+
 import {
   Users,
   Search,
@@ -280,11 +282,14 @@ function EmployeeCard({
   allEmployees,
   canNavigate,
   selectedUserIds,
+  todayStatusMap
 }: {
   emp: Employee;
   allEmployees: Employee[];
   canNavigate: boolean;
   selectedUserIds: UserMapping[] | undefined;
+  todayStatusMap: Map<string, 'leave' | 'wfh'>
+
 }) {
   const [hovered, setHovered] = useState(false);
   const manager = allEmployees.find((e) => e.cuid === emp.manager_cuid);
@@ -292,6 +297,7 @@ function EmployeeCard({
   const depts = emp.department
     ? emp.department.split(',').map((d) => d.trim())
     : [];
+const todayStatus = todayStatusMap.get(emp.email); // 'leave' | 'wfh' | undefined
 
   const cardStyle: React.CSSProperties = {
     borderRadius: 16,
@@ -367,6 +373,30 @@ function EmployeeCard({
               </div>
             )}
             <EmpBadge type={emp.employment_type} />
+            {todayStatus === 'leave' && (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', gap: 3,
+    marginTop: 4, fontSize: 9, fontWeight: 700,
+    padding: '2px 7px', borderRadius: 6,
+    background: '#fff7ed', color: '#c2410c',
+    border: '1px solid #fed7aa',
+    letterSpacing: '0.06em', textTransform: 'uppercase',
+  }}>
+    🌴 On Leave
+  </span>
+)}
+{todayStatus === 'wfh' && (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', gap: 3,
+    marginTop: 4, fontSize: 9, fontWeight: 700,
+    padding: '2px 7px', borderRadius: 6,
+    background: '#eff6ff', color: '#1d4ed8',
+    border: '1px solid #bfdbfe',
+    letterSpacing: '0.06em', textTransform: 'uppercase',
+  }}>
+    💻 WFH Today
+  </span>
+)}
           </div>
         </div>
 
@@ -484,6 +514,8 @@ function EmployeeRow({
   allEmployees: Employee[];
   canNavigate: boolean;
   selectedUserIds: UserMapping[] | undefined;
+  todayStatusMap: Map<string, 'leave' | 'wfh'>
+
 }) {
   const [hovered, setHovered] = useState(false);
   const badge = employmentBadge(emp.employment_type);
@@ -641,6 +673,7 @@ function GroupSection({
   canNavigate,
   defaultOpen = true,
   selectedUserIds,
+  todayStatusMap
 }: {
   title: string;
   subtitle?: string;
@@ -652,6 +685,8 @@ function GroupSection({
   canNavigate: boolean;
   defaultOpen?: boolean;
   selectedUserIds: UserMapping[] | undefined;
+  todayStatusMap: Map<string, 'leave' | 'wfh'>
+
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -765,6 +800,7 @@ function GroupSection({
                   allEmployees={allEmployees}
                   canNavigate={canNavigate}
                   selectedUserIds={selectedUserIds}
+                  todayStatusMap={todayStatusMap}
                 />
               ))}
             </div>
@@ -789,6 +825,7 @@ function GroupSection({
                     allEmployees={allEmployees}
                     canNavigate={canNavigate}
                     selectedUserIds={selectedUserIds}
+                    todayStatusMap={todayStatusMap}
                   />
                 </div>
               ))}
@@ -868,12 +905,41 @@ export default function TeamDirectoryPage() {
     isLoading: empLoading,
     error: empError,
   } = useEmployees();
+
+  //for map leave or wfh at team page
   const { data: departments = [], isLoading: deptLoading } = useDepartments();
   const { data: findSelectedUserID } = useUsers();
   // const selectedUserIds = findSelectedUserID?.map((e) => ({
   //   id: e.id,
   //   rsofficeId: e.rsofficeId,
   // }));
+  const { data: leaveRequests = [] } = useAllRequests();
+const { data: wfhRequests = [] }   = useAllWfhRequests();
+const todayStatusMap = useMemo(() => {
+  const today = new Date();
+  const map = new Map<string, 'leave' | 'wfh'>(); // keyed by email
+
+  const isActiveToday = (req: any) => {
+    if (req.status !== 'APPROVED') return false;
+    const start = new Date(req.startDate);
+    const end   = new Date(req.endDate);
+    // strip time for date-only comparison
+    start.setHours(0,0,0,0);
+    end.setHours(23,59,59,999);
+    today.setHours(12,0,0,0);
+    return today >= start && today <= end;
+  };
+  leaveRequests.forEach((r: any) => {
+    if (isActiveToday(r) && r.employee?.email)
+      map.set(r.employee.email, 'leave');
+  });
+  wfhRequests.forEach((r: any) => {
+    if (isActiveToday(r) && r.employee?.email)
+      map.set(r.employee.email, 'wfh');
+  });
+
+  return map;
+}, [leaveRequests, wfhRequests]);
 
   const selectedUserIds: UserMapping[] =
     findSelectedUserID?.map((e) => ({
@@ -1266,6 +1332,7 @@ export default function TeamDirectoryPage() {
                         allEmployees={employees}
                         canNavigate={canNavigate}
                         selectedUserIds={selectedUserIds}
+                        todayStatusMap={todayStatusMap}
                       />
                     ))}
                   </div>
@@ -1292,6 +1359,7 @@ export default function TeamDirectoryPage() {
                           allEmployees={employees}
                           canNavigate={canNavigate}
                           selectedUserIds={selectedUserIds}
+                          todayStatusMap={todayStatusMap}
                         />
                       </div>
                     ))}
@@ -1315,6 +1383,7 @@ export default function TeamDirectoryPage() {
                       accentColor={orgColor(path)}
                       canNavigate={canNavigate}
                       selectedUserIds={selectedUserIds}
+                      todayStatusMap={todayStatusMap}
                     />
                   ))}
                 </div>
@@ -1343,6 +1412,7 @@ export default function TeamDirectoryPage() {
                         accentColor={accent}
                         canNavigate={canNavigate}
                         selectedUserIds={selectedUserIds}
+                        todayStatusMap={todayStatusMap}
                       />
                     );
                   })}
@@ -1400,6 +1470,7 @@ export default function TeamDirectoryPage() {
                           accentColor={accent}
                           canNavigate={canNavigate}
                           selectedUserIds={selectedUserIds}
+                          todayStatusMap={todayStatusMap}
                         />
                       );
                     })}

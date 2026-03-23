@@ -13,6 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAllRequests, useAllWfhRequests } from '@/hooks/use-leave-queries' 
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -66,27 +68,27 @@ const YEARS = [currentYear, currentYear - 1, currentYear - 2].map((y) => ({
 }));
 
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
-function useAllRequests() {
-  return useQuery({
-    queryKey: ["admin-all-requests"],
-    queryFn: async () => {
-      const { data } = await api.get("/leaverequests/all");
-      return Array.isArray(data) ? data : [];
-    },
-    staleTime: 1000 * 30,
-  });
-}
+// function useAllRequests() {
+//   return useQuery({
+//     queryKey: ["admin-all-requests"],
+//     queryFn: async () => {
+//       const { data } = await api.get("/leaverequests/all");
+//       return Array.isArray(data) ? data : [];
+//     },
+//     staleTime: 1000 * 30,
+//   });
+// }
 
-function useAllWfhRequests() {
-  return useQuery({
-    queryKey: ["admin-all-wfh-requests"],
-    queryFn: async () => {
-      const { data } = await api.get("/wfh-requests/all");
-      return Array.isArray(data) ? data : [];
-    },
-    staleTime: 1000 * 30,
-  });
-}
+// function useAllWfhRequests() {
+//   return useQuery({
+//     queryKey: ["admin-all-wfh-requests"],
+//     queryFn: async () => {
+//       const { data } = await api.get("/wfh-requests/all");
+//       return Array.isArray(data) ? data : [];
+//     },
+//     staleTime: 1000 * 30,
+//   });
+// }
 
 // ─── Tiny helpers ─────────────────────────────────────────────────────────────
 function isToday(dateStr: string) {

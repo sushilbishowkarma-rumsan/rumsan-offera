@@ -26,6 +26,19 @@ const nextConfig = {
       },
     ];
   },
+  // async rewrites() {
+  //   return [
+  //     { source: '/request', destination: '/dashboard/leave/request' },
+  //     { source: '/history', destination: '/dashboard/leave/history' },
+  //     { source: '/team', destination: '/dashboard/team' },
+  //     { source: '/approvals', destination: '/dashboard/approvals' },
+  //     { source: '/calendar', destination: '/dashboard/calendar' },
+  //     { source: '/requests', destination: '/dashboard/admin/requests' },
+  //     { source: '/admin/policies', destination: '/dashboard/admin/policies' },
+  //     { source: '/admin/holidays', destination: '/dashboard/admin/holidays' },
+  //     { source: '/profile', destination: '/dashboard/profile' },
+  //   ];
+  // },
 };
 
 export default nextConfig;

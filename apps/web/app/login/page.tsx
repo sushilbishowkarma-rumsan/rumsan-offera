@@ -74,19 +74,19 @@ export default function LoginPage() {
 
         <div className="px-8 pb-8 text-center text-[11px] leading-relaxed text-slate-400">
           By continuing, you agree to the Offera{" "}
-          <a
+          {/* <a
             href="/terms"
             className="font-medium text-slate-600 underline-offset-4 hover:underline dark:text-slate-300"
-          >
+          > */}
             Terms
-          </a>{" "}
+          {/* </a>{" "} */}
           and{" "}
-          <a
+          {/* <a
             href="/privacy"
             className="font-medium text-slate-600 underline-offset-4 hover:underline dark:text-slate-300"
-          >
+          > */}
             Privacy Policy
-          </a>
+          {/* </a> */}
           .
         </div>
       </Card>

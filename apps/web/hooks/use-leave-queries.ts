@@ -28,11 +28,37 @@ export function useRecentLeaveRequests(
   });
 }
 
+
+export function useAllRequests() {
+  return useQuery({
+    queryKey: ["admin-all-requests"],
+    queryFn: async () => {
+      const { data } = await api.get("/leaverequests/all");
+      return Array.isArray(data) ? data : [];
+    },
+    staleTime: 1000 * 30,
+  });
+}
+
+export function useAllWfhRequests() {
+  return useQuery({
+    queryKey: ["admin-all-wfh-requests"],
+    queryFn: async () => {
+      const { data } = await api.get("/wfh-requests/all");
+      return Array.isArray(data) ? data : [];
+    },
+    staleTime: 1000 * 30,
+  });
+}
+
 // hooks/use-leave-queries.ts — add these two hooks
 //rumsan-offera/apps/web/src/hooks/use-leave-queries.ts
 const LEAVE_TYPES_CACHE_KEY = 'leave_types_cache';
 
 type LeavePolicy = { id: string; leaveType: string; isActive: boolean };
+
+
+
 
 // helpers
 function getCachedLeavePolicies(userId?: string): LeavePolicy[] | null {
