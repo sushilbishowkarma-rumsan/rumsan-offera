@@ -76,12 +76,6 @@ const leaveNavItems: NavItem[] = [
     icon: <History className="h-4 w-4" />,
     roles: ['EMPLOYEE', 'HRADMIN', 'MANAGER'],
   },
-  // {
-  //   title: 'Leave Balance',
-  //   href: '/dashboard/leave/balance',
-  //   icon: <Wallet className="h-4 w-4" />,
-  //   roles: ['EMPLOYEE', 'HRADMIN'],
-  // },
 ];
 
 const managerNavItems: NavItem[] = [
@@ -120,55 +114,11 @@ const adminNavItems: NavItem[] = [
     roles: ['HRADMIN'],
   },
   {
-    title: 'Leave History',
-    href: '/dashboard/admin/leave-history',
-    icon: <History className="h-4 w-4" />,
-    roles: ['HRADMIN'],
-  },
-  {
     title: 'Holidays',
     href: '/dashboard/admin/holidays',
     icon: <CalendarDays className="h-4 w-4" />,
     roles: ['HRADMIN'],
   },
-  // {
-  //   title: 'Employees',
-  //   href: '/dashboard/admin/employees',
-  //   icon: <Users className="h-4 w-4" />,
-  //   roles: ['MANAGER', 'HRADMIN'],
-  // },
-];
-
-// const analyticsNavItems: NavItem[] = [
-//   {
-//     title: "Reports",
-//     href: "/dashboard/reports",
-//     icon: <BarChart3 className="h-4 w-4" />,
-//     roles: ["MANAGER", "HRADMIN"],
-//   },
-// ];
-
-const settingsNavItems: NavItem[] = [
-  // {
-  //   title: "Notifications",
-  //   href: "/dashboard/notifications",
-  //   icon: <Bell className="h-4 w-4" />,
-  //   roles: ["EMPLOYEE", "MANAGER", "HRADMIN"],
-  //   // badge: 3,
-  // },
-  // {
-  //   title: 'Profile',
-  //   href: '/dashboard/profile',
-  //   icon: <UserCircle className="h-4 w-4" />,
-  //   roles: ['EMPLOYEE', 'MANAGER', 'HRADMIN'],
-  // },
-  // },
-  // {
-  //   title: "Settings",
-  //   href: "/dashboard/settings",
-  //   icon: <Settings className="h-4 w-4" />,
-  //   roles: ["HRADMIN"],
-  // },
 ];
 
 function filterByRole(items: NavItem[], role: UserRole): NavItem[] {
@@ -196,7 +146,7 @@ export function AppSidebar() {
           {label}
         </SidebarGroupLabel>
         <SidebarGroupContent>
-          <SidebarMenu className="gap-0.5">
+          <SidebarMenu className="gap-0">
             {filtered.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -274,10 +224,11 @@ export function AppSidebar() {
       collapsible="icon"
       variant="sidebar"
       className="
+        h-screen          /* Forces exactly 100% of the viewport height */
         border-r border-white/[0.06]
         bg-[#0d0f14]
         [&>[data-sidebar=sidebar]]:bg-[#0d0f14]
-      "
+        overflow-hidden   /* Prevents the sidebar container itself from scrolling */"
     >
       <SidebarHeader className="px-4 py-5">
         <Link href="/dashboard" className="flex items-center gap-3">
@@ -311,14 +262,13 @@ export function AppSidebar() {
       <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
       {/* Navigation */}
-      {/* <SidebarContent className="py-3 gap-0 overflow-hidden hover:overflow-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10"> */}
-      <SidebarContent className="py-3 gap-0 overflow-y-auto custom-scrollbar">
+      {/* overflow-y-auto custom-scrollbar */}
+      <SidebarContent className="py-3 gap-0 overflow-hidden ">
         {renderNavGroup('Overview', mainNavItems)}
         {renderNavGroup('Leave Management', leaveNavItems)}
         {renderNavGroup('Team', [...managerNavItems])}{' '}
         {/*...analyticsNavItems] */}
         {renderNavGroup('Administration', adminNavItems)}
-        {renderNavGroup('Account', settingsNavItems)}
       </SidebarContent>
 
       {/* Divider */}

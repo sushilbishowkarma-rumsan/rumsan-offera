@@ -127,15 +127,6 @@ export function AdminDashboard() {
 
   const { stats, combinedPending = [] } = data || {};
   const statCards = [
-    // {
-    //   label: 'Total Employees',
-    //   sub: `${stats?.totalEmployees || 0} in system`,
-    //   value: stats?.totalEmployees || 0,
-    //   icon: <Users className="h-5 w-5" />,
-    //   iconBg: '#eef2ff',
-    //   iconColor: '#4f46e5',
-    //   accentBar: '#4f46e5',
-    // },
     {
       label: 'Pending Requests',
       sub: 'Across organization',
@@ -190,14 +181,6 @@ export function AdminDashboard() {
       iconColor: '#16a34a',
       hoverBorder: '#bbf7d0',
     },
-    // {
-    //   label: 'Employees',
-    //   href: '/dashboard/admin/employees',
-    //   icon: <Users className="h-5 w-5" />,
-    //   iconBg: '#f0f9ff',
-    //   iconColor: '#0284c7',
-    //   hoverBorder: '#bae6fd',
-    // },
     {
       label: 'Team Calendar',
       href: '/dashboard/calendar',
@@ -210,12 +193,12 @@ export function AdminDashboard() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }}>
-      <div className="flex flex-col gap-8 p-4 -mt-5 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="flex flex-col gap-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         <ExceededLeaveAlert employeeId={user?.id ?? ''} />
         {/* ── Stats Grid ── */}
         <button
           onClick={() => router.push('/dashboard/exceed')}
-          className="group relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer text-left w-full"
+          className="group relative overflow-hidden rounded-2xl p-2 -mt-6 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer text-left w-full"
           style={{
             background: '#fff1f2',
             border: '1.5px solid #fca5a5',

@@ -23,15 +23,17 @@ api.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
     const url = error.config?.url || '';
-   if (status === 401 || (status === 404 && url.includes('/auth/me'))) {
+        const isUserLookup = /\/users\/[^/]+$/.test(url);
+
+    if (status === 401 && !isUserLookup) {
       if (typeof window !== 'undefined') {
         // Clear all auth data
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
 
         // Only redirect if we aren't already on the login/register page
-        const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register';
-        
+        const isAuthPage = window.location.pathname === '/login';
+
         if (!isAuthPage) {
           console.warn('[api] Session invalid. Logging out...');
           window.location.href = '/login';
