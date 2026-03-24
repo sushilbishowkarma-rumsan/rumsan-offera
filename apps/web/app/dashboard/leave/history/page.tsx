@@ -381,9 +381,9 @@ function RequestRow({
 
         <div className="flex items-center gap-2 shrink-0">
           <StatusPill status={req.status} />
-          {/* Edit + Delete only for PENDING */}
+          {/* Edit + Delete only for PENDING,  opacity-0 */}
           {req.status === 'PENDING' && (
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-1 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => onEdit(req)}
                 className="flex h-7 w-7 items-center justify-center rounded-lg"
