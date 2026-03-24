@@ -106,3 +106,14 @@ export function useUserLeaveHistory(userId: string | undefined) {
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
+
+export function useUserWfhHistory(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['user-wfh-history', userId],
+    queryFn: async () => {
+      const { data } = await api.get(`/wfh-requests/employee/${userId}`);
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!userId,
+  });
+}

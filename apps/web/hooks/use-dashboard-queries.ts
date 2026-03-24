@@ -199,7 +199,8 @@ export function useAdminDashboardData() {
     queryFn: async () => {
       const [allRequests, allWfh, allUsers] = await Promise.all([
         api.get('/leaverequests/all'),
-        api.get('/wfh-requests/calendar'),
+        // api.get('/wfh-requests/calendar'),
+        api.get('/wfh-requests/all'),
         api.get('/users'),
       ]);
 
@@ -267,6 +268,7 @@ export function useAdminDashboardData() {
           pendingCount: combinedPending.length,
           onLeaveToday,
           approvedThisMonth,
+          totalWfhApproved: wfhList.filter((w: any) => w.status === 'APPROVED').length,
         },
         recentRequests: requests
           .sort(

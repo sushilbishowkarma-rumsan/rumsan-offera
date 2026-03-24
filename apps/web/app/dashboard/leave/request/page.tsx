@@ -161,10 +161,7 @@ export default function LeaveRequestPage() {
     [allHolidays],
   );
 
-  const { data: allLeaveRequests = [] } = useRecentLeaveRequests(
-    user?.id,
-    9999,
-  );
+  const { data: allLeaveRequests = [] } = useRecentLeaveRequests(user?.id);
   const { data: balanceSummary = [] } = useEmployeeLeaveBalanceSummary(
     user?.id ?? '',
   );

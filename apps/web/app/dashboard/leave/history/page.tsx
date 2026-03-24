@@ -563,7 +563,7 @@ export default function LeaveHistoryPage() {
 
   // ── Queries ──
   const { data: leaveRequests = [], isLoading: leavesLoading } =
-    useRecentLeaveRequests(user?.id, 9999);
+    useRecentLeaveRequests(user?.id);
 
   const { data: wfhRequests = [], isLoading: wfhLoading } = useQuery<
     WfhRequest[]
@@ -592,6 +592,14 @@ export default function LeaveHistoryPage() {
   const [deleteTarget, setDeleteTarget] = useState<UnifiedRequest | null>(null);
   const [editTarget, setEditTarget] = useState<UnifiedRequest | null>(null); // ← NEW
   const [showFilters, setShowFilters] = useState(false);
+
+  const PAGE_SIZE = 6;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset page when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchQuery, searchDate, statusFilter, typeFilter, kindFilter]);
 
   // ── Merge leave + WFH ──
   const unifiedRequests = useMemo((): UnifiedRequest[] => {
@@ -666,6 +674,12 @@ export default function LeaveHistoryPage() {
     searchQuery,
     searchDate,
   ]);
+
+  const totalPages = Math.ceil(filteredRequests.length / PAGE_SIZE);
+  const paginatedRequests = filteredRequests.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
 
   const stats = useMemo(
     () => ({
@@ -1130,7 +1144,7 @@ export default function LeaveHistoryPage() {
             </div>
           )}
 
-          {!isLoading && filteredRequests.length > 0 && (
+          {/* {!isLoading && filteredRequests.length > 0 && (
             <div>
               {filteredRequests.map((req) => (
                 <RequestRow
@@ -1140,6 +1154,125 @@ export default function LeaveHistoryPage() {
                   onDelete={handleDelete}
                 />
               ))}
+            </div>
+          )} */}
+          {!isLoading && filteredRequests.length > 0 && (
+            <div>
+              {paginatedRequests.map((req) => (
+                <RequestRow
+                  key={`${req.kind}-${req.id}`}
+                  req={req}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+
+              {/* ── Pagination Footer ── */}
+              {totalPages > 1 && (
+                <div
+                  className="flex items-center justify-between px-5 py-3"
+                  style={{
+                    borderTop: `1px solid ${C.cardBorder}`,
+                    background: '#fafbff',
+                  }}
+                >
+                  {/* Left: page info */}
+                  <span className="text-[11px]" style={{ color: C.textMuted }}>
+                    Showing {(currentPage - 1) * PAGE_SIZE + 1}–
+                    {Math.min(currentPage * PAGE_SIZE, filteredRequests.length)}{' '}
+                    of {filteredRequests.length}
+                  </span>
+
+                  {/* Right: controls */}
+                  <div className="flex items-center gap-1.5">
+                    {/* Prev */}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] font-semibold"
+                      style={{
+                        background: currentPage === 1 ? '#f4f6fb' : C.card,
+                        border: `1px solid ${C.cardBorder}`,
+                        color:
+                          currentPage === 1 ? C.textMuted : C.textSecondary,
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      ← Prev
+                    </button>
+
+                    {/* Page pills with ellipsis */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(
+                        (page) =>
+                          page === 1 ||
+                          page === totalPages ||
+                          Math.abs(page - currentPage) <= 1,
+                      )
+                      .reduce<(number | '...')[]>((acc, page, idx, arr) => {
+                        if (
+                          idx > 0 &&
+                          (page as number) - (arr[idx - 1] as number) > 1
+                        ) {
+                          acc.push('...');
+                        }
+                        acc.push(page);
+                        return acc;
+                      }, [])
+                      .map((page, idx) =>
+                        page === '...' ? (
+                          <span
+                            key={`ellipsis-${idx}`}
+                            className="text-[11px] px-1"
+                            style={{ color: C.textMuted }}
+                          >
+                            …
+                          </span>
+                        ) : (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page as number)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-[11px] font-bold"
+                            style={{
+                              background:
+                                currentPage === page ? C.indigo : C.card,
+                              border: `1px solid ${currentPage === page ? C.indigo : C.cardBorder}`,
+                              color:
+                                currentPage === page ? '#fff' : C.textSecondary,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {page}
+                          </button>
+                        ),
+                      )}
+
+                    {/* Next */}
+                    <button
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                      className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] font-semibold"
+                      style={{
+                        background:
+                          currentPage === totalPages ? '#f4f6fb' : C.card,
+                        border: `1px solid ${C.cardBorder}`,
+                        color:
+                          currentPage === totalPages
+                            ? C.textMuted
+                            : C.textSecondary,
+                        cursor:
+                          currentPage === totalPages
+                            ? 'not-allowed'
+                            : 'pointer',
+                      }}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

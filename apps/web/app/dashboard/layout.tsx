@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/layout/app-sidebar";
-import { DashboardHeader } from "@/components/layout/dashboard-header";
-import { Spinner } from "@/components/ui/spinner";
-import { DashboardGate } from "@/components/dashboard-gate";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/layout/app-sidebar';
+import { DashboardHeader } from '@/components/layout/dashboard-header';
+import { Spinner } from '@/components/ui/spinner';
+import { DashboardGate } from '@/components/dashboard-gate';
 
 export default function DashboardLayout({
   children,
@@ -20,7 +20,7 @@ export default function DashboardLayout({
   useEffect(() => {
     // Only redirect if we ARE NOT loading AND we ARE NOT authenticated
     if (isLoading === false && isAuthenticated === false) {
-      router.replace("/login"); // Use replace so they can't go 'back'
+      router.replace('/login'); // Use replace so they can't go 'back'
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -41,7 +41,15 @@ export default function DashboardLayout({
 
   return (
     <DashboardGate>
-      <SidebarProvider>
+      <SidebarProvider
+        style={
+          {
+            '--sidebar-width': '15rem' /* Width when expanded */,
+            '--sidebar-width-icon':
+              '4rem' /* INCREASE THIS: Width when collapsed (default is 3rem or 4rem) */,
+          } as React.CSSProperties
+        }
+      >
         {/* Left sidebar navigation */}
         <AppSidebar />
 
@@ -55,4 +63,3 @@ export default function DashboardLayout({
     </DashboardGate>
   );
 }
-

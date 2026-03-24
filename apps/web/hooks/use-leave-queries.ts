@@ -14,17 +14,18 @@ import type { LeaveBalance, LeaveRequest } from '@/lib/types';
 
 export function useRecentLeaveRequests(
   employeeId: string | undefined,
-  limit: number = 5,
+  // limit: number = 5,
 ) {
   return useQuery<LeaveRequest[]>({
     queryKey: ['leave-history', employeeId],
     queryFn: async () => {
       const { data } = await api.get(`/leaverequests/employee/${employeeId}`);
       // Backend returns all; slice on client to the requested limit
-      return (data as LeaveRequest[]).slice(0, limit);
+       return Array.isArray(data) ? data : [];
+      // return (data as LeaveRequest[]).slice(0, limit);
     },
     enabled: !!employeeId,
-    staleTime: 1000 * 30, // 30 seconds — requests change more frequently
+    staleTime: 1000 * 60 * 5, // 30 seconds — requests change more frequently
   });
 }
 

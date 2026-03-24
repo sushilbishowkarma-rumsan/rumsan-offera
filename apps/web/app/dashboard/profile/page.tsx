@@ -6,10 +6,13 @@ import {
   useUserProfile,
   useUserLeaveBalances,
   useUserLeaveHistory,
+  useUserWfhHistory,
 } from '@/hooks/use-user-profile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LeaveBalanceSummaryCard } from '@/components/leave-balance-summary-card';
 import { formatDate } from '@/lib/leave-helpers';
+import { useState } from 'react';
+
 import {
   ArrowLeft,
   Mail,
@@ -277,8 +280,14 @@ export default function ProfilePage() {
   const { data: history = [], isLoading: historyLoading } = useUserLeaveHistory(
     currentUser?.id,
   );
+  const { data: wfhHistory = [], isLoading: wfhLoading } = useUserWfhHistory(
+    currentUser?.id,
+  );
 
-  const isLoading =  balancesLoading || historyLoading;
+  const [historyPage, setHistoryPage] = useState(1);
+  const HISTORY_PAGE_SIZE = 5;
+
+  const isLoading = balancesLoading || historyLoading || wfhLoading;
 
   // ── loading ──
   if (isLoading) {
@@ -404,12 +413,21 @@ export default function ProfilePage() {
     );
   }
 
+  const allHistory = [...history, ...wfhHistory].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
+  const totalPages = Math.ceil(allHistory.length / HISTORY_PAGE_SIZE);
+  const paginated = allHistory.slice(
+    (historyPage - 1) * HISTORY_PAGE_SIZE,
+    historyPage * HISTORY_PAGE_SIZE,
+  );
   // ── stats ──
   const stats = {
-    totalRequests: history.length,
-    pendingRequests: history.filter((r) => r.status === 'PENDING').length,
-    approvedRequests: history.filter((r) => r.status === 'APPROVED').length,
-    rejectedRequests: history.filter((r) => r.status === 'REJECTED').length,
+    totalRequests: allHistory.length,
+    pendingRequests: allHistory.filter((r) => r.status === 'PENDING').length,
+    approvedRequests: allHistory.filter((r) => r.status === 'APPROVED').length,
+    rejectedRequests: allHistory.filter((r) => r.status === 'REJECTED').length,
     totalDaysUsed: balances.reduce((s, b) => s + b.used, 0),
     totalDaysRemaining: balances.reduce((s, b) => s + b.remaining, 0),
   };
@@ -428,8 +446,6 @@ export default function ProfilePage() {
           gap: 24,
         }}
       >
-  
-
         {/* ── two-column layout ── */}
         <div
           style={{
@@ -651,7 +667,9 @@ export default function ProfilePage() {
                     icon={<Calendar size={14} />}
                     label="Joined"
                     value={
-                      currentUser.createdAt ? formatDate(currentUser.createdAt) : null
+                      currentUser.createdAt
+                        ? formatDate(currentUser.createdAt)
+                        : null
                     }
                   />
                 </div>
@@ -774,8 +792,7 @@ export default function ProfilePage() {
               employeeId={currentUser?.id ?? ''}
               showExceededAlert
             />
-
-            {/* ── leave history ── */}
+            {/* ── leave + wfh history ── */}
             <div
               style={{
                 borderRadius: 20,
@@ -792,20 +809,36 @@ export default function ProfilePage() {
                   borderBottom: '1px solid #f1f5f9',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8,
+                  justifyContent: 'space-between',
                 }}
               >
-                <History size={15} color="#64748b" />
-                <p
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: '#0f172a',
-                    margin: 0,
-                  }}
-                >
-                  Leave Request History
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <History size={15} color="#64748b" />
+                  <p
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: '#0f172a',
+                      margin: 0,
+                    }}
+                  >
+                    Request History
+                  </p>
+                </div>
+                {allHistory.length > 0 && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: '3px 9px',
+                      borderRadius: 8,
+                      background: '#f1f5f9',
+                      color: '#64748b',
+                    }}
+                  >
+                    {allHistory.length} total
+                  </span>
+                )}
               </div>
 
               {/* body */}
@@ -817,7 +850,7 @@ export default function ProfilePage() {
                   gap: 10,
                 }}
               >
-                {history.length === 0 ? (
+                {allHistory.length === 0 ? (
                   <p
                     style={{
                       fontSize: 13,
@@ -826,12 +859,13 @@ export default function ProfilePage() {
                       padding: '32px 0',
                     }}
                   >
-                    No leave requests yet.
+                    No requests yet.
                   </p>
                 ) : (
                   <>
-                    {history.slice(0, 10).map((request) => {
+                    {paginated.map((request: any) => {
                       const sc = statusConfig(request.status);
+                      const isWfh = !request.leaveType;
                       return (
                         <div
                           key={request.id}
@@ -866,6 +900,19 @@ export default function ProfilePage() {
                                 flexWrap: 'wrap',
                               }}
                             >
+                              <span
+                                style={{
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  padding: '2px 7px',
+                                  borderRadius: 6,
+                                  background: isWfh ? '#dbeafe' : '#eef2ff',
+                                  color: isWfh ? '#1d4ed8' : '#4f46e5',
+                                  border: `1px solid ${isWfh ? '#93c5fd' : '#c7d2fe'}`,
+                                }}
+                              >
+                                {isWfh ? 'WFH' : 'LEAVE'}
+                              </span>
                               <p
                                 style={{
                                   fontSize: 13,
@@ -874,8 +921,9 @@ export default function ProfilePage() {
                                   margin: 0,
                                 }}
                               >
-                                {request.leaveType.charAt(0) +
-                                  request.leaveType.slice(1).toLowerCase()}{' '}
+                                {isWfh
+                                  ? 'Work From Home'
+                                  : `${request.leaveType.charAt(0) + request.leaveType.slice(1).toLowerCase()} Leave`}
                               </p>
                               {request.isHalfDay && (
                                 <span
@@ -937,7 +985,7 @@ export default function ProfilePage() {
                                   fontStyle: 'italic',
                                 }}
                               >
-                                "{request.approverComment}"
+                                &ldquo;{request.approverComment}&rdquo;
                               </p>
                             )}
                           </div>
@@ -977,17 +1025,131 @@ export default function ProfilePage() {
                       );
                     })}
 
-                    {history.length > 10 && (
-                      <p
+                    {/* ── Pagination ── */}
+                    {totalPages > 1 && (
+                      <div
                         style={{
-                          fontSize: 11,
-                          color: '#94a3b8',
-                          textAlign: 'center',
-                          paddingTop: 8,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          paddingTop: 12,
+                          marginTop: 4,
+                          borderTop: '1px solid #f1f5f9',
                         }}
                       >
-                        Showing 10 of {history.length} requests
-                      </p>
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                          Page {historyPage} of {totalPages}
+                        </span>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            onClick={() =>
+                              setHistoryPage((p) => Math.max(1, p - 1))
+                            }
+                            disabled={historyPage === 1}
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: 8,
+                              fontSize: 11,
+                              fontWeight: 600,
+                              border: '1px solid #e2e8f0',
+                              background:
+                                historyPage === 1 ? '#f8fafc' : '#fff',
+                              color: historyPage === 1 ? '#cbd5e1' : '#475569',
+                              cursor:
+                                historyPage === 1 ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            ← Prev
+                          </button>
+
+                          {Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .filter(
+                              (page) =>
+                                page === 1 ||
+                                page === totalPages ||
+                                Math.abs(page - historyPage) <= 1,
+                            )
+                            .reduce<(number | '...')[]>(
+                              (acc, page, idx, arr) => {
+                                if (
+                                  idx > 0 &&
+                                  (page as number) - (arr[idx - 1] as number) >
+                                    1
+                                ) {
+                                  acc.push('...');
+                                }
+                                acc.push(page);
+                                return acc;
+                              },
+                              [],
+                            )
+                            .map((page, idx) =>
+                              page === '...' ? (
+                                <span
+                                  key={`ellipsis-${idx}`}
+                                  style={{
+                                    fontSize: 11,
+                                    color: '#94a3b8',
+                                    alignSelf: 'center',
+                                    padding: '0 2px',
+                                  }}
+                                >
+                                  …
+                                </span>
+                              ) : (
+                                <button
+                                  key={page}
+                                  onClick={() => setHistoryPage(page as number)}
+                                  style={{
+                                    width: 30,
+                                    height: 30,
+                                    borderRadius: 8,
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    border: '1px solid',
+                                    borderColor:
+                                      historyPage === page
+                                        ? '#6366f1'
+                                        : '#e2e8f0',
+                                    background:
+                                      historyPage === page ? '#6366f1' : '#fff',
+                                    color:
+                                      historyPage === page ? '#fff' : '#64748b',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {page}
+                                </button>
+                              ),
+                            )}
+
+                          <button
+                            onClick={() =>
+                              setHistoryPage((p) => Math.min(totalPages, p + 1))
+                            }
+                            disabled={historyPage === totalPages}
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: 8,
+                              fontSize: 11,
+                              fontWeight: 600,
+                              border: '1px solid #e2e8f0',
+                              background:
+                                historyPage === totalPages ? '#f8fafc' : '#fff',
+                              color:
+                                historyPage === totalPages
+                                  ? '#cbd5e1'
+                                  : '#475569',
+                              cursor:
+                                historyPage === totalPages
+                                  ? 'not-allowed'
+                                  : 'pointer',
+                            }}
+                          >
+                            Next →
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </>
                 )}

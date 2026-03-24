@@ -39,13 +39,14 @@ import {
   Laptop,
   CalendarDays,
   TrendingDown,
+  ChevronRight,
+  User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type RequestType = 'leave' | 'wfh';
 
-// ─── EmployeeDetailPanel ──────────────────────────────────────────────────────
 function EmployeeDetailPanel({
   employeeId,
   leaveType,
@@ -53,9 +54,10 @@ function EmployeeDetailPanel({
   employeeId: string;
   leaveType: string;
 }) {
+  const router = useRouter(); // add this at top of component
   const [tab, setTab] = useState<'history' | 'balance'>('history');
   const { data: requests = [], isLoading: histLoading } =
-    useRecentLeaveRequests(employeeId, 10);
+    useRecentLeaveRequests(employeeId); // ← pass limit=5
   const { data: balances = [], isLoading: balLoading } =
     useLeaveBalances(employeeId);
 
@@ -95,12 +97,22 @@ function EmployeeDetailPanel({
       className="mt-3 rounded-xl overflow-hidden"
       style={{ border: '1px solid #e2e8f0', background: '#f8f9fc' }}
     >
+      {/* Tab headers */}
       <div className="flex" style={{ borderBottom: '1px solid #e2e8f0' }}>
-        {(['history', 'balance'] as const).map((t) => (
+        {(['history', 'balance', 'profile'] as const).map((t) => (
           <button
             key={t}
             type="button"
-            onClick={() => setTab(t)}
+            onClick={() => {
+              if (t === 'profile') {
+                // If profile is clicked, navigate away
+                router.push(`/dashboard/users/${employeeId}`);
+              } else {
+                // Otherwise, just switch the local view
+                setTab(t);
+              }
+            }}
+            // onClick={() => setTab(t)}
             className="flex items-center gap-1.5 px-4 py-2.5 text-[11px] font-semibold transition-all"
             style={{
               color: tab === t ? '#4f46e5' : '#64748b',
@@ -109,16 +121,20 @@ function EmployeeDetailPanel({
               background: 'transparent',
             }}
           >
-            {t === 'history' ? (
-              <History className="h-3 w-3" />
-            ) : (
-              <BarChart2 className="h-3 w-3" />
-            )}
-            {t === 'history' ? 'Leave History' : 'Leave Balance'}
+            {t === 'history' && <History className="h-3 w-3" />}
+            {t === 'balance' && <BarChart2 className="h-3 w-3" />}
+            {t === 'profile' && <User className="h-3 w-3" />}
+
+            {/* {t === 'history' ? <History className="h-3 w-3" /> : <BarChart2 className="h-3 w-3" />}
+            {t === 'history' ? 'Leave History' : 'Leave Balance'} */}
+            {t === 'history' && 'Leave History'}
+            {t === 'balance' && 'Leave Balance'}
+            {t === 'profile' && 'View Profile'}
           </button>
         ))}
       </div>
 
+      {/* ── HISTORY TAB ── */}
       {tab === 'history' && (
         <div className="flex flex-col divide-y divide-slate-100">
           {histLoading ? (
@@ -139,48 +155,61 @@ function EmployeeDetailPanel({
               No leave history found.
             </p>
           ) : (
-            requests.map((r: any) => (
-              <div
-                key={r.id}
-                className="flex items-center justify-between px-4 py-2.5 gap-3"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className="shrink-0 inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase"
-                    style={{
-                      background: '#eef2ff',
-                      color: '#4f46e5',
-                      border: '1px solid #c7d2fe',
-                    }}
+            <>
+              {requests
+                .sort(
+                  (a: any, b: any) =>
+                    new Date(b.createdAt).getTime() -
+                    new Date(a.createdAt).getTime(),
+                )
+                .slice(0, 5)
+                .map((r: any) => (
+                  <div
+                    key={r.id}
+                    className="flex items-center justify-between px-4 py-2.5 gap-3"
                   >
-                    {r.leaveType.slice(0, 3)}
-                  </span>
-                  <span
-                    className="text-[11px] truncate"
-                    style={{ color: '#334155' }}
-                  >
-                    {formatDate(r.startDate)}
-                    {r.startDate !== r.endDate && ` – ${formatDate(r.endDate)}`}
-                  </span>
-                  <span
-                    className="text-[10px] shrink-0"
-                    style={{ color: '#94a3b8' }}
-                  >
-                    {r.totalDays}d
-                  </span>
-                </div>
-                <span
-                  className="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold"
-                  style={getStatusStyle(r.status)}
-                >
-                  {r.status.charAt(0) + r.status.slice(1).toLowerCase()}
-                </span>
-              </div>
-            ))
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="shrink-0 inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase"
+                        style={{
+                          background: '#eef2ff',
+                          color: '#4f46e5',
+                          border: '1px solid #c7d2fe',
+                        }}
+                      >
+                        {r.leaveType}
+
+                        {/* {r.leaveType.slice(0, 3)} */}
+                      </span>
+                      <span
+                        className="text-[11px] truncate"
+                        style={{ color: '#334155' }}
+                      >
+                        {formatDate(r.startDate)}
+                        {r.startDate !== r.endDate &&
+                          ` – ${formatDate(r.endDate)}`}
+                      </span>
+                      <span
+                        className="text-[10px] shrink-0"
+                        style={{ color: '#94a3b8' }}
+                      >
+                        {r.totalDays}d
+                      </span>
+                    </div>
+                    <span
+                      className="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                      style={getStatusStyle(r.status)}
+                    >
+                      {r.status.charAt(0) + r.status.slice(1).toLowerCase()}
+                    </span>
+                  </div>
+                ))}
+            </>
           )}
         </div>
       )}
 
+      {/* ── BALANCE TAB ── */}
       {tab === 'balance' && (
         <div className="flex flex-col divide-y divide-slate-100">
           {balLoading ? (
@@ -703,6 +732,100 @@ function RequestCard({
   );
 }
 
+function Paginator({
+  page,
+  total,
+  pageSize,
+  onChange,
+}: {
+  page: number;
+  total: number;
+  pageSize: number;
+  onChange: (p: number) => void;
+}) {
+  const totalPages = Math.ceil(total / pageSize);
+  if (totalPages <= 1) return null;
+  const pageNumbers: number[] = Array.from(
+    { length: totalPages },
+    (_, i) => i + 1,
+  );
+
+  const pages = pageNumbers.reduce<(number | '...')[]>((acc, p) => {
+    if (p === 1 || p === totalPages || Math.abs(p - page) <= 1) {
+      const last = acc[acc.length - 1];
+      if (acc.length > 0 && typeof last === 'number' && last + 1 < p) {
+        acc.push('...');
+      }
+      acc.push(p);
+    }
+    return acc;
+  }, []);
+
+  return (
+    <div
+      className="flex items-center justify-between px-5 py-3"
+      style={{ borderTop: '1px solid #f1f5f9' }}
+    >
+      <span className="text-[11px]" style={{ color: '#94a3b8' }}>
+        Page {page} of {totalPages} · {total} total
+      </span>
+      <div className="flex items-center gap-1.5">
+        <button
+          disabled={page === 1}
+          onClick={() => onChange(Math.max(1, page - 1))}
+          className="h-7 px-2.5 rounded-lg text-[11px] font-semibold disabled:opacity-40"
+          style={{
+            border: '1px solid #e2e8f0',
+            background: '#fff',
+            color: '#475569',
+          }}
+        >
+          ← Prev
+        </button>
+
+        {pages.map((p, idx) =>
+          p === '...' ? (
+            <span
+              key={`e-${idx}`}
+              className="text-[11px]"
+              style={{ color: '#94a3b8', padding: '0 2px' }}
+            >
+              …
+            </span>
+          ) : (
+            <button
+              key={p}
+              onClick={() => onChange(p as number)}
+              className="h-7 w-7 rounded-lg text-[11px] font-bold"
+              style={{
+                border: '1px solid',
+                borderColor: page === p ? '#6366f1' : '#e2e8f0',
+                background: page === p ? '#6366f1' : '#fff',
+                color: page === p ? '#fff' : '#64748b',
+              }}
+            >
+              {p}
+            </button>
+          ),
+        )}
+
+        <button
+          disabled={page === totalPages}
+          onClick={() => onChange(Math.min(totalPages, page + 1))}
+          className="h-7 px-2.5 rounded-lg text-[11px] font-semibold disabled:opacity-40"
+          style={{
+            border: '1px solid #e2e8f0',
+            background: '#fff',
+            color: '#475569',
+          }}
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main ApprovalsPage ───────────────────────────────────────────────────────
 export default function ApprovalsPage() {
   const router = useRouter();
@@ -723,6 +846,10 @@ export default function ApprovalsPage() {
 
   const [activeTab, setActiveTab] = useState('pending');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const PAGE_SIZE = 6;
+  const [pendingPage, setPendingPage] = useState(1);
+  const [processedPage, setProcessedPage] = useState(1);
 
   const [actionDialog, setActionDialog] = useState<{
     open: boolean;
@@ -818,10 +945,21 @@ export default function ApprovalsPage() {
     }
   };
 
+  useEffect(() => {
+    setPendingPage(1);
+  }, [allPending.length]);
+  useEffect(() => {
+    setProcessedPage(1);
+  }, [allProcessed.length]);
+
   const isLoading = leaveLoading || wfhLoading;
   const isPending = updateLeaveStatus.isPending || updateWfhStatus.isPending;
 
-  const renderList = (list: any[]) => {
+  const renderList = (
+    list: any[],
+    page: number,
+    setPage: (p: number) => void,
+  ) => {
     if (list.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center gap-3 py-14">
@@ -838,35 +976,58 @@ export default function ApprovalsPage() {
       );
     }
 
-    return list.map((req) => (
-      <RequestCard
-        key={`${req._type}-${req.id}`}
-        req={req}
-        type={req._type}
-        expandedId={expandedId}
-        setExpandedId={setExpandedId}
-        onApprove={() =>
-          setActionDialog({
-            open: true,
-            requestId: req.id,
-            requestType: req._type,
-            employeeName: req.employee?.name ?? '',
-            leaveType: req._type === 'wfh' ? 'Work From Home' : req.leaveType,
-            action: 'APPROVED',
-          })
-        }
-        onReject={() =>
-          setActionDialog({
-            open: true,
-            requestId: req.id,
-            requestType: req._type,
-            employeeName: req.employee?.name ?? '',
-            leaveType: req._type === 'wfh' ? 'Work From Home' : req.leaveType,
-            action: 'REJECTED',
-          })
-        }
-      />
-    ));
+    const totalPages = Math.ceil(list.length / PAGE_SIZE);
+    const safePage = Math.min(page, totalPages); // guard stale page
+    const paginated = list.slice(
+      (safePage - 1) * PAGE_SIZE,
+      safePage * PAGE_SIZE,
+    );
+
+    return (
+      <>
+        {' '}
+        {paginated.map((req) => (
+          <RequestCard
+            key={`${req._type}-${req.id}`}
+            req={req}
+            type={req._type}
+            expandedId={expandedId}
+            setExpandedId={setExpandedId}
+            onApprove={() =>
+              setActionDialog({
+                open: true,
+                requestId: req.id,
+                requestType: req._type,
+                employeeName: req.employee?.name ?? '',
+                leaveType:
+                  req._type === 'wfh' ? 'Work From Home' : req.leaveType,
+                action: 'APPROVED',
+              })
+            }
+            onReject={() =>
+              setActionDialog({
+                open: true,
+                requestId: req.id,
+                requestType: req._type,
+                employeeName: req.employee?.name ?? '',
+                leaveType:
+                  req._type === 'wfh' ? 'Work From Home' : req.leaveType,
+                action: 'REJECTED',
+              })
+            }
+          />
+        ))}
+        <Paginator
+          page={safePage}
+          total={list.length}
+          pageSize={PAGE_SIZE}
+          onChange={(p) => {
+            setPage(p);
+            setExpandedId(null);
+          }}
+        />
+      </>
+    );
   };
 
   return (
@@ -942,7 +1103,12 @@ export default function ApprovalsPage() {
                     ))}
                   </div>
                 ) : (
-                  renderList(outerTab === 'pending' ? allPending : allProcessed)
+                  // renderList(outerTab === 'pending' ? allPending : allProcessed)
+                  renderList(
+                    outerTab === 'pending' ? allPending : allProcessed,
+                    outerTab === 'pending' ? pendingPage : processedPage,
+                    outerTab === 'pending' ? setPendingPage : setProcessedPage,
+                  )
                 )}
               </div>
             </TabsContent>

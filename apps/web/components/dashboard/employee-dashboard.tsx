@@ -356,7 +356,7 @@ export function EmployeeDashboard() {
     );
   }
 
-  const { balances = [], requests = [], wfhRequests = [], stats } = data || {};
+  const { requests = [], wfhRequests = [], stats } = data || {};
 
   // ── Merge leave + WFH, tag each, sort by createdAt desc, take top 8 ──
   const mergedRequests = [
@@ -566,7 +566,7 @@ export function EmployeeDashboard() {
                 </div>
               ) : (
                 mergedRequests
-                  .slice(0, 8)
+                  .slice(0, 5)
                   .map((req: any) => (
                     <RequestRow
                       key={`${req._type}-${req.id}`}

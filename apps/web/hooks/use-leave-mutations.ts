@@ -115,7 +115,7 @@ export const useUpdateLeaveStatus = () => {
 
 export const useUpdateLeaveRequest = () => {
   const queryClient = useQueryClient();
- 
+
   return useMutation({
     mutationFn: async ({
       id,
@@ -152,11 +152,11 @@ export const useUpdateLeaveRequest = () => {
     },
   });
 };
- 
+
 // ── DELETE leave request (employee deletes PENDING request) ──
 export const useDeleteLeaveRequest = () => {
   const queryClient = useQueryClient();
- 
+
   return useMutation({
     mutationFn: async ({
       id,
@@ -188,8 +188,6 @@ export const useDeleteLeaveRequest = () => {
   });
 };
 
-
-
 export const useCreateWfhRequest = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -204,7 +202,8 @@ export const useCreateWfhRequest = () => {
         description: 'Your request has been sent for approval.',
       });
       queryClient.invalidateQueries({
-        queryKey: ['wfh-requests', variables.employeeId],
+        // queryKey: ['wfh-requests', variables.employeeId],
+        queryKey: ['wfh-history', variables.employeeId],
       });
       queryClient.invalidateQueries({ queryKey: ['calendar-wfh-requests'] });
       router.push('/dashboard/leave/history');
@@ -253,11 +252,11 @@ export const useUpdateWfhStatus = () => {
     },
   });
 };
- 
+
 // ── DELETE WFH request ──
 export const useDeleteWfhRequest = () => {
   const queryClient = useQueryClient();
- 
+
   return useMutation({
     mutationFn: async ({
       id,
@@ -282,7 +281,7 @@ export const useDeleteWfhRequest = () => {
     },
   });
 };
- 
+
 // ── UPDATE WFH request ──
 // Payload type for WFH update — adjust to match your CreateWfhRequestPayload
 interface UpdateWfhPayload {
@@ -293,10 +292,10 @@ interface UpdateWfhPayload {
   reason?: string;
   managerId: string;
 }
- 
+
 export const useUpdateWfhRequest = () => {
   const queryClient = useQueryClient();
- 
+
   return useMutation({
     mutationFn: async ({
       id,
@@ -323,4 +322,3 @@ export const useUpdateWfhRequest = () => {
     },
   });
 };
- 
