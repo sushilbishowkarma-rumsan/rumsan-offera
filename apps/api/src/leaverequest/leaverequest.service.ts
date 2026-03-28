@@ -360,6 +360,12 @@ export class LeaverequestService {
     const request = await this.prisma.leaveRequest.findUnique({
       where: { id: requestId },
     });
+    console.log('--- DEBUG DELETION ---');
+    console.log(requestId, 'this is request id >>>>>');
+
+    console.log('Request Owner ID:', request?.employeeId);
+    console.log('Logged-in User ID:', employeeId);
+
     if (!request) throw new NotFoundException('Request not found');
     if (request.employeeId !== employeeId)
       throw new ForbiddenException('Not authorized');

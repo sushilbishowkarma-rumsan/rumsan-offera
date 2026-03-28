@@ -1,4 +1,5 @@
 import {
+  Logger,
   Injectable,
   BadRequestException,
   NotFoundException,
@@ -8,8 +9,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateWfhRequestDto } from './dto/create-wfh-request.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MailService } from '../mail/mail.service';
+
+interface UpdateWfhDto {
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  reason?: string;
+}
+
 @Injectable()
 export class WfhRequestService {
+  private readonly logger = new Logger(WfhRequestService.name);
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
@@ -236,104 +246,149 @@ export class WfhRequestService {
     });
   }
 
-  async deleteRequest(requestId: string, employeeId: string) {
+  async deleteRequest(requestId: string, requestingUserId: string) {
+    this.logger.log(
+      `Attempting to delete WFH request ++++++____+++>>>>>>>>>> ${requestId} by user ${requestingUserId}`,
+    );
     const request = await this.prisma.wfhRequest.findUnique({
       where: { id: requestId },
+      include: { employee: true },
     });
 
     if (!request) {
+      this.logger.warn(
+        `Delete failed: WFH request ++++++____+++>>>>>>>>>> ${requestId} not found`,
+      );
       throw new NotFoundException('WFH request not found');
     }
-    if (request.employeeId !== employeeId) {
+    const requestingUser = await this.prisma.user.findUnique({
+      where: { id: requestingUserId },
+      select: { id: true, role: true },
+    });
+    if (!requestingUser) throw new ForbiddenException('User not found');
+
+    const isOwner = request.employeeId === requestingUser.id;
+
+    if (!isOwner) {
       throw new ForbiddenException(
         'You are not authorized to delete this request',
       );
     }
+
     if (request.status !== 'PENDING') {
+      this.logger.warn(
+        `Delete failed: Request ++++++____+++>>>>>>>>>> ${requestId} is ${request.status}, not PENDING`,
+      );
       throw new BadRequestException('Only PENDING requests can be deleted');
     }
 
     await this.prisma.wfhRequest.delete({ where: { id: requestId } });
-
+    this.logger.log(
+      `Successfully deleted WFH request ++++++____+++>>>>>>>>>> ${requestId} for user ${requestingUserId}`,
+    );
     return { message: 'WFH request deleted successfully' };
   }
 
   async updateRequest(
     requestId: string,
-    employeeId: string,
-    dto: {
-      startDate: string;
-      endDate: string;
-      totalDays: number;
-      reason?: string;
-    },
+    requestingUserId: string,
+    dto: UpdateWfhDto,
   ) {
-    const request = await this.prisma.wfhRequest.findUnique({
-      where: { id: requestId },
-    });
+    this.logger.log(
+      `User ++++++____+++>>>>>>>>>> ${requestingUserId} is updating WFH request ${requestId}`,
+    );
+    try {
+      const request = await this.prisma.wfhRequest.findUnique({
+        where: { id: requestId },
+        include: { employee: true, manager: true },
+      });
 
-    if (!request) {
-      throw new NotFoundException('WFH request not found');
-    }
-    if (request.employeeId !== employeeId) {
-      throw new ForbiddenException(
-        'You are not authorized to edit this request',
+      if (!request) {
+        throw new NotFoundException('WFH request not found');
+      }
+      const requestingUser = await this.prisma.user.findUnique({
+        where: { id: requestingUserId },
+        select: { id: true, role: true },
+      });
+
+      this.logger.log(
+        `WFH request ++++++____+++>>>>>>>>>> ${requestId} updated successfully`,
       );
-    }
-    if (request.status !== 'PENDING') {
-      throw new BadRequestException('Only PENDING requests can be edited');
-    }
 
-    const start = new Date(dto.startDate);
-    const end = new Date(dto.endDate);
-    if (end < start) {
-      throw new BadRequestException(
-        'End date cannot be earlier than start date',
-      );
-    }
+      if (!requestingUser) throw new ForbiddenException('User not found');
 
-    const updated = await this.prisma.wfhRequest.update({
-      where: { id: requestId },
-      data: {
-        startDate: dto.startDate,
-        endDate: dto.endDate,
-        totalDays: dto.totalDays,
-        reason: dto.reason ?? '',
-      },
-      include: {
-        employee: true,
-        manager: true,
-      },
-    });
-    if (updated.managerId) {
-      this.notificationsService
-        .create({
-          userId: updated.managerId,
-          type: 'new_request',
-          title: 'WFH Request Updated',
-          message: `${updated.employee.name || updated.employee.email} has updated their WFH request`,
-          linkTo: `/dashboard/approvals`,
-          relatedRequestId: updated.id,
-        })
-        .catch((err) =>
-          console.error('Failed to send WFH update notification:', err),
+      const isOwner = request.employeeId === requestingUser.id;
+      if (!isOwner) {
+        throw new ForbiddenException(
+          'You are not authorized to edit this request',
         );
-    }
+      }
 
-    if (updated.manager?.email) {
-      this.mailService
-        .sendWfhRequestNotification({
-          managerEmail: updated.manager.email,
-          managerName: updated.manager.name || 'Manager',
-          employeeName: updated.employee.name || updated.employee.email,
-          startDate: new Date(updated.startDate),
-          endDate: new Date(updated.endDate),
-          totalDays: updated.totalDays,
-          reason: updated.reason,
-          approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
-        })
-        .catch((err) => console.error('Failed to send WFH update email:', err));
+      if (request.status !== 'PENDING') {
+        throw new BadRequestException('Only PENDING requests can be edited');
+      }
+
+      const start = new Date(dto.startDate);
+      const end = new Date(dto.endDate);
+      if (end < start) {
+        throw new BadRequestException(
+          'End date cannot be earlier than start date',
+        );
+      }
+
+      const updated = await this.prisma.wfhRequest.update({
+        where: { id: requestId },
+        data: {
+          startDate: dto.startDate,
+          endDate: dto.endDate,
+          totalDays: dto.totalDays,
+          reason: dto.reason ?? '',
+        },
+        include: {
+          employee: true,
+          manager: true,
+        },
+      });
+      if (updated.managerId) {
+        this.notificationsService
+          .create({
+            userId: updated.managerId,
+            type: 'new_request',
+            title: 'WFH Request Updated',
+            message: `${updated.employee.name || updated.employee.email} has updated their WFH request`,
+            linkTo: `/dashboard/approvals`,
+            relatedRequestId: updated.id,
+          })
+          .catch((err) =>
+            console.error('Failed to send WFH update notification:', err),
+          );
+      }
+
+      if (updated.manager?.email) {
+        this.mailService
+          .sendWfhRequestNotification({
+            managerEmail: updated.manager.email,
+            managerName: updated.manager.name || 'Manager',
+            employeeName: updated.employee.name || updated.employee.email,
+            startDate: new Date(updated.startDate),
+            endDate: new Date(updated.endDate),
+            totalDays: updated.totalDays,
+            reason: updated.reason,
+            approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
+          })
+          .catch((err) =>
+            console.error('Failed to send WFH update email:', err),
+          );
+      }
+      this.logger.debug(
+        `Triggering notifications for update on request ++++++____+++>>>>>>>>>> ${requestId}`,
+      );
+      return updated;
+    } catch (error) {
+      this.logger.error(
+        `Failed to update WFH request ++++++____+++>>>>>>>>>> ${requestId}: ${error}`,
+      );
+      throw error;
     }
-    return updated;
   }
 }
