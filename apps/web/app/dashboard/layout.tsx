@@ -8,14 +8,16 @@ import { AppSidebar } from '@/components/layout/app-sidebar';
 import { DashboardHeader } from '@/components/layout/dashboard-header';
 import { Spinner } from '@/components/ui/spinner';
 import { DashboardGate } from '@/components/dashboard-gate';
+import { useNotificationSocket } from "@/hooks/use-notifications";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, token, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  useNotificationSocket(user?.id, token || undefined);
 
   useEffect(() => {
     // Only redirect if we ARE NOT loading AND we ARE NOT authenticated
