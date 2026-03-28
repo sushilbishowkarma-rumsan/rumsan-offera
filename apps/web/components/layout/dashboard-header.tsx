@@ -1,36 +1,42 @@
-"use client";
+//rumsan-offera/apps/web/components/layout/dashboard-header.tsx
+'use client';
 
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from '@/lib/auth-context';
 import {
   useUnreadCount,
-  useNotificationListener,
-} from "@/hooks/use-notifications";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { Bell } from "lucide-react";
-import Link from "next/link";
-
+  useNotificationSocket,
+} from '@/hooks/use-notifications';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { Bell } from 'lucide-react';
+import Link from 'next/link';
+// import { unlockAudio } from '@/lib/socket';
+import { useEffect } from 'react';
 export function DashboardHeader() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   // Fetch unread count
   // const { data: unreadCount = 0 } = useUnreadCount(user?.id);
-const unreadCountQuery = useUnreadCount(user?.id);
-const unreadCount = unreadCountQuery.data ?? 0;
+  const unreadCountQuery = useUnreadCount(user?.id);
+  const unreadCount = unreadCountQuery.data ?? 0;
   // Listen for new notifications and play sound
-  useNotificationListener(user?.id);
+  useNotificationSocket(user?.id, token || undefined);
+
+//   useEffect(() => {
+//   unlockAudio();
+// }, []);
 
   if (!user) return null;
 
   const roleLabel =
-    user.role === "HRADMIN"
-      ? "HR Admin"
+    user.role === 'HRADMIN'
+      ? 'HR Admin'
       : user.role.charAt(0) + user.role.slice(1).toLowerCase();
 
   return (
     <header
-    className="
+      className="
         sticky top-0 z-50
         flex h-14 shrink-0 items-center gap-3 px-4
         bg-[#0d0f14]/95 backdrop-blur-sm
@@ -52,7 +58,7 @@ const unreadCount = unreadCountQuery.data ?? 0;
       {/* Center: logged-in context */}
       <div className="flex-1 min-w-0">
         <p className="text-[13px] text-slate-500 truncate">
-          Signed in as{" "}
+          Signed in as{' '}
           <span
             className="
               font-semibold
@@ -105,7 +111,7 @@ const unreadCount = unreadCountQuery.data ?? 0;
                       flex items-center justify-center
                     "
                   >
-                    {unreadCount > 9 ? "9+" : unreadCount}
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </>
@@ -113,7 +119,7 @@ const unreadCount = unreadCountQuery.data ?? 0;
             <span className="sr-only">
               {unreadCount > 0
                 ? `${unreadCount} unread notifications`
-                : "View notifications"}
+                : 'View notifications'}
             </span>
           </Link>
         </Button>

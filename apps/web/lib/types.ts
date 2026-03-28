@@ -165,6 +165,7 @@ export interface DepartmentLeaveData {
 
 /* ── Auth Context Type ── */
 export interface AuthContextType {
+  token: string | null,
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;

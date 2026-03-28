@@ -24,21 +24,23 @@ export function useAuth(): AuthContextType {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
+
   const queryClient = useQueryClient();
   // --- PERSISTENCE: Check for logged in user on mount ---
- 
- 
-   const logout = useCallback(() => {
+
+  const logout = useCallback(() => {
     setUser(null);
+    setToken(null); 
     localStorage.removeItem('auth_user');
     localStorage.removeItem('auth_token');
     localStorage.removeItem('google token');
 
     if (typeof window !== 'undefined') {
-    window.location.href = '/login';
-  }
+      window.location.href = '/login';
+    }
   }, []);
-  
+
   useEffect(() => {
     const validateSession = async () => {
       const savedUser = localStorage.getItem('auth_user');
@@ -54,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(parsedUser);
         const { data } = await api.get(`/users/${parsedUser.id}`);
         setUser(data);
+        setToken(savedToken);
         localStorage.setItem('auth_user', JSON.stringify(data));
       } catch (error: any) {
         if (error.response?.status === 404 || error.response?.status === 401) {
@@ -86,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const login = useCallback((userData: User, token: string) => {
     setIsLoading(true);
-
+setToken(token);
     // 1. Update State
     setUser(userData);
 
@@ -96,8 +99,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(false);
   }, []);
-
- 
 
   const switchRole = useCallback(
     (role: UserRole) => {
@@ -127,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<AuthContextType>(
     () => ({
+      token: token,
       user,
       isAuthenticated: !!user,
       isLoading,
@@ -135,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       switchRole,
       refreshUser,
     }),
-    [user, isLoading, login, logout, switchRole, refreshUser],
+    [ token, user, isLoading, login, logout, switchRole, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
