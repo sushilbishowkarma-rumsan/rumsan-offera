@@ -85,17 +85,12 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
         select: { id: true, role: true, email: true },
       });
 
-      if (dbUser && dbUser.role !== 'EMPLOYEE') {
-        // DB says elevated role → override token role
+      if (dbUser) {
         request.user = {
-          id: dbUser.id, // ← use our DB UUID, not RsOffice sub
+          id: dbUser.id, // Always use Internal UUID if found
           email: dbUser.email,
-          role: dbUser.role, // ← always from DB
+          role: dbUser.role,
         };
-
-        this.logger.debug(
-          `Auth resolved: rsoffice_sub=${payload.sub} → db.id=${dbUser.id} role=${dbUser.role}`,
-        );
         return true;
       }
       // If DB role is EMPLOYEE or user not found → keep tokenRole as-is

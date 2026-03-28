@@ -703,6 +703,9 @@ export default function LeaveHistoryPage() {
 
   const confirmDelete = useCallback(() => {
     if (!deleteTarget || !user) return;
+    console.log(deleteTarget.id, "deleteTarget Id");
+        console.log(user.id, "user  Id");
+
     if (deleteTarget.kind === 'wfh') {
       deleteWfh.mutate(
         { id: deleteTarget.id, employeeId: user.id },
@@ -1143,19 +1146,6 @@ export default function LeaveHistoryPage() {
               )}
             </div>
           )}
-
-          {/* {!isLoading && filteredRequests.length > 0 && (
-            <div>
-              {filteredRequests.map((req) => (
-                <RequestRow
-                  key={`${req.kind}-${req.id}`}
-                  req={req}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
-          )} */}
           {!isLoading && filteredRequests.length > 0 && (
             <div>
               {paginatedRequests.map((req) => (
