@@ -8,7 +8,6 @@ import {
   Delete,
   Body,
   Param,
-  ParseUUIDPipe,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -36,9 +35,7 @@ export class LeavePolicyController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  async findOne(
-    @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<LeavePolicyModel> {
+  async findOne(@Param('id') id: string): Promise<LeavePolicyModel> {
     return this.leavePolicyService.findOne(id);
   }
 
@@ -54,7 +51,7 @@ export class LeavePolicyController {
   @UseGuards(JwtAuthGuard)
   // @Roles('HR_ADMIN')
   async update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateLeavePolicyDto,
   ): Promise<LeavePolicyModel> {
     return this.leavePolicyService.update(id, dto);
@@ -64,7 +61,7 @@ export class LeavePolicyController {
   @UseGuards(JwtAuthGuard)
   // @Roles('HR_ADMIN')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+  async remove(@Param('id') id: string): Promise<void> {
     return this.leavePolicyService.remove(id);
   }
 }

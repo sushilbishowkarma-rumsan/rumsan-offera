@@ -1,16 +1,16 @@
 // rumsan-offera/apps/web/hooks/use-leave-policies.ts
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { leavePolicyApi } from "@/lib/leave-policy.api";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { leavePolicyApi } from '@/lib/leave-policy.api';
 import type {
   CreateLeavePolicyDto,
   UpdateLeavePolicyDto,
-} from "@/lib/leave-policy.types";
+} from '@/lib/leave-policy.types';
 
 /** Stable query key factory — keeps cache keys consistent */
 export const leavePolicyKeys = {
-  all: ["leave-policies"] as const,
-  detail: (id: string) => ["leave-policies", id] as const,
+  all: ['leave-policies'] as const,
+  detail: (id: string) => ['leave-policies', id] as const,
 };
 
 // ─── GET ALL ─────────────────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ export function useCreateLeavePolicy() {
     onSuccess: () => {
       // Invalidate the list so the table re-fetches
       queryClient.invalidateQueries({ queryKey: leavePolicyKeys.all });
-
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
     },
   });
 }
@@ -60,6 +60,8 @@ export function useUpdateLeavePolicy() {
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: leavePolicyKeys.all });
       queryClient.invalidateQueries({ queryKey: leavePolicyKeys.detail(id) });
+            queryClient.invalidateQueries({ queryKey: ['employees'] }); 
+
     },
   });
 }

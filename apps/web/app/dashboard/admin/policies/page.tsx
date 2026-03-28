@@ -155,7 +155,8 @@ export default function PoliciesPage() {
         const balance = selectedEmployee?.leaveBalances.find(
           (b) => b.leaveType === policy.leaveType,
         );
-        const currentTotal = balance?.total ?? 0;
+        // const currentTotal = balance?.total ?? 0;
+        const currentTotal = balance ? balance.total : policy.defaultQuota;
         const draftVal = quotaDraft[policy.leaveType];
         return {
           leaveType: policy.leaveType,
