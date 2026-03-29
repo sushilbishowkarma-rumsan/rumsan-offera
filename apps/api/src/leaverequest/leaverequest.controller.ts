@@ -77,10 +77,22 @@ export class LeaverequestController {
   async getManagerRequests(@Param('managerId') managerId: string) {
     return this.leaverequestService.findAllByManager(managerId);
   }
+
+  // @Get('managerdashboard/:managerId')
+  // @UseGuards(JwtAuthGuard)
+  // async getManagerRequestsDashboard(@Param('managerId') managerId: string) {
+  //   return this.leaverequestService.findByManagerforDashboard(managerId);
+  // }
+
   @Get('employee/:id')
   @UseGuards(JwtAuthGuard)
   async getEmployeeRequests(@Param('id') id: string) {
     return this.leaverequestService.findAllByEmployee(id);
+  }
+  @Get('employeedashboard/:id')
+  @UseGuards(JwtAuthGuard)
+  async getEmployeeRequestsforDash(@Param('id') id: string) {
+    return this.leaverequestService.findByEmployeefordash(id);
   }
   @Post()
   @UseGuards(JwtAuthGuard)

@@ -128,8 +128,17 @@ export class LeaverequestService {
       where: { employeeId },
       orderBy: { createdAt: 'desc' },
       include: {
-        leaveDays: true, // ← ADD THIS
+        leaveDays: true,
       },
+    });
+  }
+
+  async findByEmployeefordash(employeeId: string) {
+    return this.prisma.leaveRequest.findMany({
+      where: { employeeId },
+      orderBy: { createdAt: 'desc' },
+      include: { leaveDays: true },
+      take: 5, // ← and here
     });
   }
 
@@ -153,6 +162,25 @@ export class LeaverequestService {
     });
   }
 
+  // async findByManagerforDashboard(managerId: string) {
+  //   return this.prisma.leaveRequest.findMany({
+  //     where: { managerId },
+  //     orderBy: { createdAt: 'desc' },
+  //     include: {
+  //       employee: {
+  //         select: {
+  //           id: true,
+  //           name: true,
+  //           email: true,
+  //           avatar: true,
+  //           rsofficeId: true,
+  //         },
+  //       },
+  //       leaveDays: true,
+  //     },
+  //     take: 5,
+  //   });
+  // }
   async updateStatus(
     requestId: string,
     managerId: string,

@@ -118,6 +118,19 @@ export class WfhRequestService {
     });
   }
 
+  async findByEmployeeForDash(employeeId: string) {
+    return this.prisma.wfhRequest.findMany({
+      where: { employeeId },
+      include: {
+        employee: {
+          select: { department: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5, // ← just hardcode it here
+    });
+  }
+
   async findAllByManager(managerId: string) {
     return this.prisma.wfhRequest.findMany({
       where: { managerId },
@@ -129,6 +142,18 @@ export class WfhRequestService {
       },
     });
   }
+  // async findByManagerDashboard(managerId: string) {
+  //   return this.prisma.wfhRequest.findMany({
+  //     where: { managerId },
+  //     orderBy: { createdAt: 'desc' },
+  //     include: {
+  //       employee: {
+  //         select: { id: true, name: true, email: true, avatar: true },
+  //       },
+  //     },
+  //     take: 5,
+  //   });
+  // }
 
   async updateStatus(
     requestId: string,

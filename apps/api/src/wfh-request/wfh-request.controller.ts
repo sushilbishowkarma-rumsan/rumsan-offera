@@ -58,6 +58,11 @@ export class WfhRequestController {
   getByEmployee(@Param('employeeId') employeeId: string) {
     return this.wfhRequestService.findAllByEmployee(employeeId);
   }
+  @Get('employeedashboard/:employeeId')
+  @UseGuards(JwtAuthGuard)
+  getByEmployeeForDashboard(@Param('employeeId') employeeId: string) {
+    return this.wfhRequestService.findByEmployeeForDash(employeeId);
+  }
 
   @Get('manager/:managerId')
   @UseGuards(JwtAuthGuard)
@@ -65,6 +70,11 @@ export class WfhRequestController {
     return this.wfhRequestService.findAllByManager(managerId);
   }
 
+  // @Get('managerdashboard/:managerId')
+  // @UseGuards(JwtAuthGuard)
+  // getByManagerforDashboard(@Param('managerId') managerId: string) {
+  //   return this.wfhRequestService.findByManagerDashboard(managerId);
+  // }
   @Patch(':requestId/status')
   @UseGuards(JwtAuthGuard)
   updateStatus(

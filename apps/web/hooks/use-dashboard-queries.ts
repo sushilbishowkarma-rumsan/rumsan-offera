@@ -37,15 +37,15 @@ async function syncRoleIfMismatched(
 // ─── Employee Dashboard Data ───────────────────────────────────────────────
 
 export function useEmployeeDashboardData(employeeId: string | undefined) {
-  const { user: contextUser, refreshUser } = useAuth(); // ← ADD
+  const { user: contextUser, refreshUser } = useAuth();
 
   return useQuery({
     queryKey: ['employee-dashboard', employeeId],
     queryFn: async () => {
       const [balances, requests, wfhRequests] = await Promise.all([
         api.get(`/leave-balances/employee/${employeeId}`),
-        api.get(`/leaverequests/employee/${employeeId}`),
-        api.get(`/wfh-requests/employee/${employeeId}`),
+        api.get(`/leaverequests/employeedashboard/${employeeId}`),
+        api.get(`/wfh-requests/employeedashboard/${employeeId}`),
       ]);
 
       const myRequests = Array.isArray(requests.data) ? requests.data : [];
@@ -77,14 +77,14 @@ export function useEmployeeDashboardData(employeeId: string | undefined) {
       };
     },
     enabled: !!employeeId,
-    staleTime: 3000, // always refetch when asked
+    staleTime: 3000,
     refetchOnWindowFocus: true,
   });
 }
 
 // ─── Manager Dashboard Data ────────────────────────────────────────────────
 export function useManagerDashboardData(managerId: string | undefined) {
-  const { user: contextUser, refreshUser } = useAuth(); // ← ADD
+  const { user: contextUser, refreshUser } = useAuth();
 
   return useQuery({
     queryKey: ['manager-dashboard', managerId],
