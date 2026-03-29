@@ -1,6 +1,6 @@
 // src/leave-balance/leave-balance.scheduler.ts
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 
@@ -45,7 +45,8 @@ export class LeaveBalanceScheduler {
     private mailService: MailService,
   ) {}
 
-  @Cron(CronExpression.EVERY_10_MINUTES)
+  // @Cron(CronExpression.EVERY_10_MINUTES)
+  @Cron('0 */5 * * *') //every 5 hrs
   async sendMonthEndExceededWarnings() {
     this.logger.log(`[ExceededLeaveWarning] Scheduled run started...`);
     await this.processExceededLeaves();

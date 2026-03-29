@@ -12,13 +12,11 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'https://offera-app-frontend.vercel.app', // ✅ Add your Vercel domain
-    ],
+    origin: [process.env.FRONTEND_URL, 'http://localhost:3000'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
+
   // 3. ENABLE SHUTDOWN HOOKS (Crucial for Prisma v5)
   // This allows the PrismaService.onModuleDestroy() we wrote to fire
   app.enableShutdownHooks();

@@ -30,9 +30,9 @@ interface SocketData {
   email: string;
 }
 type AuthenticatedSocket = Socket<
-  Record<string, never>, // ListenEvents
-  ServerToClientEvents, // EmitEvents
-  Record<string, never>, // ServerSideEvents
+  Record<string, never>,
+  ServerToClientEvents,
+  Record<string, never>,
   SocketData
 >;
 
