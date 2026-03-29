@@ -33,10 +33,10 @@ export function ManagerDashboard() {
   const { data, isLoading, error, refetch } = useManagerDashboardData(user?.id);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
-  // ── Approve handler
-  const handleApprove = async (req: any, requestId: string) => {
+  // ── Approve handler, requestId: string
+  const handleApprove = async (req: any) => {
     const isWfh = req.requestType === 'wfh';
-    setProcessingIds((prev) => new Set(prev).add(requestId));
+    setProcessingIds((prev) => new Set(prev).add(req.id));
     try {
       const endpoint = isWfh
         ? `/wfh-requests/${req.id}/status`
@@ -60,16 +60,16 @@ export function ManagerDashboard() {
     } finally {
       setProcessingIds((prev) => {
         const next = new Set(prev);
-        next.delete(requestId);
+        next.delete(req.id);
         return next;
       });
     }
   };
 
-  // ── Reject handler
-  const handleReject = async (req: any, requestId: string) => {
+  // ── Reject handler , requestId: string
+  const handleReject = async (req: any) => {
     const isWfh = req.requestType === 'wfh';
-    setProcessingIds((prev) => new Set(prev).add(requestId));
+    setProcessingIds((prev) => new Set(prev).add(req.id));
     try {
       const endpoint = isWfh
         ? `/wfh-requests/${req.id}/status`
@@ -89,7 +89,7 @@ export function ManagerDashboard() {
     } finally {
       setProcessingIds((prev) => {
         const next = new Set(prev);
-        next.delete(requestId);
+        next.delete(req.id);
         return next;
       });
     }
@@ -513,8 +513,9 @@ export function ManagerDashboard() {
                           <button
                             onClick={() =>
                               handleReject(
-                                req.id,
-                                req.employee?.name || 'employee',
+                                req,
+                                // req.id,
+                                // req.employee?.name || 'employee',
                               )
                             }
                             disabled={isProcessing}
@@ -531,8 +532,9 @@ export function ManagerDashboard() {
                           <button
                             onClick={() =>
                               handleApprove(
-                                req.id,
-                                req.employee?.name || 'employee',
+                                req,
+                                // req.id,
+                                // req.employee?.name || 'employee',
                               )
                             }
                             disabled={isProcessing}
