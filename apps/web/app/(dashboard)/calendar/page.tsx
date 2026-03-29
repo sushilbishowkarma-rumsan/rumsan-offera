@@ -1850,7 +1850,7 @@ export default function CalendarPage() {
                         DAY_TYPE_CONFIG[dayType] ?? DAY_TYPE_CONFIG.FULL;
                       const Wrapper = canNavigate ? Link : 'div';
                       const wrapperProps = canNavigate
-                        ? { href: `/dashboard/users/${u.id}` }
+                        ? { href: `/users/${u.id}` }
                         : {};
 
                       return (
@@ -3923,7 +3923,7 @@ export default function CalendarPage() {
 //                         user?.role === 'HRADMIN' || user?.role === 'MANAGER';
 //                       const Wrapper = canNavigate ? Link : 'div';
 //                       const wrapperProps = canNavigate
-//                         ? { href: `/dashboard/users/${u.id}` }
+//                         ? { href: `/users/${u.id}` }
 //                         : {};
 
 //                       return (

@@ -65,7 +65,7 @@ export const useCreateLeaveRequest = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['calendar-leave-requests'] });
 
-      router.push('/dashboard/leave/history');
+      router.push('/leave/history');
     },
     onError: (error: any) => {
       const message =
@@ -206,7 +206,7 @@ export const useCreateWfhRequest = () => {
         queryKey: ['wfh-history', variables.employeeId],
       });
       queryClient.invalidateQueries({ queryKey: ['calendar-wfh-requests'] });
-      router.push('/dashboard/leave/history');
+      router.push('/leave/history');
     },
     onError: (error: any) => {
       const message =

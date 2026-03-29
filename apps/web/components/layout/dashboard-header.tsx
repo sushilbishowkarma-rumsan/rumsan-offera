@@ -86,7 +86,7 @@ export function DashboardHeader() {
           "
           asChild
         >
-          <Link href="/dashboard/notifications">
+          <Link href="/notifications">
             <Bell className="h-4 w-4" />
 
             {/* Unread indicator with count */}

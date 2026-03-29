@@ -17,7 +17,7 @@ const [idTokenn, setIdTokenn] = useState<string>("");
       setAuthContext(data.user, data.access_token);
       localStorage.setItem("auth_token", data.access_token); // Save for the interceptor
       localStorage.setItem("google token", idTokenn); // Save user info for persistence
-      window.location.href = "/dashboard";
+      window.location.href = "/home";
     },
   });
 };

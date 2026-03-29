@@ -429,7 +429,7 @@ export function EmployeeDashboard() {
             </p>
           </div>
           <Link
-            href="/dashboard/leave/request"
+            href="/leave/request"
             className="inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white self-start sm:self-auto"
             style={{
               background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
@@ -583,7 +583,7 @@ export function EmployeeDashboard() {
               style={{ borderTop: '1px solid #f1f5f9' }}
             >
               <Link
-                href="/dashboard/leave/history"
+                href="/leave/history"
                 className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[12px] font-semibold"
                 style={{
                   border: '1px solid #e2e8f0',

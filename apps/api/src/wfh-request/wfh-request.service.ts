@@ -75,7 +75,7 @@ export class WfhRequestService {
           type: 'new_request',
           title: 'New WFH Request',
           message: `${request.employee.name || request.employee.email} has requested to work from home`,
-          linkTo: `/dashboard/approvals`,
+          linkTo: `/approvals`,
           relatedRequestId: request.id,
         })
         .catch((err) => {
@@ -94,7 +94,7 @@ export class WfhRequestService {
           endDate: new Date(request.endDate),
           totalDays: request.totalDays,
           reason: request.reason,
-          approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
+          approvalLink: `${process.env.APP_URL}/approvals`,
         })
         .catch((err) => {
           // Log but don't crash — email failure won't affect the response
@@ -182,7 +182,7 @@ export class WfhRequestService {
         type: action === 'APPROVED' ? 'leave_approved' : 'leave_rejected',
         title: `WFH Request ${action === 'APPROVED' ? 'Approved' : 'Rejected'}`,
         message: `Your WFH request was ${action.toLowerCase()}${approverComment ? `: ${approverComment}` : ''}`,
-        linkTo: `/dashboard/leave/history`,
+        linkTo: `/leave/history`,
         relatedRequestId: updated.id,
       })
       .catch((err) => {
@@ -381,7 +381,7 @@ export class WfhRequestService {
             type: 'new_request',
             title: 'WFH Request Updated',
             message: `${updated.employee.name || updated.employee.email} has updated their WFH request`,
-            linkTo: `/dashboard/approvals`,
+            linkTo: `/approvals`,
             relatedRequestId: updated.id,
           })
           .catch((err) =>
@@ -399,7 +399,7 @@ export class WfhRequestService {
             endDate: new Date(updated.endDate),
             totalDays: updated.totalDays,
             reason: updated.reason,
-            approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
+            approvalLink: `${process.env.APP_URL}/approvals`,
           })
           .catch((err) =>
             console.error('Failed to send WFH update email:', err),

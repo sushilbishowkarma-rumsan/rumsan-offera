@@ -106,7 +106,7 @@ function EmployeeDetailPanel({
             onClick={() => {
               if (t === 'profile') {
                 // If profile is clicked, navigate away
-                router.push(`/dashboard/users/${employeeId}`);
+                router.push(`/users/${employeeId}`);
               } else {
                 // Otherwise, just switch the local view
                 setTab(t);
@@ -832,7 +832,7 @@ export default function ApprovalsPage() {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user && user.role !== 'MANAGER') router.replace('/dashboard');
+    if (user && user.role !== 'MANAGER') router.replace('/');
   }, [user, router]);
 
   if (!user || user.role !== 'MANAGER') return null;

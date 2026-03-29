@@ -499,7 +499,7 @@ function EmployeeCard({
 
     return (
       <Link
-        href={`/dashboard/users/${finalId}`}
+        href={`/users/${finalId}`}
         style={cardStyle}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -694,7 +694,7 @@ function EmployeeRow({
     const finalId = selectedUserIds?.find((u) => u.rsofficeId === emp.cuid)?.id;
     return (
       <Link
-        href={`/dashboard/users/${finalId}`}
+        href={`/users/${finalId}`}
         style={rowStyle}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}

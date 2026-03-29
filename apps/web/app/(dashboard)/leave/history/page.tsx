@@ -806,7 +806,7 @@ export default function LeaveHistoryPage() {
               </p>
             </div>
             <Link
-              href="/dashboard/leave/request"
+              href="/leave/request"
               className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[12px] font-bold text-white shrink-0"
               style={{
                 background: `linear-gradient(135deg, ${C.indigo} 0%, #7c3aed 100%)`,
@@ -1137,7 +1137,7 @@ export default function LeaveHistoryPage() {
                 </button>
               ) : (
                 <Link
-                  href="/dashboard/leave/request"
+                  href="/leave/request"
                   className="text-[12px] font-semibold"
                   style={{ color: C.indigo }}
                 >

@@ -228,7 +228,7 @@ export function ManagerDashboard() {
       <div className="flex flex-col gap-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         <ExceededLeaveAlert employeeId={user?.id ?? ''} />
         <button
-          onClick={() => router.push('/dashboard/exceed')}
+          onClick={() => router.push('/exceed')}
           className="group relative overflow-hidden rounded-2xl p-2 -mt-6 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer text-left w-full"
           style={{
             background: '#fff1f2',
@@ -305,7 +305,7 @@ export function ManagerDashboard() {
           </div>
 
           <Link
-            href="/dashboard/approvals"
+            href="/approvals"
             className="inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-95 self-start sm:self-auto"
             style={{
               background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
@@ -562,7 +562,7 @@ export function ManagerDashboard() {
               style={{ borderTop: '1px solid #f1f5f9' }}
             >
               <Link
-                href="/dashboard/approvals"
+                href="/approvals"
                 className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[12px] font-semibold transition-all duration-150"
                 style={{
                   border: '1px solid #e2e8f0',
@@ -739,7 +739,7 @@ export function ManagerDashboard() {
               style={{ borderTop: '1px solid #f1f5f9' }}
             >
               <Link
-                href="/dashboard/calendar"
+                href="/calendar"
                 className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[12px] font-semibold transition-all duration-150"
                 style={{
                   border: '1px solid #e2e8f0',

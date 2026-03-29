@@ -97,7 +97,7 @@ export class MailService {
         }
       </table>
       <br/>
-      <a href="${process.env.APP_URL}/dashboard/leave/history"
+      <a href="${process.env.APP_URL}/leave/history"
          style="padding:10px 20px;background:${isApproved ? '#16a34a' : '#dc2626'};color:white;text-decoration:none;border-radius:5px;">
         View Request
       </a>

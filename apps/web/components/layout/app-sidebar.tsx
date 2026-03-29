@@ -57,7 +57,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   {
     title: 'Dashboard',
-    href: '/dashboard',
+    href: '/home',
     icon: <LayoutDashboard className="h-4 w-4" />,
     roles: ['EMPLOYEE', 'MANAGER', 'HRADMIN'],
   },
@@ -66,13 +66,13 @@ const mainNavItems: NavItem[] = [
 const leaveNavItems: NavItem[] = [
   {
     title: 'New Request',
-    href: '/dashboard/leave/request',
+    href: '/leave/request',
     icon: <CalendarPlus className="h-4 w-4" />,
     roles: ['EMPLOYEE', 'HRADMIN', 'MANAGER'],
   },
   {
     title: 'My History',
-    href: '/dashboard/leave/history',
+    href: '/leave/history',
     icon: <History className="h-4 w-4" />,
     roles: ['EMPLOYEE', 'HRADMIN', 'MANAGER'],
   },
@@ -81,20 +81,20 @@ const leaveNavItems: NavItem[] = [
 const managerNavItems: NavItem[] = [
   {
     title: 'Approvals',
-    href: '/dashboard/approvals',
+    href: '/approvals',
     icon: <CheckSquare className="h-4 w-4" />,
     roles: ['MANAGER'],
     // badge: 4,
   },
   {
     title: 'Calendar',
-    href: '/dashboard/calendar',
+    href: '/calendar',
     icon: <CalendarRange className="h-4 w-4" />,
     roles: ['EMPLOYEE', 'MANAGER', 'HRADMIN'],
   },
   {
     title: 'Team Directory',
-    href: '/dashboard/team',
+    href: '/team',
     icon: <Users className="h-4 w-4" />,
     roles: ['MANAGER', 'HRADMIN', 'EMPLOYEE'],
   },
@@ -103,19 +103,19 @@ const managerNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   {
     title: 'All Requests',
-    href: '/dashboard/admin/requests',
+    href: '/admin/requests',
     icon: <FileText className="h-4 w-4" />,
     roles: ['HRADMIN'],
   },
   {
     title: 'Leave Policies',
-    href: '/dashboard/admin/policies',
+    href: '/admin/policies',
     icon: <ShieldCheck className="h-4 w-4" />,
     roles: ['HRADMIN'],
   },
   {
     title: 'Holidays',
-    href: '/dashboard/admin/holidays',
+    href: '/admin/holidays',
     icon: <CalendarDays className="h-4 w-4" />,
     roles: ['HRADMIN'],
   },
@@ -231,7 +231,7 @@ export function AppSidebar() {
         overflow-hidden   /* Prevents the sidebar container itself from scrolling */"
     >
       <SidebarHeader className="px-4 py-5">
-        <Link href="/dashboard" className="flex items-center gap-3">
+        <Link href="/home" className="flex items-center gap-3">
           {/* Logo mark - Using image from public folder */}
           <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl overflow-hidden">
             <img
@@ -343,7 +343,7 @@ export function AppSidebar() {
                   className="mx-1 mb-1 rounded-lg text-sm text-white/70 hover:text-white focus:bg-white/10 focus:text-white transition-colors cursor-pointer"
                 >
                   <Link
-                    href="/dashboard/profile"
+                    href="/profile"
                     className="flex w-full items-center"
                   >
                     <UserCircle className="mr-2.5 h-4 w-4" />

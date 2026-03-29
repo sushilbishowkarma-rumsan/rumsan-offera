@@ -94,7 +94,7 @@ export class LeaverequestService {
           type: 'new_request',
           title: 'New Leave Request',
           message: `${request.employee.name || request.employee.email} has submitted a leave request`,
-          linkTo: `/dashboard/approvals`,
+          linkTo: `/approvals`,
           relatedRequestId: request.id,
         })
         .catch((err) => {
@@ -113,7 +113,7 @@ export class LeaverequestService {
           endDate: request.endDate,
           totalDays: request.totalDays,
           reason: request.reason,
-          approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
+          approvalLink: `${process.env.APP_URL}/approvals`,
         })
         .catch((err) => {
           // Log but don't crash — email failure won't affect the response
@@ -259,7 +259,7 @@ export class LeaverequestService {
             : 'leave_rejected',
         title: `Leave Request ${dto.action === LeaveAction.APPROVE ? 'Approved' : 'Rejected'}`,
         message: `Your request was ${dto.action.toLowerCase()}${dto.approverComment ? `: ${dto.approverComment}` : ''}`,
-        linkTo: `/dashboard/leave/history`,
+        linkTo: `/leave/history`,
         relatedRequestId: updatedRequest.id,
       })
       .catch((err) => {
@@ -460,7 +460,7 @@ export class LeaverequestService {
           type: 'new_request',
           title: 'Leave Request Updated',
           message: `${updated.employee.name || updated.employee.email} has updated their leave request`,
-          linkTo: `/dashboard/approvals`,
+          linkTo: `/approvals`,
           relatedRequestId: updated.id,
         })
         .catch((err) =>
@@ -480,7 +480,7 @@ export class LeaverequestService {
           endDate: updated.endDate,
           totalDays: updated.totalDays,
           reason: updated.reason,
-          approvalLink: `${process.env.APP_URL}/dashboard/approvals`,
+          approvalLink: `${process.env.APP_URL}/approvals`,
         })
         .catch((err) => console.error('Failed to send update email:', err));
     }

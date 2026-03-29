@@ -1,5 +1,9 @@
+//runsan-offera/apps/web/app/login/page.tsx
+
 "use client";
-// app/login/page.tsx
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
 import { useLoginMutation } from "@/hooks/use-auth-mutations";
 import { GoogleLogin } from "@react-oauth/google";
 import {
@@ -13,8 +17,34 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link"; 
 
 export default function LoginPage() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter(); 
   const loginMutation = useLoginMutation();
 
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace('/home');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  if (isLoading || isAuthenticated) {
+    return (
+      <div
+        className="relative flex min-h-screen items-center justify-center overflow-hidden px-4"
+        style={{
+          background:
+            "linear-gradient(135deg, #0a0f2e 0%, #0d0a2e 25%, #1a0a2e 50%, #2d0a3e 75%, #1a0520 100%)",
+          backgroundAttachment: "fixed",
+        }}
+      >
+        {/* Same decorative blurs as login page */}
+        <div className="absolute -top-[10%] -left-[10%] h-[40%] w-[40%] rounded-full bg-orange-100/50 blur-[120px] dark:bg-orange-900/20" />
+        <div className="absolute -bottom-[10%] -right-[10%] h-[40%] w-[40%] rounded-full bg-orange-50/50 blur-[120px] dark:bg-slate-900/50" />
+        <Loader2 className="relative z-10 h-8 w-8 animate-spin text-orange-400" />
+      </div>
+    );
+  }
+  
   return (
       <div
       className="relative flex min-h-screen items-center justify-center overflow-hidden px-4"
@@ -25,7 +55,7 @@ export default function LoginPage() {
       }}
     >
       <Link 
-        href="/" 
+        href="/landing" 
         className="absolute left-6 top-6 z-20 flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors hover:text-white"
       >
         <div className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-800 bg-slate-900/50 backdrop-blur-md transition-all hover:border-slate-600">

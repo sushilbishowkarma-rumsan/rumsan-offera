@@ -159,7 +159,7 @@ export function AdminDashboard() {
   const quickActions = [
     {
       label: 'All Requests',
-      href: '/dashboard/admin/requests',
+      href: '/admin/requests',
       icon: <FileText className="h-5 w-5" />,
       iconBg: '#eef2ff',
       iconColor: '#4f46e5',
@@ -167,7 +167,7 @@ export function AdminDashboard() {
     },
     {
       label: 'Leave Policies',
-      href: '/dashboard/admin/policies',
+      href: '/admin/policies',
       icon: <ShieldCheck className="h-5 w-5" />,
       iconBg: '#fffbeb',
       iconColor: '#d97706',
@@ -175,7 +175,7 @@ export function AdminDashboard() {
     },
     {
       label: 'Public Holidays',
-      href: '/dashboard/admin/holidays',
+      href: '/admin/holidays',
       icon: <CalendarDays className="h-5 w-5" />,
       iconBg: '#f0fdf4',
       iconColor: '#16a34a',
@@ -183,7 +183,7 @@ export function AdminDashboard() {
     },
     {
       label: 'Team Calendar',
-      href: '/dashboard/calendar',
+      href: '/calendar',
       icon: <CalendarRange className="h-5 w-5" />,
       iconBg: '#fdf2f8',
       iconColor: '#be185d',
@@ -197,7 +197,7 @@ export function AdminDashboard() {
         <ExceededLeaveAlert employeeId={user?.id ?? ''} />
         {/* ── Stats Grid ── */}
         <button
-          onClick={() => router.push('/dashboard/exceed')}
+          onClick={() => router.push('/exceed')}
           className="group relative overflow-hidden rounded-2xl p-2 -mt-6 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer text-left w-full"
           style={{
             background: '#fff1f2',
@@ -522,7 +522,7 @@ export function AdminDashboard() {
               style={{ borderTop: '1px solid #f1f5f9' }}
             >
               <Link
-                href="/dashboard/admin/requests"
+                href="/admin/requests"
                 className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[12px] font-semibold"
                 style={{
                   border: '1px solid #e2e8f0',

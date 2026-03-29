@@ -1,3 +1,5 @@
+//runsan-offera/apps/web/app/(dashboard)/layout.tsx
+
 'use client';
 
 import { useEffect } from 'react';
@@ -21,13 +23,10 @@ export default function DashboardLayout({
 
   useEffect(() => {
     // Only redirect if we ARE NOT loading AND we ARE NOT authenticated
-    if (isLoading === false && isAuthenticated === false) {
+    if (!isLoading && !isAuthenticated) {
       router.replace('/login'); // Use replace so they can't go 'back'
     }
   }, [isAuthenticated, isLoading, router]);
-
-  // If not loading and not authenticated, return null while the useEffect handles the redirect
-  if (!isAuthenticated) return null;
 
   /** Show loading spinner while auth state is resolving */
   if (isLoading) {
@@ -41,6 +40,9 @@ export default function DashboardLayout({
     );
   }
 
+    if (!isAuthenticated) return null;
+
+    
   return (
     <DashboardGate>
       <SidebarProvider
