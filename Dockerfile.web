@@ -16,6 +16,8 @@ WORKDIR /app
 COPY . .
 
 RUN turbo prune @app/web --docker
+
+
 FROM base AS builder
 WORKDIR /app
 
@@ -25,24 +27,25 @@ COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile
 
 COPY --from=pruner /app/out/full/ .
-
 ARG NEXT_PUBLIC_SERVER_API
 ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ARG NEXT_PUBLIC_BASE_RUMSAN_URL
+ARG NEXT_PUBLIC_BASE_RUMSAN_USER_DEP_URL
 
 ENV NEXT_PUBLIC_SERVER_API=$NEXT_PUBLIC_SERVER_API
 ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ENV NEXT_PUBLIC_BASE_RUMSAN_URL=$NEXT_PUBLIC_BASE_RUMSAN_URL
+ENV NEXT_PUBLIC_BASE_RUMSAN_USER_DEP_URL=$NEXT_PUBLIC_BASE_RUMSAN_USER_DEP_URL
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN pnpm --filter @app/web run build
-
 
 FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
@@ -50,15 +53,129 @@ RUN addgroup --system --gid 1001 nodejs \
  && adduser  --system --uid 1001 nextjs
 
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
-
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
-
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 
 USER nextjs
+
 CMD ["node", "apps/web/server.js"]
 
 
+#////////////start///////////////////
+#it just commands to clear the cache and rebuild the image without using cache. You can run these commands in your terminal to achieve that.
+# # Stop everything
+# docker compose down
+
+# # Remove the specific cached images
+# docker rmi rumsan-offera-api rumsan-offera-web 2>/dev/null
+
+# # Clear ALL build cache
+# docker builder prune -af
+
+# # Now rebuild to api
+# docker compose build --no-cache api
+
+# # Now rebuild to web
+#docker compose build --no-cache web
+
+##Then start everything:
+#docker compose up       or in detached mode: docker compose up -d
+#////////////END /////////////////
+
+
+# #                V2 with detailed comments and best practices for Next.js in Docker
+# # =============================================================================
+# # Dockerfile.web — place at MONOREPO ROOT
+# # Build: docker compose build web
+# # NEXT_PUBLIC_* vars are baked into the JS bundle at BUILD TIME.
+# # They MUST be passed as build args — runtime env vars have no effect.
+# # =============================================================================
+
+# # ── STAGE 1: base ─────────────────────────────────────────────────────────────
+# FROM node:22-alpine AS base
+
+# ENV PNPM_HOME="/pnpm"
+# ENV PATH="$PNPM_HOME:$PATH"
+
+# # No openssl needed — Next.js does not use Prisma
+# RUN apk update && apk add --no-cache libc6-compat
+
+# RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
+
+# RUN pnpm add -g turbo@^2
+
+
+# # ── STAGE 2: pruner ───────────────────────────────────────────────────────────
+# # Same concept as Dockerfile.api but scoped to @app/web.
+# # A change to apps/api will NOT appear in this pruned lockfile.
+# FROM base AS pruner
+# WORKDIR /app
+
+# COPY . .
+
+# RUN turbo prune @app/web --docker
+
+
+# # ── STAGE 3: builder ──────────────────────────────────────────────────────────
+# FROM base AS builder
+# WORKDIR /app
+
+# COPY --from=pruner /app/out/json/ .
+# COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+
+# RUN pnpm install --frozen-lockfile
+
+# COPY --from=pruner /app/out/full/ .
+
+# # NEXT_PUBLIC_* vars must be declared as ARG then ENV.
+# # ARG receives the value from --build-arg at docker build time.
+# # ENV makes it visible to the next build process (webpack bakes it into bundle).
+# # If you only pass these at docker run time they will be undefined in the browser.
+# ARG NEXT_PUBLIC_SERVER_API
+# ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+# ARG NEXT_PUBLIC_BASE_RUMSAN_URL
+# ARG NEXT_PUBLIC_BASE_RUMSAN_USER_DEP_URL
+
+# ENV NEXT_PUBLIC_SERVER_API=$NEXT_PUBLIC_SERVER_API
+# ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
+# ENV NEXT_PUBLIC_BASE_RUMSAN_URL=$NEXT_PUBLIC_BASE_RUMSAN_URL
+# ENV NEXT_PUBLIC_BASE_RUMSAN_USER_DEP_URL=$NEXT_PUBLIC_BASE_RUMSAN_USER_DEP_URL
+
+# # Disable Next.js telemetry pings during CI/CD builds
+# ENV NEXT_TELEMETRY_DISABLED=1
+
+# RUN pnpm --filter @app/web run build
+
+
+# # ── STAGE 4: runner (final production image) ──────────────────────────────────
+# # With output: 'standalone', Next.js produces three things:
+# #   .next/standalone/  → self-contained Node.js server + minimal node_modules
+# #   .next/static/      → compiled client-side JS/CSS
+# #   public/            → static assets (favicon, robots.txt, etc.)
+# # No full node_modules needed — standalone includes only what's required.
+# FROM node:22-alpine AS runner
+# WORKDIR /app
+
+# ENV NODE_ENV=production
+# ENV NEXT_TELEMETRY_DISABLED=1
+
+# # Next.js standalone server reads PORT and HOSTNAME at startup.
+# # HOSTNAME=0.0.0.0 is required — without it Node binds to 127.0.0.1 (container
+# # loopback only) and no external traffic can reach it.
+# ENV PORT=3000
+# ENV HOSTNAME="0.0.0.0"
+
+# RUN addgroup --system --gid 1001 nodejs \
+#  && adduser  --system --uid 1001 nextjs
+
+# COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+# COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+# COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
+
+# USER nextjs
+
+# # server.js is auto-generated by Next.js when output: 'standalone' is configured
+# CMD ["node", "apps/web/server.js"]
 
 
 
@@ -67,10 +184,7 @@ CMD ["node", "apps/web/server.js"]
 
 
 
-
-
-
-
+#              V1  initial  but can reference how to do 
 # # =============================================================================
 # # Dockerfile.web
 # # Place at: rumsan-offera/Dockerfile.web

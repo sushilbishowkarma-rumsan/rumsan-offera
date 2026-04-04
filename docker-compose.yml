@@ -1,24 +1,4 @@
 services:
-  # db:
-  #   image: postgres:16-alpine
-  #   container_name: offera-db
-  #   restart: unless-stopped
-  #   environment:
-  #     POSTGRES_USER: ${POSTGRES_USER:-offera}
-  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
-  #     POSTGRES_DB: ${POSTGRES_DB:-offera_db}
-  #     DATABASE_URL: postgres://${POSTGRES_USER:-offera}:${POSTGRES_PASSWORD:-secret}@db:5432/${POSTGRES_DB:-offera_db}
-
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   ports:
-  #     - '5432:5432'
-  #   healthcheck:
-  #     test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-offera}']
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-
   # ---------------------------------------------------------------------------
   # NestJS API
   # ---------------------------------------------------------------------------
@@ -33,9 +13,6 @@ services:
     restart: unless-stopped
     env_file:
       - ./apps/api/.env.production # never commit this file
-    # depends_on:
-    #   db:
-    #     condition: service_healthy
     ports:
       - '${API_PORT:-4001}:4001' # remove in prod — reverse proxy handles this
 
@@ -65,8 +42,6 @@ services:
 secrets:
   github_token:
     environment: GITHUB_TOKEN
-volumes:
-  pgdata:
 
 
 
