@@ -1,0 +1,272 @@
+# =============================================================================
+# Build from monorepo root: docker build -f Dockerfile.api -t offera-api .
+# =============================================================================
+
+FROM node:22-alpine AS base
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+RUN apk update && apk add --no-cache libc6-compat openssl
+
+RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
+
+RUN pnpm add -g turbo@^2
+
+
+FROM base AS pruner
+WORKDIR /app
+
+COPY . .
+
+RUN turbo prune @app/api --docker
+
+FROM base AS builder
+WORKDIR /app
+
+
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+
+RUN --mount=type=secret,id=github_token \
+    sh -c ' \
+      TOKEN=$(cat /run/secrets/github_token) && \
+      echo "Token length: ${#TOKEN}" && \
+      echo "Token prefix: $(echo $TOKEN | cut -c1-10)" && \
+      echo "@rumsan:registry=https://npm.pkg.github.com/" > .npmrc && \
+      echo "//npm.pkg.github.com/:_authToken=${TOKEN}" >> .npmrc && \
+      pnpm install --frozen-lockfile && \
+      rm -f .npmrc \
+    '
+
+COPY --from=pruner /app/out/full/ .
+
+RUN pnpm --filter @app/api run build
+
+
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN apk add --no-cache openssl
+
+RUN addgroup --system --gid 1001 nodejs \
+ && adduser  --system --uid 1001 nestjs
+
+
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+
+RUN --mount=type=secret,id=github_token \
+    sh -c ' \
+      TOKEN=$(cat /run/secrets/github_token) && \
+      echo "Token length: ${#TOKEN}" && \
+      echo "Token prefix: $(echo $TOKEN | cut -c1-10)" && \
+      echo "@rumsan:registry=https://npm.pkg.github.com/" > .npmrc && \
+      echo "//npm.pkg.github.com/:_authToken=${TOKEN}" >> .npmrc && \
+      pnpm install --frozen-lockfile && \
+      rm -f .npmrc \
+    '
+    
+
+# Copy prisma schema first so generate can find it
+COPY --from=pruner /app/out/full/apps/api/prisma ./apps/api/prisma
+
+# Generate prisma client in the runner stage
+RUN npx prisma generate --schema=./apps/api/prisma/schema.prisma
+
+
+COPY --from=builder --chown=nestjs:nodejs /app/apps/api/dist ./apps/api/dist
+
+COPY --from=builder --chown=nestjs:nodejs /app/apps/api/prisma ./apps/api/prisma
+
+USER nestjs
+
+CMD ["node", "apps/api/dist/src/main"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # =============================================================================
+# # Dockerfile.api
+# # Place at: rumsan-offera/Dockerfile.api
+# # Build from monorepo root: docker build -f Dockerfile.api -t offera-api .
+# # =============================================================================
+
+
+# # ─────────────────────────────────────────────────────────────────────────────
+# # STAGE 1 · base
+# #
+# # WHY Alpine? Smallest production-grade Linux (~5 MB base). We add libc6-compat
+# # because some native Node addons (including Prisma's query engine) expect the
+# # GNU libc interface which Alpine (musl-based) doesn't ship by default.
+# # openssl is required by Prisma at both build and runtime.
+# #
+# # WHY corepack? It is Node's built-in package manager version manager.
+# # Using it avoids a separate `npm install -g pnpm` step and guarantees
+# # the exact version from your root package.json (pnpm@10.30.3).
+# #
+# # WHY install turbo globally? turbo prune must run in Stage 2 before any
+# # source code is filtered. Installing it once in base means Stages 2, 3, 4
+# # all inherit it without repeating the install.
+# # ─────────────────────────────────────────────────────────────────────────────
+# FROM node:22-alpine AS base
+
+# RUN apk update && apk add --no-cache libc6-compat openssl
+
+# # Pin to your exact packageManager from root package.json
+# RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
+
+# # Pin to the major version of turbo from your root devDependencies (^2.x)
+# RUN pnpm add -g turbo@^2
+
+
+# # ─────────────────────────────────────────────────────────────────────────────
+# # STAGE 2 · pruner
+# #
+# # PURPOSE: Isolate only the files @app/api needs from the entire monorepo.
+# #
+# # turbo prune @app/api --docker reads the workspace dependency graph and
+# # produces two output folders inside /app/out/:
+# #
+# #   out/json/           ← package.json files ONLY (no source code)
+# #                         includes root, apps/api, and any packages/* it uses
+# #   out/pnpm-lock.yaml  ← pruned lockfile (only @app/api's dependency subset)
+# #   out/full/           ← full source code for the same set of packages
+# #
+# # WHY split json vs full?
+# #   Docker caches each RUN/COPY instruction as a separate layer.
+# #   By copying json/ first and running pnpm install BEFORE copying the source,
+# #   the install layer is only invalidated when package.json or the lockfile
+# #   changes — NOT when you edit a .ts file. This is the single biggest
+# #   build-time optimisation in this entire Dockerfile.
+# #
+# # WHY does this help the web image?
+# #   turbo prune scopes the lockfile to @app/api only. A change to apps/web
+# #   will NOT appear in this pruned lockfile, so it will NOT bust this cache.
+# #   The two images are completely independent of each other.
+# # ─────────────────────────────────────────────────────────────────────────────
+# FROM base AS pruner
+# WORKDIR /app
+
+# # Copy everything so turbo can read the full workspace graph
+# COPY . .
+
+# # @app/api must match "name" in apps/api/package.json exactly
+# RUN turbo prune @app/api --docker
+
+
+# # ─────────────────────────────────────────────────────────────────────────────
+# # STAGE 3 · builder
+# #
+# # PURPOSE: Install dependencies and compile TypeScript → dist/
+# #
+# # Phase A (dependency install):
+# #   Copy only package.json files + lockfile → run pnpm install
+# #   This layer is cached until dependencies change.
+# #
+# # Phase B (source + build):
+# #   Copy full source → run turbo build
+# #   Your turbo.json has: "build" dependsOn ["^build", "db:generate"]
+# #   Your apps/api build script is: "prisma generate && nest build"
+# #   So pnpm --filter @app/api run build will:
+# #     1. prisma generate  → create the typed Prisma client
+# #     2. nest build       → tsc compile → apps/api/dist/
+# # ─────────────────────────────────────────────────────────────────────────────
+# FROM base AS builder
+# WORKDIR /app
+
+# # ── Phase A ──────────────────────────────────────────────────────────────────
+# # out/json/ contains the pruned package.json tree (no source).
+# # Copying it before pnpm install lets Docker cache the install layer.
+# COPY --from=pruner /app/out/json/ .
+# COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+
+# # --frozen-lockfile: fail loudly if lockfile is stale (prevents silent
+# # dependency drift between dev and production).
+# RUN pnpm install --frozen-lockfile
+
+# # ── Phase B ──────────────────────────────────────────────────────────────────
+# COPY --from=pruner /app/out/full/ .
+
+# # Runs: prisma generate → nest build  (as defined in apps/api/package.json)
+# RUN pnpm --filter @app/api run build
+
+
+# # ─────────────────────────────────────────────────────────────────────────────
+# # STAGE 4 · runner  (the actual production image)
+# #
+# # PURPOSE: The leanest image that can RUN the app — nothing more.
+# #
+# # We start fresh from base (not from builder) so TypeScript, turbo,
+# # source .ts files, test files, and devDependencies are NOT in this image.
+# #
+# # We install ONLY production dependencies (--prod flag) from the same pruned
+# # package.json files. This is cleaner than copying node_modules from builder
+# # because builder's node_modules includes devDependencies.
+# #
+# # Security: we run as a non-root user. Running as root inside a container
+# # is a widespread security anti-pattern — if a vulnerability allows container
+# # escape, root inside = root outside.
+# # ─────────────────────────────────────────────────────────────────────────────
+# FROM base AS runner
+# WORKDIR /app
+
+# ENV NODE_ENV=production
+
+# # openssl required by Prisma's query engine at runtime
+# RUN apk add --no-cache openssl
+
+# # Non-root user (same convention used by Vercel's official Next.js Docker example)
+# RUN addgroup --system --gid 1001 nodejs \
+#  && adduser  --system --uid 1001 nestjs
+
+# # Install production-only dependencies from the pruned package.json set.
+# # --prod excludes everything in devDependencies (TypeScript, ESLint, Jest, etc.)
+# COPY --from=pruner /app/out/json/ .
+# COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+# RUN pnpm install --frozen-lockfile --prod
+
+# # Copy compiled output from builder
+# COPY --from=builder --chown=nestjs:nodejs /app/apps/api/dist ./apps/api/dist
+
+# # Copy Prisma schema so the client can find its engine and migrations can run
+# COPY --from=builder --chown=nestjs:nodejs /app/apps/api/prisma ./apps/api/prisma
+
+# USER nestjs
+
+# # No EXPOSE: port mapping is done at runtime by the orchestration layer
+# # (docker run -p / docker-compose ports / ECS task definition / k8s Service).
+# # Hardcoding EXPOSE creates false expectations and port conflicts.
+
+# # Full path because WORKDIR is /app (not /app/apps/api).
+# # Matches "start:prod": "node dist/main" in apps/api/package.json
+# CMD ["node", "apps/api/dist/main"]

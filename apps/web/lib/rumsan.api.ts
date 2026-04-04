@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // export const rumsanApi = axios.create({
-//   baseURL: `${process.env.NEXT_PUBLIC_SERVER_API}/api/v1`,
+//   baseURL: `${process.env.NEXT_PUBLIC_SERVER_API}`,
 // });
 export const employeeApi = axios.create({ baseURL: process.env.NEXT_PUBLIC_BASE_RUMSAN_URL });
 export const departmentApi = axios.create({ baseURL: process.env.NEXT_PUBLIC_BASE_RUMSAN_USER_DEP_URL });

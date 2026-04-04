@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import type { LeaveBalance, LeaveRequest } from '@/lib/types';
 
 // ─── Recent Leave Requests ───────────────────────────────────────────────────
-// Backend endpoint: GET /api/v1/leaverequests/employee/:employeeId
+// Backend endpoint: GET /leaverequests/employee/:employeeId
 // Your controller already has this: @Get('employee/:id')
 
 export function useRecentLeaveRequests(

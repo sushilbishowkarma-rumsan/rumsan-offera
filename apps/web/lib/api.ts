@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_SERVER_API}/api/v1`,
+  baseURL: `${process.env.NEXT_PUBLIC_SERVER_API}`,
 });
 
 // Attach JWT token to every request

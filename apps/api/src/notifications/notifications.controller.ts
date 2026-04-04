@@ -9,7 +9,7 @@ import {
   DefaultValuePipe,
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
-import { JwtAuthGuard } from 'src/auth/guards/roles.guard';
+import { JwtAuthGuard } from '../auth/guards/roles.guard';
 
 @Controller('notifications')
 export class NotificationsController {

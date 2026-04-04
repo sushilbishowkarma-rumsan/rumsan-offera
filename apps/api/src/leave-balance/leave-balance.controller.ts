@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { LeaveBalanceService } from './leave-balance.service';
 import type { Response } from 'express';
-import { JwtAuthGuard } from 'src/auth/guards/roles.guard';
+import { JwtAuthGuard } from '../auth/guards/roles.guard';
 import {
   SetEmployeeLeaveQuotaDto,
   SetEmployeeLeaveQuotaBulkDto,

@@ -1,0 +1,217 @@
+
+FROM node:22-alpine AS base
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+RUN apk update && apk add --no-cache libc6-compat
+
+RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
+
+RUN pnpm add -g turbo@^2
+
+FROM base AS pruner
+WORKDIR /app
+
+COPY . .
+
+RUN turbo prune @app/web --docker
+FROM base AS builder
+WORKDIR /app
+
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+
+RUN pnpm install --frozen-lockfile
+
+COPY --from=pruner /app/out/full/ .
+
+ARG NEXT_PUBLIC_SERVER_API
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+
+ENV NEXT_PUBLIC_SERVER_API=$NEXT_PUBLIC_SERVER_API
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
+
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN pnpm --filter @app/web run build
+
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+RUN addgroup --system --gid 1001 nodejs \
+ && adduser  --system --uid 1001 nextjs
+
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
+
+USER nextjs
+CMD ["node", "apps/web/server.js"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # =============================================================================
+# # Dockerfile.web
+# # Place at: rumsan-offera/Dockerfile.web
+# # Build from monorepo root:
+# #   docker build \
+# #     --build-arg NEXT_PUBLIC_SERVER_API=https://api.yourdomain.com \
+# #     --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-client-id \
+# #     -f Dockerfile.web -t offera-web .
+# #
+# # PREREQUISITE: apps/web/next.config.mjs must have output: 'standalone'
+# # at the TOP LEVEL (not inside typescript: {}).
+# # =============================================================================
+
+
+# # ─────────────────────────────────────────────────────────────────────────────
+# # STAGE 1 · base  (identical reasoning to Dockerfile.api)
+# # No openssl needed here — Next.js doesn't use Prisma.
+# # ─────────────────────────────────────────────────────────────────────────────
+# FROM node:22-alpine AS base
+
+# RUN apk update && apk add --no-cache libc6-compat
+
+# RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
+
+# RUN pnpm add -g turbo@^2
+
+
+# # ─────────────────────────────────────────────────────────────────────────────
+# # STAGE 2 · pruner
+# #
+# # Same concept as Dockerfile.api.
+# # @app/web must match "name" in apps/web/package.json exactly.
+# # A change to apps/api will NOT appear in this pruned lockfile and will NOT
+# # bust this image's cache.
+# # ─────────────────────────────────────────────────────────────────────────────
+# FROM base AS pruner
+# WORKDIR /app
+
+# COPY . .
+
+# RUN turbo prune @app/web --docker
+
+
+# # ─────────────────────────────────────────────────────────────────────────────
+# # STAGE 3 · builder
+# #
+# # PURPOSE: Install dependencies and run next build.
+# #
+# # CRITICAL — NEXT_PUBLIC_* variables:
+# #   In your turbo.json, "env" lists NEXT_PUBLIC_SERVER_API and
+# #   NEXT_PUBLIC_GOOGLE_CLIENT_ID. These are compiled into the browser JS
+# #   bundle by Next.js webpack at build time. They are NOT read from the
+# #   environment at container startup — the bundle is already built by then.
+# #
+# #   The correct flow:
+# #     ARG  → receives the value from --build-arg at docker build time
+# #     ENV  → makes it visible to the next build process
+# #
+# #   If you only pass these at docker run time (or in docker-compose
+# #   environment:) they will be undefined in the browser. This is one of
+# #   the most common Next.js Docker mistakes.
+# # ─────────────────────────────────────────────────────────────────────────────
+# FROM base AS builder
+# WORKDIR /app
+
+# # ── Phase A ──────────────────────────────────────────────────────────────────
+# COPY --from=pruner /app/out/json/ .
+# COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+
+# RUN pnpm install --frozen-lockfile
+
+# # ── Phase B ──────────────────────────────────────────────────────────────────
+# COPY --from=pruner /app/out/full/ .
+
+# # Receive NEXT_PUBLIC_* build args (names from your turbo.json "env" array)
+# ARG NEXT_PUBLIC_SERVER_API
+# ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+
+# # Expose them to the Next.js build process
+# ENV NEXT_PUBLIC_SERVER_API=$NEXT_PUBLIC_SERVER_API
+# ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
+
+# # Disable Next.js telemetry — no analytics pings during CI/CD builds
+# ENV NEXT_TELEMETRY_DISABLED=1
+
+# # Your apps/web build script is simply "next build"
+# RUN pnpm --filter @app/web run build
+
+
+# # ─────────────────────────────────────────────────────────────────────────────
+# # STAGE 4 · runner  (the actual production image)
+# #
+# # PURPOSE: Run the Next.js app with the absolute minimum footprint.
+# #
+# # With output: 'standalone', Next.js creates three things we need:
+# #
+# #   .next/standalone/      → A self-contained Node.js server. Includes server.js
+# #                            and a minimal node_modules with only runtime deps.
+# #                            No TypeScript, no build tools, no source files.
+# #
+# #   .next/static/          → Compiled client-side JS/CSS chunks, fonts, etc.
+# #                            Must be placed at .next/static relative to where
+# #                            server.js expects to find it.
+# #
+# #   public/                → Static assets (favicon, images, robots.txt, etc.)
+# #
+# # That is all. We do NOT need package.json, pnpm, or node_modules in this stage.
+# # The standalone server already has its own minimal node_modules baked in.
+# #
+# # HOSTNAME=0.0.0.0 is required. By default Node.js servers bind to 127.0.0.1
+# # (localhost). Inside a container, localhost is the container's own loopback —
+# # traffic from outside the container (the host, other containers, a load
+# # balancer) cannot reach it. 0.0.0.0 means "accept connections on all
+# # network interfaces", which is what you need in a container.
+# # ─────────────────────────────────────────────────────────────────────────────
+# FROM node:22-alpine AS runner
+# WORKDIR /app
+
+# ENV NODE_ENV=production
+# ENV NEXT_TELEMETRY_DISABLED=1
+
+# # Next.js standalone server reads PORT and HOSTNAME at startup
+# ENV PORT=3000
+# ENV HOSTNAME="0.0.0.0"
+
+# RUN addgroup --system --gid 1001 nodejs \
+#  && adduser  --system --uid 1001 nextjs
+
+# # 1. standalone/ is the self-contained server (includes its own node_modules)
+# COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+
+# # 2. static assets — must sit at this exact path relative to the server root
+# COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+
+# # 3. public folder (favicon, og-images, robots.txt, etc.)
+# COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
+
+# USER nextjs
+
+# # No EXPOSE — same reasoning as Dockerfile.api
+
+# # server.js is auto-generated by Next.js when output: 'standalone' is configured.
+# # It reads PORT and HOSTNAME from the environment (set above).
+# CMD ["node", "apps/web/server.js"]

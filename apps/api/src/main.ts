@@ -9,10 +9,11 @@ async function bootstrap() {
     forceCloseConnections: true,
   });
   // 1. Global Prefix (Good practice for API versioning)
-  app.setGlobalPrefix('api/v1');
+  // app.setGlobalPrefix('api/v1');
 
   app.enableCors({
-    origin: [process.env.FRONTEND_URL, 'http://localhost:3000'],
+    origin: [process.env.APP_URL, 'http://localhost:3000'],
+    // origin: [process.env.APP_URL],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
@@ -34,6 +35,6 @@ async function bootstrap() {
   const port = process.env.PORT || 4001;
 
   await app.listen(port);
-  console.log(`🚀 Application is running on: http://localhost:${port}/api/v1`);
+  console.log(`🚀 Application is running on: http://localhost:${port}`);
 }
 bootstrap();

@@ -19,7 +19,7 @@ import {
   UpdateLeavePolicyDto,
 } from './dto/leave-policy.dto';
 import { LeavePolicyModel } from './leave-policy.model';
-import { JwtAuthGuard } from 'src/auth/guards/roles.guard';
+import { JwtAuthGuard } from '../auth/guards/roles.guard';
 
 @Controller('leave-policies')
 @UseGuards(JwtAuthGuard)

@@ -1,0 +1,50 @@
+# ─── node_modules ───────────────────────────────────────────────────────────
+# Never send host node_modules to the Docker daemon. The Dockerfile runs
+# pnpm install inside the container. Host node_modules may have binaries
+# compiled for the wrong OS/CPU architecture.
+**/node_modules
+
+# ─── Build artifacts ─────────────────────────────────────────────────────────
+# Generated inside the container during the build stage. Copying from host
+# would overwrite the container's own build output.
+**/.next
+**/dist
+**/.turbo
+**/out
+
+# ─── Environment / secrets ───────────────────────────────────────────────────
+# NEVER bake .env files into an image — they contain secrets.
+# Pass env vars at runtime via docker run --env-file, ECS task definitions,
+# Kubernetes secrets, etc.
+**/.env
+**/.env.*
+# Allow the example templates (they contain no real secrets)
+!**/.env.example
+
+# ─── Version control ─────────────────────────────────────────────────────────
+.git
+.gitignore
+
+# ─── Test files ──────────────────────────────────────────────────────────────
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+**/test
+**/coverage
+
+# ─── Editor / OS ─────────────────────────────────────────────────────────────
+.DS_Store
+.vscode
+.idea
+*.swp
+
+.env.production
+# ─── Docs / misc ─────────────────────────────────────────────────────────────
+README.md
+docs/
+*.log
+
+# # ─── npm config ─────────────────────────────────────────────────────────────
+# # .npmrc may contain auth tokens or private registry URLs. Never bake these into
+# .npmrc
+# **/.npmrc

@@ -251,7 +251,7 @@ User Login
 │  Next.js Login  │
 │  /login page    │
 └────────┬────────┘
-         │ POST /api/v1/auth/google
+         │ POST /auth/google
          ↓
 ┌─────────────────────────┐
 │       NestJS API        │
@@ -397,7 +397,7 @@ pnpm dev
 | Service | URL |
 |---|---|
 | **Frontend (Next.js)** | http://localhost:3000 |
-| **Backend (NestJS)** | http://localhost:4001/api/v1 |
+| **Backend (NestJS)** | http://localhost:4001 |
 
 ---
 

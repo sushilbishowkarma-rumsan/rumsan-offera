@@ -1,4 +1,3 @@
-
 //runsan-offera/apps/web/app/layout.tsx
 
 import type { Metadata, Viewport } from 'next';
