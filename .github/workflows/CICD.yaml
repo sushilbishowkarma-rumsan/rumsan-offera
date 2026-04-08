@@ -1,0 +1,68 @@
+name: CICD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME_API: rumsan/offera-api
+  IMAGE_NAME_WEB: rumsan/offera-web
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - app: api
+            dockerfile: apps/api/Dockerfile.api
+            image: workops-api
+          - app: web
+            dockerfile: apps/web/Dockerfile.web
+            image: workops-web
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+
+      - name: Import secrets from vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ secrets.VAULT_URL }}
+          token: ${{ secrets.VAULT_TOKEN }}
+          secrets: |
+            github/data/general/docker/rumsan username | DOCKERHUB_USERNAME ;
+            github/data/general/docker/rumsan password | DOCKERHUB_TOKEN ;
+            github/data/rumsan/offera env_api | ENV_API ;
+            github/data/rumsan/offera env_web | ENV_WEB ;
+
+      - name: Create environment files
+        run: |
+          mkdir -p apps/api apps/web
+          echo "${ENV_API}" > apps/api/.env
+          echo "${ENV_WEB}" > apps/web/.env
+          
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3        
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.image }}:latest
+            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,scope=${{ matrix.app }},mode=max
