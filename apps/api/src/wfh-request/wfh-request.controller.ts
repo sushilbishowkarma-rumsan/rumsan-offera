@@ -115,4 +115,10 @@ export class WfhRequestController {
   deleteRequest(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.wfhRequestService.deleteRequest(id, req.user.id);
   }
+
+  @Delete('admin/:id')
+  @UseGuards(JwtAuthGuard)
+  async adminDeleteRequest(@Param('id') id: string) {
+    return this.wfhRequestService.adminDeleteRequest(id);
+  }
 }

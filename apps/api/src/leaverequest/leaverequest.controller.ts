@@ -143,4 +143,10 @@ export class LeaverequestController {
   ) {
     return this.leaverequestService.updateRequest(id, req.user.id, dto);
   }
+
+  @Delete('admin/:id')
+  @UseGuards(JwtAuthGuard)
+  async adminDeleteRequest(@Param('id') id: string) {
+    return this.leaverequestService.adminDeleteRequest(id);
+  }
 }

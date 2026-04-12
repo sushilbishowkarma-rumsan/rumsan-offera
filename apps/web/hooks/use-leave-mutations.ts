@@ -188,6 +188,29 @@ export const useDeleteLeaveRequest = () => {
   });
 };
 
+export const useAdminDeleteLeaveRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/leaverequests/admin/${id}`);
+      return id;
+    },
+    onSuccess: () => {
+      toast.success('Leave request deleted.');
+      queryClient.invalidateQueries({ queryKey: ['admin-all-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-leave-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['recent-activity'] });
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || 'Failed to delete request.';
+      toast.error('Delete failed', { description: message });
+    },
+  });
+};
+
 export const useCreateWfhRequest = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -273,6 +296,29 @@ export const useDeleteWfhRequest = () => {
       queryClient.invalidateQueries({
         queryKey: ['wfh-history', variables.employeeId],
       });
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || 'Failed to delete WFH request.';
+      toast.error('Delete failed', { description: message });
+    },
+  });
+};
+
+export const useAdminDeleteWfhRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/wfh-requests/admin/${id}`);
+      return id;
+    },
+    onSuccess: () => {
+      toast.success('WFH request deleted.');
+      queryClient.invalidateQueries({ queryKey: ['admin-all-wfh-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-wfh-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['recent-activity'] });
     },
     onError: (error: any) => {
       const message =

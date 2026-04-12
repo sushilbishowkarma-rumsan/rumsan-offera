@@ -35,6 +35,7 @@ import {
   XCircle,
   Users,
   FileText,
+  Trash2,
   Laptop,
   Briefcase,
   Download,
@@ -42,7 +43,7 @@ import {
   X,
   ChevronRight,
 } from 'lucide-react';
-
+import { useAdminDeleteLeaveRequest, useAdminDeleteWfhRequest } from '@/hooks/use-leave-mutations';
 // ─── Month / Year constants ───────────────────────────────────────────────────
 const MONTHS = [
   { value: '1', label: 'January' },
@@ -810,6 +811,92 @@ function Paginator({
   );
 }
 
+// Add this component in the file, before AdminRequestsPage
+
+function AdminDeleteModal({
+  req,
+  onConfirm,
+  onCancel,
+  isPending,
+}: {
+  req: any;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isPending: boolean;
+}) {
+  const isWfh = req.requestType === 'wfh';
+  return (
+     <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      style={{ background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(3px)' }}
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl overflow-hidden"
+        style={{
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+        }}
+      >
+        <div className="p-5">
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-xl mb-3"
+            style={{ background: '#fff1f2' }}
+          >
+            <Trash2 className="h-5 w-5" style={{ color: '#e11d48' }} />
+          </div>
+          <h3
+            className="text-[14px] font-bold mb-1"
+            style={{ color: '#0f172a' }}
+          >
+            Delete {isWfh ? 'WFH' : 'Leave'} Request?
+          </h3>
+          <p
+            className="text-[12px] leading-relaxed"
+            style={{ color: '#475569' }}
+          >
+            You are permanently deleting the{' '}
+            <span className="font-semibold">
+              {isWfh ? 'WFH' : req.leaveType?.charAt(0) + req.leaveType?.slice(1).toLowerCase()}
+            </span>{' '}
+            request for{' '}
+            <span className="font-semibold">
+              {req.employee?.name ?? req.employee?.email}
+            </span>
+            . This removes it from all views including the employee's history
+            and manager's queue. This cannot be undone.
+          </p>
+        </div>
+        <div className="flex gap-2 px-5 pb-5">
+          <button
+            onClick={onCancel}
+            disabled={isPending}
+            className="flex-1 rounded-xl py-2.5 text-[13px] font-semibold"
+            style={{
+              background: '#f8f9fc',
+              border: '1px solid #e2e8f0',
+              color: '#475569',
+              cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isPending}
+            className="flex-1 rounded-xl py-2.5 text-[13px] font-bold text-white disabled:opacity-60"
+            style={{
+              background: 'linear-gradient(135deg, #e11d48, #be123c)',
+              cursor: isPending ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {isPending ? 'Deleting…' : 'Delete Permanently'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function AdminRequestsPage() {
   const { user } = useAuth();
@@ -819,12 +906,15 @@ export default function AdminRequestsPage() {
   const { data: wfhRequests = [], isLoading: wfhLoading } = useAllWfhRequests();
 
   const isLoading = leaveLoading || wfhLoading;
+  const adminDeleteLeave = useAdminDeleteLeaveRequest();
+  const adminDeleteWfh = useAdminDeleteWfhRequest();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [requestTypeFilter, setRequestTypeFilter] = useState('all');
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
 
   // Pagination
   const [todayPage, setTodayPage] = useState(1);
@@ -836,6 +926,21 @@ export default function AdminRequestsPage() {
 
   const TODAY_PAGE_SIZE = 6;
   const ALL_PAGE_SIZE = 9;
+
+ const confirmAdminDelete = () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.requestType === 'wfh') {
+      adminDeleteWfh.mutate(deleteTarget.id, {
+        onSuccess: () => setDeleteTarget(null),
+      });
+    } else {
+      adminDeleteLeave.mutate(deleteTarget.id, {
+        onSuccess: () => setDeleteTarget(null),
+      });
+    }
+  };
+
+  const isDeleting = adminDeleteLeave.isPending || adminDeleteWfh.isPending;
 
   // Combine leave + WFH, sorted newest-first
   const allRequests = useMemo(() => {
@@ -934,6 +1039,14 @@ export default function AdminRequestsPage() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }}>
+      {deleteTarget && (
+        <AdminDeleteModal
+          req={deleteTarget}
+          onConfirm={confirmAdminDelete}
+          onCancel={() => setDeleteTarget(null)}
+          isPending={isDeleting}
+        />
+      )}
       <div className="flex flex-col gap-5 p-4 -mt-5 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         {/* ══ PAGE HEADER ══════════════════════════════════════════════════════ */}
         <div className="flex items-center justify-between">
@@ -1154,32 +1267,55 @@ export default function AdminRequestsPage() {
                       </span>
 
                       <StatusPill status={req.status} />
-
-                      <button
-                        type="button"
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all"
-                        style={{ background: '#f1f5f9', color: '#64748b' }}
-                        onMouseEnter={(e) => {
-                          (
-                            e.currentTarget as HTMLButtonElement
-                          ).style.background = '#eef2ff';
-                          (e.currentTarget as HTMLButtonElement).style.color =
-                            '#4f46e5';
-                        }}
-                        onMouseLeave={(e) => {
-                          (
-                            e.currentTarget as HTMLButtonElement
-                          ).style.background = '#f1f5f9';
-                          (e.currentTarget as HTMLButtonElement).style.color =
-                            '#64748b';
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedRequest(req);
-                        }}
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all"
+                          style={{ background: '#f1f5f9', color: '#64748b' }}
+                          onMouseEnter={(e) => {
+                            (
+                              e.currentTarget as HTMLButtonElement
+                            ).style.background = '#eef2ff';
+                            (e.currentTarget as HTMLButtonElement).style.color =
+                              '#4f46e5';
+                          }}
+                          onMouseLeave={(e) => {
+                            (
+                              e.currentTarget as HTMLButtonElement
+                            ).style.background = '#f1f5f9';
+                            (e.currentTarget as HTMLButtonElement).style.color =
+                              '#64748b';
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedRequest(req);
+                          }}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all"
+                          style={{ background: '#fff1f2', color: '#e11d48' }}
+                          onMouseEnter={(e) => {
+                            (
+                              e.currentTarget as HTMLButtonElement
+                            ).style.background = '#fecdd3';
+                          }}
+                          onMouseLeave={(e) => {
+                            (
+                              e.currentTarget as HTMLButtonElement
+                            ).style.background = '#fff1f2';
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteTarget(req);
+                          }}
+                          title="Delete request (Admin)"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })
@@ -1566,7 +1702,7 @@ export default function AdminRequestsPage() {
                             {formatDate(req.createdAt)}
                           </td>
 
-                          <td className="px-5 py-3.5">
+                          {/* <td className="px-5 py-3.5">
                             <button
                               type="button"
                               className="flex h-7 w-7 items-center justify-center rounded-lg transition-all"
@@ -1597,6 +1733,68 @@ export default function AdminRequestsPage() {
                             >
                               <Eye className="h-3.5 w-3.5" />
                             </button>
+                          </td> */}
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-1.5">
+                              {/* Eye / view button — unchanged */}
+                              <button
+                                type="button"
+                                className="flex h-7 w-7 items-center justify-center rounded-lg transition-all"
+                                style={{
+                                  background: '#f1f5f9',
+                                  color: '#64748b',
+                                }}
+                                onMouseEnter={(e) => {
+                                  (
+                                    e.currentTarget as HTMLButtonElement
+                                  ).style.background = '#eef2ff';
+                                  (
+                                    e.currentTarget as HTMLButtonElement
+                                  ).style.color = '#4f46e5';
+                                }}
+                                onMouseLeave={(e) => {
+                                  (
+                                    e.currentTarget as HTMLButtonElement
+                                  ).style.background = '#f1f5f9';
+                                  (
+                                    e.currentTarget as HTMLButtonElement
+                                  ).style.color = '#64748b';
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedRequest(req);
+                                }}
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </button>
+
+                              {/* ── ADD: Admin delete button ── */}
+                              <button
+                                type="button"
+                                className="flex h-7 w-7 items-center justify-center rounded-lg transition-all"
+                                style={{
+                                  background: '#fff1f2',
+                                  color: '#e11d48',
+                                }}
+                                onMouseEnter={(e) => {
+                                  (
+                                    e.currentTarget as HTMLButtonElement
+                                  ).style.background = '#fecdd3';
+                                }}
+                                onMouseLeave={(e) => {
+                                  (
+                                    e.currentTarget as HTMLButtonElement
+                                  ).style.background = '#fff1f2';
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteTarget(req);
+                                }}
+                                title="Delete request (Admin)"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );

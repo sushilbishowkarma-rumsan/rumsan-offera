@@ -219,7 +219,69 @@ export function useNotificationSocket(
       });
 
       playNotificationSound();
+
+      const type = notification.type;
+
+
+            // Manager received a new leave/WFH request from an employee
+      if (type === 'new_request') {
+        // Manager's approval queue
+        queryClient.invalidateQueries({
+          queryKey: ['manager-leave-requests', userId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['manager-wfh-requests', userId],
+        });
+        // Manager dashboard pending count
+        queryClient.invalidateQueries({
+          queryKey: ['manager-dashboard', userId],
+        });
+        // Admin sees all requests
+        queryClient.invalidateQueries({ queryKey: ['admin-all-requests'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-all-wfh-requests'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+        queryClient.invalidateQueries({ queryKey: ['recent-activity'] });
+      }
+
+      // Employee's leave was approved or rejected by manager
+      if (type === 'leave_approved' || type === 'leave_rejected') {
+        // Employee's own leave history page
+        queryClient.invalidateQueries({
+          queryKey: ['leave-history', userId],
+        });
+        // Employee's WFH history (in case it was a WFH approval)
+        queryClient.invalidateQueries({
+          queryKey: ['wfh-history', userId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['wfh-requests', userId],
+        });
+        // Employee dashboard stats (pending/approved counts)
+        queryClient.invalidateQueries({
+          queryKey: ['employee-dashboard', userId],
+        });
+        // Leave balance changes on approval (days deducted)
+        queryClient.invalidateQueries({
+          queryKey: ['leave-balances', userId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['leave-balances', 'employee', userId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['leave-balances', 'employee', userId, 'summary'],
+        });
+        // Calendar shows approved leaves
+        queryClient.invalidateQueries({ queryKey: ['calendar-leave-requests'] });
+        queryClient.invalidateQueries({ queryKey: ['calendar-wfh-requests'] });
+        // Admin and recent activity
+        queryClient.invalidateQueries({ queryKey: ['admin-all-requests'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+        queryClient.invalidateQueries({ queryKey: ['recent-activity'] });
+      }
+
     };
+
+     
 
     const handleUnreadCount = ({ count }: { count: number }) => {
       queryClient.setQueryData(notifKeys.unread(userId), count);

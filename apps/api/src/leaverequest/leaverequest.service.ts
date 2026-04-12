@@ -486,4 +486,27 @@ export class LeaverequestService {
     }
     return updated;
   }
+
+  // Add this method to LeaverequestService
+
+  async adminDeleteRequest(requestId: string): Promise<{ message: string }> {
+    const request = await this.prisma.leaveRequest.findUnique({
+      where: { id: requestId },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Leave request not found');
+    }
+
+    // Delete leaveDays first (child records), then the request
+    await this.prisma.leaveDay.deleteMany({
+      where: { leaveRequestId: requestId },
+    });
+
+    await this.prisma.leaveRequest.delete({
+      where: { id: requestId },
+    });
+
+    return { message: 'Leave request deleted successfully by admin' };
+  }
 }

@@ -1,3 +1,4 @@
+//rumsan-offera/apps/api/src/rsoffice/rsoffice.module.ts
 import { Global, Module } from '@nestjs/common';
 import { RsOfficeClient } from '@rumsan/user';
 

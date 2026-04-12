@@ -416,4 +416,20 @@ export class WfhRequestService {
       throw error;
     }
   }
+
+  async adminDeleteRequest(requestId: string): Promise<{ message: string }> {
+    const request = await this.prisma.wfhRequest.findUnique({
+      where: { id: requestId },
+    });
+
+    if (!request) {
+      throw new NotFoundException('WFH request not found');
+    }
+
+    await this.prisma.wfhRequest.delete({
+      where: { id: requestId },
+    });
+
+    return { message: 'WFH request deleted successfully by admin' };
+  }
 }
