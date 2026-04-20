@@ -24,15 +24,11 @@ COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
 RUN --mount=type=secret,id=github_token \
-    sh -c ' \
-      TOKEN=$(cat /run/secrets/github_token) && \
-      echo "Token length: ${#TOKEN}" && \
-      echo "Token prefix: $(echo $TOKEN | cut -c1-10)" && \
-      echo "@rumsan:registry=https://npm.pkg.github.com/" > .npmrc && \
-      echo "//npm.pkg.github.com/:_authToken=${TOKEN}" >> .npmrc && \
-      pnpm install --frozen-lockfile && \
-      rm -f .npmrc \
-    '
+    TOKEN=$(cat /run/secrets/github_token) && \
+    echo "@rumsan:registry=https://npm.pkg.github.com/" > .npmrc && \
+    echo "//npm.pkg.github.com/:_authToken=${TOKEN}" >> .npmrc && \
+    pnpm install --frozen-lockfile && \
+    rm -f .npmrc
 
 COPY --from=pruner /app/out/full/ .
 
@@ -52,21 +48,14 @@ COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
 RUN --mount=type=secret,id=github_token \
-    sh -c ' \
-      TOKEN=$(cat /run/secrets/github_token) && \
-      echo "Token length: ${#TOKEN}" && \
-      echo "Token prefix: $(echo $TOKEN | cut -c1-10)" && \
-      echo "@rumsan:registry=https://npm.pkg.github.com/" > .npmrc && \
-      echo "//npm.pkg.github.com/:_authToken=${TOKEN}" >> .npmrc && \
-      pnpm install --frozen-lockfile --prod && \
-      rm -f .npmrc \
-    '
+    TOKEN=$(cat /run/secrets/github_token) && \
+    echo "@rumsan:registry=https://npm.pkg.github.com/" > .npmrc && \
+    echo "//npm.pkg.github.com/:_authToken=${TOKEN}" >> .npmrc && \
+    pnpm install --frozen-lockfile --prod && \
+    rm -f .npmrc
 
 COPY --from=pruner /app/out/full/apps/api/prisma ./apps/api/prisma
-#RUN pnpm prisma generate --schema=./apps/api/prisma/schema.prisma
-# Use the prisma binary from the installed node_modules, not npx (which downloads latest)
-# --schema path is relative to WORKDIR (/app)
-#RUN ./node_modules/.bin/prisma generate --schema=./apps/api/prisma/schema.prisma
+
 RUN ./apps/api/node_modules/.bin/prisma generate --schema=./apps/api/prisma/schema.prisma
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/dist ./apps/api/dist
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/prisma ./apps/api/prisma
