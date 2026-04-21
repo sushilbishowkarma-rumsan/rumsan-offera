@@ -19,10 +19,10 @@ jobs:
         include:
           - app: api
             dockerfile: apps/api/Dockerfile.api
-            image: workops-api
+            image: offera-api
           - app: web
             dockerfile: apps/web/Dockerfile.web
-            image: workops-web
+            image: offera-web
 
     steps:
       - name: Checkout code
