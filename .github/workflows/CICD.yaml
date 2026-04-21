@@ -28,7 +28,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-
       - name: Import secrets from vault
         uses: hashicorp/vault-action@v3
         with:
@@ -37,6 +36,7 @@ jobs:
           secrets: |
             github/data/general/docker/rumsan username | DOCKERHUB_USERNAME ;
             github/data/general/docker/rumsan password | DOCKERHUB_TOKEN ;
+            github/data/rumsan/offera github_token | GITHUB_PKG_TOKEN ;
             github/data/rumsan/offera env_api | ENV_API ;
             github/data/rumsan/offera env_web | ENV_WEB ;
 
@@ -45,11 +45,9 @@ jobs:
           mkdir -p apps/api apps/web
           echo "${ENV_API}" > apps/api/.env
           echo "${ENV_WEB}" > apps/web/.env
-          GITHUB_TOKEN=$(grep '^GITHUB_TOKEN=' apps/api/.env | cut -d'=' -f2)
-          echo "GITHUB_TOKEN=${GITHUB_TOKEN}" >> $GITHUB_ENV
-          
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3        
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -67,6 +65,6 @@ jobs:
             ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.image }}:latest
             ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.image }}:${{ github.sha }}
           secrets: |
-            github_token=${{ env.GITHUB_TOKEN }}
+            github_token=${{ env.GITHUB_PKG_TOKEN }}
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,scope=${{ matrix.app }},mode=max
