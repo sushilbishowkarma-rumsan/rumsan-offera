@@ -9,6 +9,10 @@ RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
 
 RUN pnpm add -g turbo@^2
 
+
+# -------------------------
+# PRUNER
+# -------------------------
 FROM base AS pruner
 WORKDIR /app
 
@@ -17,6 +21,9 @@ COPY . .
 RUN turbo prune @app/api --docker
 
 
+# -------------------------
+# BUILDER
+# -------------------------
 FROM base AS builder
 WORKDIR /app
 
@@ -37,6 +44,9 @@ COPY --from=pruner /app/out/full/ .
 RUN pnpm --filter @app/api run build
 
 
+# -------------------------
+# RUNNER
+# -------------------------
 FROM base AS runner
 WORKDIR /app
 
@@ -44,12 +54,15 @@ ENV NODE_ENV=production
 
 RUN apk add --no-cache openssl
 
+# Create non-root user
 RUN addgroup --system --gid 1001 nodejs \
  && adduser  --system --uid 1001 nestjs
 
+# Copy dependency files
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
+# Install production deps with GitHub token
 RUN --mount=type=secret,id=github_token \
     sh -c ' \
       TOKEN=$(cat /run/secrets/github_token) && \
@@ -59,12 +72,24 @@ RUN --mount=type=secret,id=github_token \
       rm -f .npmrc \
     '
 
+# Copy Prisma schema
 COPY --from=pruner /app/out/full/apps/api/prisma ./apps/api/prisma
 
+# Generate Prisma client
 RUN ./apps/api/node_modules/.bin/prisma generate --schema=./apps/api/prisma/schema.prisma
 
+# Copy built app with correct ownership
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/dist ./apps/api/dist
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/prisma ./apps/api/prisma
+
+# Ensure dist is readable + writable (if needed)
+RUN chown -R nestjs:nodejs /app/apps/api/dist \
+ && chmod -R 775 /app/apps/api/dist
+
+# Create a proper writable directory (recommended)
+RUN mkdir -p /app/storage \
+ && chown -R nestjs:nodejs /app/storage \
+ && chmod -R 775 /app/storage
 
 USER nestjs
 
