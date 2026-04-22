@@ -25,9 +25,11 @@ RUN turbo prune @app/api --docker
 FROM base AS builder
 WORKDIR /app
 
+# Copy dependency graph first
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
+# Install deps
 RUN --mount=type=secret,id=github_token \
     sh -c 'TOKEN=$(cat /run/secrets/github_token) && \
     printf "@rumsan:registry=https://npm.pkg.github.com/\n" > .npmrc && \
@@ -35,11 +37,13 @@ RUN --mount=type=secret,id=github_token \
     pnpm install --frozen-lockfile && \
     rm -f .npmrc'
 
+# NOW copy full source (IMPORTANT FIX)
 COPY --from=pruner /app/out/full/ .
 
+# Build API
 RUN pnpm --filter @app/api run build
 
-# IMPORTANT: generate prisma in builder (correct layer)
+# Prisma generate (NOW schema exists)
 RUN pnpm --filter @app/api exec prisma generate \
   --schema=apps/api/prisma/schema.prisma
 
