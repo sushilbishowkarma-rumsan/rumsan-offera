@@ -25,7 +25,6 @@ RUN turbo prune @app/api --docker
 FROM base AS builder
 WORKDIR /app
 
-# 1. Copy dependency graph
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
@@ -36,14 +35,14 @@ RUN --mount=type=secret,id=github_token \
     pnpm install --frozen-lockfile && \
     rm -f .npmrc'
 
+# Full workspace
 COPY --from=pruner /app/out/full/ .
 
-COPY prisma ./prisma
-
+# Prisma is now correctly inside apps/api/prisma
 RUN pnpm --filter @app/api run build
 
 RUN pnpm --filter @app/api exec prisma generate \
-  --schema=prisma/schema.prisma
+  --schema=apps/api/prisma/schema.prisma
 
 
 # -------------------------
