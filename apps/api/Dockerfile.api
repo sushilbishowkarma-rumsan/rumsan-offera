@@ -3,10 +3,9 @@ FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
-RUN apk update && apk add --no-cache libc6-compat openssl
+RUN apk add --no-cache libc6-compat openssl
 
 RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
-
 RUN pnpm add -g turbo@^2
 
 
@@ -17,7 +16,6 @@ FROM base AS pruner
 WORKDIR /app
 
 COPY . .
-
 RUN turbo prune @app/api --docker
 
 
@@ -31,66 +29,43 @@ COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
 RUN --mount=type=secret,id=github_token \
-    sh -c ' \
-      TOKEN=$(cat /run/secrets/github_token) && \
-      printf "@rumsan:registry=https://npm.pkg.github.com/\n" > .npmrc && \
-      printf "//npm.pkg.github.com/:_authToken=%s\n" "$TOKEN" >> .npmrc && \
-      pnpm install --frozen-lockfile && \
-      rm -f .npmrc \
-    '
+    sh -c 'TOKEN=$(cat /run/secrets/github_token) && \
+    printf "@rumsan:registry=https://npm.pkg.github.com/\n" > .npmrc && \
+    printf "//npm.pkg.github.com/:_authToken=%s\n" "$TOKEN" >> .npmrc && \
+    pnpm install --frozen-lockfile && \
+    rm -f .npmrc'
 
 COPY --from=pruner /app/out/full/ .
 
 RUN pnpm --filter @app/api run build
 
+# IMPORTANT: generate prisma in builder (correct layer)
+RUN pnpm --filter @app/api exec prisma generate \
+  --schema=apps/api/prisma/schema.prisma
+
 
 # -------------------------
 # RUNNER
 # -------------------------
-FROM base AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 
 RUN apk add --no-cache openssl
 
-# Create non-root user
 RUN addgroup --system --gid 1001 nodejs \
- && adduser  --system --uid 1001 nestjs
+ && adduser --system --uid 1001 nestjs
 
-# Copy dependency files
-COPY --from=pruner /app/out/json/ .
-COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+# Copy ONLY production artifacts
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
-# Install production deps with GitHub token
-RUN --mount=type=secret,id=github_token \
-    sh -c ' \
-      TOKEN=$(cat /run/secrets/github_token) && \
-      printf "@rumsan:registry=https://npm.pkg.github.com/\n" > .npmrc && \
-      printf "//npm.pkg.github.com/:_authToken=%s\n" "$TOKEN" >> .npmrc && \
-      pnpm install --frozen-lockfile --prod && \
-      rm -f .npmrc \
-    '
-
-# Copy Prisma schema
-COPY --from=pruner /app/out/full/apps/api/prisma ./apps/api/prisma
-
-# Generate Prisma client
-RUN ./apps/api/node_modules/.bin/prisma generate --schema=./apps/api/prisma/schema.prisma
-
-# Copy built app with correct ownership
-COPY --from=builder --chown=nestjs:nodejs /app/apps/api/dist ./apps/api/dist
-COPY --from=builder --chown=nestjs:nodejs /app/apps/api/prisma ./apps/api/prisma
-
-# Ensure dist is readable + writable (if needed)
-RUN chown -R nestjs:nodejs /app/apps/api/dist \
- && chmod -R 775 /app/apps/api/dist
-
-# Create a proper writable directory (recommended)
-RUN mkdir -p /app/storage \
- && chown -R nestjs:nodejs /app/storage \
- && chmod -R 775 /app/storage
+RUN chown -R nestjs:nodejs /app
 
 USER nestjs
 
+# PURE runtime (NO prisma, NO npx, NO installs)
 CMD ["node", "apps/api/dist/src/main"]
