@@ -37,8 +37,15 @@ RUN --mount=type=secret,id=github_token \
 
 COPY --from=pruner /app/out/full/ .
 
-# prisma generate + nest build — both happen here
 RUN pnpm --filter @app/api run build
+
+# Deploy flattens node_modules correctly — resolves all pnpm symlinks
+RUN --mount=type=secret,id=github_token \
+    sh -c 'TOKEN=$(cat /run/secrets/github_token) && \
+    printf "@rumsan:registry=https://npm.pkg.github.com/\n" > .npmrc && \
+    printf "//npm.pkg.github.com/:_authToken=%s\n" "$TOKEN" >> .npmrc && \
+    pnpm --filter @app/api deploy --prod /app/deploy && \
+    rm -f .npmrc'
 
 
 # -------------------------
@@ -54,15 +61,14 @@ RUN apk add --no-cache openssl
 RUN addgroup --system --gid 1001 nodejs \
  && adduser --system --uid 1001 nestjs
 
-# Copy ONLY production artifacts
+# /app/deploy contains: node_modules (flat, no symlinks), package.json, prisma
+COPY --from=builder /app/deploy/node_modules ./node_modules
+COPY --from=builder /app/deploy/package.json ./package.json
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
 
 RUN chown -R nestjs:nodejs /app
 
 USER nestjs
 
-# PURE runtime (NO prisma, NO npx, NO installs)
 CMD ["node", "apps/api/dist/src/main"]
