@@ -46,6 +46,10 @@ jobs:
           echo "${ENV_API}" > apps/api/.env
           echo "${ENV_WEB}" > apps/web/.env
 
+      # Parse all NEXT_PUBLIC_* lines from ENV_WEB into GitHub env
+      - name: Export NEXT_PUBLIC vars to GitHub env
+        run: grep '^NEXT_PUBLIC_' apps/web/.env >> $GITHUB_ENV || true
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -66,5 +70,10 @@ jobs:
             ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.image }}:${{ github.sha }}
           secrets: |
             github_token=${{ env.GITHUB_PKG_TOKEN }}
+          build-args: |
+            NEXT_PUBLIC_SERVER_API=${{ env.NEXT_PUBLIC_SERVER_API }}
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ env.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+            NEXT_PUBLIC_BASE_RUMSAN_URL=${{ env.NEXT_PUBLIC_BASE_RUMSAN_URL }}
+            NEXT_PUBLIC_BASE_RUMSAN_USER_DEP_URL=${{ env.NEXT_PUBLIC_BASE_RUMSAN_USER_DEP_URL }}
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,scope=${{ matrix.app }},mode=max
