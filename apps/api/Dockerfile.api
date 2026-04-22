@@ -1,23 +1,17 @@
 FROM node:22-alpine AS base
-
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-
 RUN apk add --no-cache libc6-compat openssl
-
 RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
 RUN pnpm add -g turbo@^2
-
 
 # -------------------------
 # PRUNER
 # -------------------------
 FROM base AS pruner
 WORKDIR /app
-
 COPY . .
 RUN turbo prune @app/api --docker
-
 
 # -------------------------
 # BUILDER
@@ -39,14 +33,12 @@ COPY --from=pruner /app/out/full/ .
 
 RUN pnpm --filter @app/api run build
 
-# Deploy flattens node_modules correctly — resolves all pnpm symlinks
 RUN --mount=type=secret,id=github_token \
     sh -c 'TOKEN=$(cat /run/secrets/github_token) && \
     printf "@rumsan:registry=https://npm.pkg.github.com/\n" > .npmrc && \
     printf "//npm.pkg.github.com/:_authToken=%s\n" "$TOKEN" >> .npmrc && \
-    pnpm --filter @app/api deploy --prod /app/deploy && \
+    pnpm --filter @app/api deploy --prod --legacy /app/deploy && \
     rm -f .npmrc'
-
 
 # -------------------------
 # RUNNER
@@ -61,7 +53,6 @@ RUN apk add --no-cache openssl
 RUN addgroup --system --gid 1001 nodejs \
  && adduser --system --uid 1001 nestjs
 
-# /app/deploy contains: node_modules (flat, no symlinks), package.json, prisma
 COPY --from=builder /app/deploy/node_modules ./node_modules
 COPY --from=builder /app/deploy/package.json ./package.json
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
